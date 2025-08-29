@@ -1,0 +1,12 @@
+{
+  "orders": [
+    { "orderId": 1, "orderDate": "2025-08-10", "totalAmount": 250.00 },
+    { "orderId": 2, "orderDate": "2025-08-11", "totalAmount": 300.00 }
+  ],
+  "customers": [
+    { "customerId": 1, "firstName": "John", "lastName": "Doe", "email": "john@example.com" }
+  ],
+  "orderlines": [
+    { "orderLineId": 1, "quantity": 2, "unitPrice": 100.0, "orderId": 1 }
+  ]
+}
