@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { loginCustomer } from '../api/api';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -6,15 +7,25 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
       setError('Please enter both email and password.');
       return;
     }
     setError('');
-    // TODO: Add login logic here
-    alert(`Logging in with ${email}`);
+    try {
+      const customer = await loginCustomer(email, password);
+      if (customer && customer.id) {
+        alert('Login successful!');
+        // You can store customer info in localStorage or context here
+        window.location.href = '/';
+      } else {
+        setError('Invalid email or password.');
+      }
+    } catch (err) {
+      setError('Login failed. Please try again.');
+    }
   };
 
   return (
