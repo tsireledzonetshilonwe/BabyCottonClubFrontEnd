@@ -33,6 +33,7 @@ function Navbar() {
                     <button onClick={() => navigate("/signup")}>Register</button>
                     <button onClick={() => navigate("/orders")}>Orders</button>
                     <button onClick={() => navigate("/customers")}>My Account</button>
+                    <button onClick={() => navigate("/products")}>Products</button>
                     <button onClick={() => navigate("/cart")}>Cart{cartItems.length > 0 && ` (${cartItems.length})`}</button>
                 </div>
             </div>

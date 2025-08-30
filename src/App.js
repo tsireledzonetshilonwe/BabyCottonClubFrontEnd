@@ -12,6 +12,7 @@ import OrderLineDetails from "./screens/OrderLineDetails";
 import Payment from "./screens/Payment";
 import SupplierSearch from "./screens/SupplierSearch";
 import CartPage from "./screens/CartPage";
+import Products from "./screens/Product";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import { CartProvider } from "./context/CartContext";
@@ -35,6 +36,7 @@ function App() {
                         <Route path="/order-line-details/:id" element={<OrderLineDetails />} />
                         <Route path="/cart" element={<CartPage />} />
                         <Route path="/payment" element={<Payment />} />
+                        <Route path="/products" element={<Products />} />
                         <Route path="/supplier-search" element={<SupplierSearch />} />
                     </Routes>
                     <Footer />
