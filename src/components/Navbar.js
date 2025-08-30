@@ -29,6 +29,7 @@ function Navbar() {
             </form>
             <div className="header-right">
                 <div className="user-links">
+                    <button onClick={() => navigate("/")}>Home</button>
                     <button onClick={() => navigate("/login")}>Login</button>
                     <button onClick={() => navigate("/signup")}>Register</button>
                     <button onClick={() => navigate("/orders")}>Orders</button>
