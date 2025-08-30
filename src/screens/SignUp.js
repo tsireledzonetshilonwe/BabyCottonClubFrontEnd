@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createCustomer } from '../api/api';
 
 function SignUp() {
   const [firstName, setFirstName] = useState('');
@@ -9,17 +10,28 @@ function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!firstName || !lastName || !email || !phoneNumber || !password) {
       setError('Please fill in all fields.');
       return;
     }
-
     setError('');
-    // TODO: Add sign up logic (API call to backend)
-    alert(`Signing up: ${firstName} ${lastName}, Email: ${email}, Phone: ${phoneNumber}`);
+    try {
+      const customerData = {
+        firstName,
+        lastName,
+        email,
+        phoneNumber,
+        password
+      };
+      await createCustomer(customerData);
+      alert('Sign up successful! You can now log in.');
+      window.location.href = '/login';
+    } catch (err) {
+      console.error('Sign up error:', err, err?.response?.data);
+      setError('Sign up failed. Please try again.');
+    }
   };
 
   return (
