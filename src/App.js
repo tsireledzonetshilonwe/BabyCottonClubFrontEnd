@@ -9,29 +9,38 @@ import SignUp from "./screens/SignUp";
 import CreateOrder from "./screens/CreateOrder";
 import OrderDetails from "./screens/OrderDetails";
 import OrderLineDetails from "./screens/OrderLineDetails";
+import Payment from "./screens/Payment";
+import SupplierSearch from "./screens/SupplierSearch";
+import CartPage from "./screens/CartPage";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import { CartProvider } from "./context/CartContext";
 import "./App.css";
 
 function App() {
     return (
-        <Router>
-            <div className="app">
-                <Navbar />
-                <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/order-lines" element={<OrderLines />} />
-                    <Route path="/orders" element={<Orders />} />
-                    <Route path="/customers" element={<Customers />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/signup" element={<SignUp />} />
-                    <Route path="/create-order" element={<CreateOrder />} />
-                    <Route path="/order-details/:id" element={<OrderDetails />} />
-                    <Route path="/order-line-details/:id" element={<OrderLineDetails />} />
-                </Routes>
-                <Footer />
-            </div>
-        </Router>
+        <CartProvider>
+            <Router>
+                <div className="app">
+                    <Navbar />
+                    <Routes>
+                        <Route path="/" element={<Home />} />
+                        <Route path="/order-lines" element={<OrderLines />} />
+                        <Route path="/orders" element={<Orders />} />
+                        <Route path="/customers" element={<Customers />} />
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/signup" element={<SignUp />} />
+                        <Route path="/create-order" element={<CreateOrder />} />
+                        <Route path="/order-details/:id" element={<OrderDetails />} />
+                        <Route path="/order-line-details/:id" element={<OrderLineDetails />} />
+                        <Route path="/cart" element={<CartPage />} />
+                        <Route path="/payment" element={<Payment />} />
+                        <Route path="/supplier-search" element={<SupplierSearch />} />
+                    </Routes>
+                    <Footer />
+                </div>
+            </Router>
+        </CartProvider>
     );
 }
 
