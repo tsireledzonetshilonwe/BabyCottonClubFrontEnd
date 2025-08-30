@@ -61,21 +61,6 @@ export default function Home() {
     return (
         <div className="app">
             {toast && <div className="toast">{toast}</div>}
-            <header className="header">
-                <div className="header-left"><h1>Baby Cotton Club</h1></div>
-                <div className="search-bar">
-                    <input type="text" placeholder="Search for suppliers..." />
-                    <button onClick={() => setViewSupplierSearch(true)}>Search</button>
-                </div>
-                <div className="header-right">
-                    <div className="user-links">
-                        <button>Login</button>
-                        <button>Register</button>
-                        <button>Orders</button>
-                        <button>My Account</button>
-                    </div>
-                </div>
-            </header>
 
             <div className="banner">
                 <img src={bannerImages[currentBanner]} alt="Banner" className={fade ? "fade-in" : "fade-out"} />
