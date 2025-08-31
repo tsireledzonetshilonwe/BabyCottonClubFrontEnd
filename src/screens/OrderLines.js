@@ -6,6 +6,7 @@ const formatCurrency = (amount) =>
     minimumFractionDigits: 2,
   }).format(amount);
 import React, { useEffect, useState } from "react";
+import { useCart } from "../context/CartContext";
 // import api from "../api/api";
 
 const productImages = {
@@ -23,6 +24,7 @@ const categories = [
 
 function OrderLines({ isAuthenticated }) {
   const [orderLines, setOrderLines] = useState([]);
+  const { addToCart } = useCart();
   const [orderIdFilter, setOrderIdFilter] = useState("");
   const [search, setSearch] = useState("");
   const [showPrompt, setShowPrompt] = useState(false);
@@ -110,6 +112,20 @@ function OrderLines({ isAuthenticated }) {
               <div className="product-sku">SKU: {line.productSKU}</div>
               <div className="product-price">{formatCurrency(line.price)}</div>
             </div>
+            <button
+              className="auth-btn product-buy-btn"
+              onClick={() => {
+                addToCart({
+                  id: line.orderLineId,
+                  name: line.productName,
+                  price: line.price,
+                  sku: line.productSKU,
+                  image: productImages[line.productName] || 'https://via.placeholder.com/200x200?text=No+Image',
+                });
+              }}
+            >
+              Add to Cart
+            </button>
             {isAuthenticated ? (
               <button className="auth-btn product-buy-btn" onClick={() => alert('Buying...')}>Buy</button>
             ) : (
