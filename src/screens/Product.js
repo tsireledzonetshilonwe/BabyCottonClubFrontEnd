@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useCart } from "../context/CartContext";
+import { fetchAllReviews, createReview } from "../api/api";
 import "../App.css";
 
 const productsData = [
@@ -19,23 +21,41 @@ export default function Products() {
     const [reviewInputs, setReviewInputs] = useState({});
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [selectedBrand, setSelectedBrand] = useState("All");
+    const [allReviews, setAllReviews] = useState([]);
+    const [loadingReviews, setLoadingReviews] = useState(false);
+    const [reviewError, setReviewError] = useState("");
+    const { addToCart } = useCart();
+
+    useEffect(() => {
+        setLoadingReviews(true);
+        fetchAllReviews()
+            .then((data) => setAllReviews(data))
+            .catch(() => setReviewError("Failed to load reviews."))
+            .finally(() => setLoadingReviews(false));
+    }, []);
 
     const toggleExpand = (id) => {
         setExpandedProduct(expandedProduct === id ? null : id);
     };
 
-    const handleReviewSubmit = (e, productId) => {
+    const handleReviewSubmit = async (e, productId) => {
         e.preventDefault();
         const { name, comment, rating } = reviewInputs[productId] || {};
         if (!name || !comment) return;
-
-        const newReview = { name, comment, rating: rating || 5 };
-        setReviews({
-            ...reviews,
-            [productId]: [...(reviews[productId] || []), newReview],
-        });
-
-        setReviewInputs({ ...reviewInputs, [productId]: { name: "", comment: "", rating: 5 } });
+        try {
+            await createReview({
+                productId,
+                name,
+                comment,
+                rating: rating || 5
+            });
+            // Refresh reviews after submit
+            const data = await fetchAllReviews();
+            setAllReviews(data);
+            setReviewInputs({ ...reviewInputs, [productId]: { name: "", comment: "", rating: 5 } });
+        } catch (err) {
+            setReviewError("Failed to submit review.");
+        }
     };
 
     const handleInputChange = (productId, field, value) => {
@@ -109,6 +129,20 @@ export default function Products() {
                         <button className="product-buy-btn" onClick={() => toggleExpand(product.id)}>
                             {expandedProduct === product.id ? "Hide Details" : "View Details"}
                         </button>
+                        <button
+                            className="product-buy-btn"
+                            onClick={() => addToCart({
+                                id: product.id,
+                                name: product.name,
+                                price: product.price,
+                                image: product.image,
+                                quantity: 1
+                            })}
+                            disabled={!product.inStock}
+                            style={{ marginTop: 8, background: product.inStock ? '#90e0ef' : '#ccc', color: product.inStock ? '#023e8a' : '#888', cursor: product.inStock ? 'pointer' : 'not-allowed' }}
+                        >
+                            {product.inStock ? 'Add to Cart' : 'Out of Stock'}
+                        </button>
 
                         {expandedProduct === product.id && (
                             <div className="product-detail-section">
@@ -122,8 +156,10 @@ export default function Products() {
                                 <div className="review-section">
                                     <h4>Customer Reviews</h4>
                                     <div className="review-list">
-                                        {(reviews[product.id] || []).length === 0 && <p>No reviews yet.</p>}
-                                        {(reviews[product.id] || []).map((rev, index) => (
+                                        {loadingReviews && <p>Loading reviews...</p>}
+                                        {reviewError && <p className="error-message">{reviewError}</p>}
+                                        {allReviews.filter(r => r.productId === product.id).length === 0 && <p>No reviews yet.</p>}
+                                        {allReviews.filter(r => r.productId === product.id).map((rev, index) => (
                                             <div key={index} className="review-card">
                                                 <div className="review-card-header">
                                                     <span>{rev.name}</span>
