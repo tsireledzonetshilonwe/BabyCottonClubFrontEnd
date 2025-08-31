@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import { createOrder } from "../api/api";
 import "../App.css";
 
 export default function CartPage() {
@@ -21,6 +22,37 @@ export default function CartPage() {
     if (cartItems.length === 0) {
         return <h2 style={{ textAlign: "center", marginTop: "2rem" }}>Your cart is empty</h2>;
     }
+
+    // Handle checkout: create order, store orderId, then navigate to payment
+    const handleCheckout = async () => {
+        try {
+            // Get customer from localStorage
+            const customer = JSON.parse(localStorage.getItem("customer"));
+            if (!customer || !customer.customerId) {
+                alert("No customer found. Please log in first.");
+                return;
+            }
+            // Prepare order data as required by backend
+            const orderData = {
+                customer: { customerId: customer.customerId },
+                orderLines: cartItems.map(item => {
+                    const unitPrice = parseFloat(item.price.replace("R ", ""));
+                    const quantity = item.quantity;
+                    return {
+                        quantity,
+                        unitPrice,
+                        subTotal: unitPrice * quantity,
+                        product: { productId: item.id }
+                    };
+                })
+            };
+            const order = await createOrder(orderData);
+            localStorage.setItem("orderId", order.orderId);
+            navigate("/payment");
+        } catch (err) {
+            alert("Failed to create order. Please try again.");
+        }
+    };
 
     return (
         <div className="cart-container">
@@ -49,7 +81,7 @@ export default function CartPage() {
                 <h3>Total: R {totalAmount.toFixed(2)}</h3>
                 <div className="cart-actions">
                     <button onClick={clearCart} className="clear-btn">Clear Cart</button>
-                    <button onClick={() => navigate("/payment")} className="checkout-btn">
+                    <button onClick={handleCheckout} className="checkout-btn">
                         Proceed to Payment
                     </button>
                 </div>
