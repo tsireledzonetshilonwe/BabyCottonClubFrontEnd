@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useCart } from "../context/CartContext";
 import img_1 from "../assets/img_1.png";
 import img from "../assets/img.png";
 import onesie from "../assets/onesie.webp";
@@ -10,7 +11,6 @@ import "../App.css";
 // Example product data
 const products = [
     { id: 1, name: "Baby Cotton Onesie", supplier: "Cotton Suppliers SA", price: "R 199", image: onesie },
-
     { id: 2, name: "Soft Cotton Blanket", supplier: "Cozy Fabrics Ltd", price: "R 250", image: img },
     { id: 3, name: "Baby Booties", supplier: "Cotton Suppliers SA", price: "R 120", image: img_1 },
     { id: 4, name: "Baby Dress", supplier: "Cotton Suppliers SA", price: "R 250", image: img_2 },
@@ -18,7 +18,8 @@ const products = [
     { id: 6, name: "Baby Long sleeve top", supplier: "Cozy Fabrics Ltd", price: "R 299", image: img_3 },
 ];
 
-export default function SupplierSearch({ handleAddToCart }) {
+export default function SupplierSearch() {
+    const { addToCart } = useCart();
     const [query, setQuery] = useState("");
     const [results, setResults] = useState([]);
     const [notification, setNotification] = useState(""); // For toast
@@ -35,7 +36,7 @@ export default function SupplierSearch({ handleAddToCart }) {
     };
 
     const handleAdd = (product) => {
-        handleAddToCart(product);
+        addToCart(product);
         setNotification(`${product.name} added to cart!`);
         setTimeout(() => setNotification(""), 2000); // disappears after 2s
     };
@@ -125,7 +126,7 @@ export default function SupplierSearch({ handleAddToCart }) {
                                         borderRadius: "8px",
                                         cursor: "pointer",
                                     }}
-                                    onClick={() => handleAdd(product)} // updated to show toast
+                                    onClick={() => handleAdd(product)} // ✅ now safe
                                 >
                                     Add to Cart
                                 </button>
