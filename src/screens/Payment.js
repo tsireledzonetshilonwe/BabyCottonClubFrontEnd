@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { createPayment } from "../api/api";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
-import "../App.css";
+import "./Payment.css";
 
 export default function Payment() {
     const { cartItems, clearCart } = useCart();

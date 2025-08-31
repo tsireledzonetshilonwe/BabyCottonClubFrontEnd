@@ -6,7 +6,7 @@ import onesie from "../assets/onesie.webp";
 import img_2 from "../assets/img_2.png";
 import img_3 from "../assets/img_3.png";
 import img_4 from "../assets/img_4.png";
-import "../App.css";
+import "./SupplierSearch.css";
 
 // Example product data
 const products = [

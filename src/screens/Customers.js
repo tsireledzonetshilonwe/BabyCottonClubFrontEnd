@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-// import api from "../api/api";
+
+import "./Customers.css";
 
 function Customers() {
   const [customer, setCustomer] = useState(null);

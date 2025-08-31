@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { createOrder } from "../api/api";
-import "../App.css";
+import "./CartPage.css";
 
 export default function CartPage() {
     const {

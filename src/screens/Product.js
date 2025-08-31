@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useCart } from "../context/CartContext";
 import { fetchAllReviews, createReview } from "../api/api";
-import "../App.css";
+import "./Product.css";
 
 const productsData = [
     { id: 1, name: "Baby Cotton Onesie", price: 199, inStock: true, category: "Clothing", brand: "TinyWear", image: "/images/onesie.jpg" },

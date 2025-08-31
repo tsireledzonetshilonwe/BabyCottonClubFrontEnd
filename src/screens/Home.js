@@ -8,7 +8,7 @@ import banner1 from "../assets/banner1.webp";
 import banner2 from "../assets/banner2.jpg";
 import banner3 from "../assets/banner3.webp";
 import SupplierSearch from "./SupplierSearch";
-import "../App.css";
+import "./Home.css";
 
 const products = [
     { id: 1, name: "Baby Cotton Onesie", supplier: "Cotton Suppliers SA", price: "R 199", image: onesie },

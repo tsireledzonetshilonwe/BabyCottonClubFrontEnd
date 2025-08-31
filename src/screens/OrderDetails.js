@@ -3,6 +3,8 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { fetchOrderDetails } from "../api/api";
 
+import "./OrderDetails.css";
+
 
 const formatCurrency = (amount) =>
   new Intl.NumberFormat("en-ZA", {

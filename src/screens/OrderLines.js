@@ -5,6 +5,7 @@ const formatCurrency = (amount) =>
     currency: "ZAR",
     minimumFractionDigits: 2,
   }).format(amount);
+import "./OrderLines.css";
 import React, { useEffect, useState } from "react";
 import { useCart } from "../context/CartContext";
 // import api from "../api/api";
