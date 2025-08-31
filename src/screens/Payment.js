@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
@@ -33,78 +34,106 @@ export default function Payment() {
     }
 
     return (
-        <div style={{ maxWidth: "800px", margin: "2rem auto" }}>
-            <h2>Payment</h2>
-
-            {/* Order Summary */}
-            <div style={{ marginBottom: "1.5rem" }}>
-                <h3>Order Summary</h3>
-                <ul>
-                    {cartItems.map((item) => (
-                        <li key={item.id}>
-                            {item.name} – {item.quantity} × {item.price}
-                        </li>
-                    ))}
-                </ul>
-                <h3>Total: R {totalAmount.toFixed(2)}</h3>
+        <div className="payment-container">
+            {/* Progress Bar */}
+            <div className="payment-progress">
+                <div className="step completed">Cart</div>
+                <div className="step completed">Shipping</div>
+                <div className="step active">Payment</div>
+                <div className="step">Confirmation</div>
             </div>
 
-            {/* Payment Form */}
-            <form onSubmit={handlePayment}>
-                <label>
-                    Payment Method:
-                    <select
-                        value={paymentMethod}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                    >
-                        <option>Credit Card</option>
-                        <option>EFT</option>
-                        <option>Cash on Delivery</option>
-                    </select>
-                </label>
-
-                {paymentMethod === "Credit Card" && (
-                    <div style={{ marginTop: "1rem" }}>
-                        <input
-                            type="text"
-                            placeholder="Card Number"
-                            value={cardNumber}
-                            onChange={(e) => setCardNumber(e.target.value)}
-                            required
-                        />
-                        <input
-                            type="text"
-                            placeholder="Expiry Date (MM/YY)"
-                            value={expiry}
-                            onChange={(e) => setExpiry(e.target.value)}
-                            required
-                        />
-                        <input
-                            type="text"
-                            placeholder="CVV"
-                            value={cvv}
-                            onChange={(e) => setCvv(e.target.value)}
-                            required
-                        />
+            <div className="payment-content">
+                {/* Order Summary */}
+                <section className="payment-summary">
+                    <h2>Order Summary</h2>
+                    <ul>
+                        {cartItems.map((item) => (
+                            <li key={item.id} className="payment-summary-item">
+                                <span className="payment-summary-name">{item.name}</span>
+                                <span className="payment-summary-qty">× {item.quantity}</span>
+                                <span className="payment-summary-price">{item.price}</span>
+                            </li>
+                        ))}
+                    </ul>
+                    <div className="payment-summary-total">
+                        <strong>Total:</strong> R {totalAmount.toFixed(2)}
                     </div>
-                )}
+                </section>
 
-                {paymentMethod === "EFT" && (
-                    <p style={{ marginTop: "1rem" }}>
-                        Please transfer to FNB Account: 1234567890, Ref: Your Order ID
-                    </p>
-                )}
+                {/* Payment Form */}
+                <section className="payment-form-section">
+                    <h2>Payment Details</h2>
+                    <form className="payment-form" onSubmit={handlePayment}>
+                        <div className="input-group">
+                            <label>Payment Method</label>
+                            <select
+                                value={paymentMethod}
+                                onChange={(e) => setPaymentMethod(e.target.value)}
+                                className="payment-method-select"
+                            >
+                                <option>Credit Card</option>
+                                <option>EFT</option>
+                                <option>Cash on Delivery</option>
+                            </select>
+                        </div>
 
-                {paymentMethod === "Cash on Delivery" && (
-                    <p style={{ marginTop: "1rem" }}>
-                        You will pay the driver upon delivery.
-                    </p>
-                )}
+                        {paymentMethod === "Credit Card" && (
+                            <div className="credit-card-fields">
+                                <div className="input-group">
+                                    <label>Card Number</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Card Number"
+                                        value={cardNumber}
+                                        onChange={(e) => setCardNumber(e.target.value)}
+                                        required
+                                    />
+                                    <span className="card-icons">💳</span>
+                                </div>
+                                <div className="input-row">
+                                    <div className="input-group">
+                                        <label>Expiry</label>
+                                        <input
+                                            type="text"
+                                            placeholder="MM/YY"
+                                            value={expiry}
+                                            onChange={(e) => setExpiry(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>CVV</label>
+                                        <input
+                                            type="text"
+                                            placeholder="CVV"
+                                            value={cvv}
+                                            onChange={(e) => setCvv(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
-                <button type="submit" style={{ marginTop: "1.5rem", padding: "10px 20px" }}>
-                    Confirm Payment
-                </button>
-            </form>
+                        {paymentMethod === "EFT" && (
+                            <div className="eft-info">
+                                <p>Please transfer to <strong>FNB Account: 1234567890</strong>, Ref: Your Order ID</p>
+                            </div>
+                        )}
+
+                        {paymentMethod === "Cash on Delivery" && (
+                            <div className="cod-info">
+                                <p>You will pay the driver upon delivery.</p>
+                            </div>
+                        )}
+
+                        <button className="payment-confirm-btn" type="submit">
+                            Confirm Payment
+                        </button>
+                    </form>
+                </section>
+            </div>
         </div>
     );
 }
