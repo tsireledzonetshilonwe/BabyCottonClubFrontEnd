@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+import { createPayment } from "../api/api";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import "../App.css";
@@ -18,11 +19,28 @@ export default function Payment() {
         return sum + price * (item.quantity || 1);
     }, 0);
 
-    const handlePayment = (e) => {
+    const handlePayment = async (e) => {
         e.preventDefault();
-        alert(`Payment successful with ${paymentMethod}!`);
-        clearCart();
-        navigate("/");
+        // Retrieve orderId from localStorage (should be set after order creation)
+        const orderId = localStorage.getItem("orderId");
+        if (!orderId) {
+            alert("Order not found. Please complete checkout first.");
+            return;
+        }
+        // Prepare payment data matching backend domain
+        const paymentData = {
+            paymentMethod,
+            customerOrder: { orderId: Number(orderId) }
+        };
+        try {
+            await createPayment(paymentData);
+            alert(`Payment successful with ${paymentMethod}!`);
+            clearCart();
+            localStorage.removeItem("orderId");
+            navigate("/");
+        } catch (err) {
+            alert("Payment failed. Please try again.");
+        }
     };
 
     if (cartItems.length === 0) {
