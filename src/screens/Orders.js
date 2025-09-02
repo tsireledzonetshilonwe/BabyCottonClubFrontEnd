@@ -5,6 +5,7 @@ const formatCurrency = (amount) =>
     currency: "ZAR",
     minimumFractionDigits: 2,
   }).format(amount);
+import "./Orders.css";
 
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
