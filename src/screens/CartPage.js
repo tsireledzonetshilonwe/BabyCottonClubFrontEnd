@@ -5,6 +5,9 @@ import { createOrder } from "../api/api";
 import "./CartPage.css";
 
 export default function CartPage() {
+    // Helper to get price as number from string or number
+    const getPriceNumber = (price) =>
+        typeof price === "string" ? parseFloat(price.replace("R ", "")) : price;
     const {
         cartItems,
         removeFromCart,
@@ -15,7 +18,7 @@ export default function CartPage() {
     const navigate = useNavigate();
 
     const totalAmount = cartItems.reduce(
-        (sum, item) => sum + parseFloat(item.price.replace("R ", "")) * item.quantity,
+        (sum, item) => sum + getPriceNumber(item.price) * item.quantity,
         0
     );
 
@@ -36,7 +39,7 @@ export default function CartPage() {
             const orderData = {
                 customer: { customerId: customer.customerId },
                 orderLines: cartItems.map(item => {
-                    const unitPrice = parseFloat(item.price.replace("R ", ""));
+                    const unitPrice = getPriceNumber(item.price);
                     const quantity = item.quantity;
                     return {
                         quantity,
