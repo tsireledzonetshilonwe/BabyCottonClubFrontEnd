@@ -1,0 +1,155 @@
+/* Payment styles */
+
+.payment-container {
+	max-width: 900px;
+	margin: 2.5rem auto;
+	background: #fff;
+	border-radius: 1.2rem;
+	box-shadow: 0 4px 32px rgba(44, 62, 80, 0.08);
+	padding: 2.5rem 2rem 2rem 2rem;
+	display: flex;
+	flex-direction: column;
+	gap: 2.5rem;
+}
+
+.payment-progress {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 2rem;
+	gap: 0.5rem;
+}
+.payment-progress .step {
+	flex: 1;
+	text-align: center;
+	padding: 0.7rem 0.5rem;
+	border-radius: 1.5rem;
+	background: #f1f1f1;
+	color: #bdbdbd;
+	font-weight: 600;
+	font-size: 1.1rem;
+	position: relative;
+}
+.payment-progress .completed {
+	background: #90e0ef;
+	color: #023e8a;
+}
+.payment-progress .active {
+	background: #ffd6e0;
+	color: #d32f2f;
+	border: 2px solid #d32f2f;
+}
+.payment-progress .step:not(:last-child)::after {
+	content: '';
+	position: absolute;
+	right: -0.5rem;
+	top: 50%;
+	width: 1rem;
+	height: 4px;
+	background: #e0e0e0;
+	transform: translateY(-50%);
+	z-index: 0;
+}
+
+.payment-content {
+	display: flex;
+	gap: 2.5rem;
+	flex-wrap: wrap;
+}
+.payment-summary {
+	flex: 1 1 300px;
+	background: #f8f9fa;
+	border-radius: 1rem;
+	padding: 1.5rem 1.2rem;
+	box-shadow: 0 2px 8px rgba(44, 62, 80, 0.04);
+}
+.payment-summary h2 {
+	margin-top: 0;
+	color: #023e8a;
+	font-size: 1.3rem;
+}
+.payment-summary-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 0.5rem 0;
+	border-bottom: 1px solid #ececec;
+	font-size: 1.05rem;
+}
+.payment-summary-total {
+	margin-top: 1.2rem;
+	font-size: 1.2rem;
+	color: #d32f2f;
+	font-weight: bold;
+	text-align: right;
+}
+
+.payment-form-section {
+	flex: 2 1 400px;
+	background: #f8f9fa;
+	border-radius: 1rem;
+	padding: 1.5rem 1.2rem;
+	box-shadow: 0 2px 8px rgba(44, 62, 80, 0.04);
+}
+.payment-form-section h2 {
+	margin-top: 0;
+	color: #023e8a;
+	font-size: 1.3rem;
+}
+.payment-form {
+	display: flex;
+	flex-direction: column;
+	gap: 1.2rem;
+}
+.input-group {
+	display: flex;
+	flex-direction: column;
+	gap: 0.3rem;
+}
+.input-row {
+	display: flex;
+	gap: 1rem;
+}
+.payment-method-select, .credit-card-fields input, .payment-form input {
+	padding: 0.7rem 1rem;
+	border-radius: 0.5rem;
+	border: 1px solid #cbd5e1;
+	font-size: 1.1rem;
+	background: #fff;
+}
+.credit-card-fields {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+.card-icons {
+	font-size: 1.5rem;
+	margin-left: 0.5rem;
+	color: #90e0ef;
+}
+.eft-info, .cod-info {
+	background: #fffbe6;
+	border-left: 4px solid #ffd166;
+	padding: 1rem;
+	border-radius: 0.5rem;
+	color: #7c6f57;
+	font-size: 1.05rem;
+}
+.payment-confirm-btn {
+	background: linear-gradient(90deg, #90e0ef, #ffd6e0);
+	color: #023e8a;
+	border: none;
+	border-radius: 0.7rem;
+	padding: 0.9rem 2.2rem;
+	font-size: 1.15rem;
+	font-weight: 600;
+	cursor: pointer;
+	margin-top: 1.2rem;
+	transition: background 0.2s;
+}
+.payment-confirm-btn:hover {
+	background: linear-gradient(90deg, #48cae4, #ffb4c6);
+	color: #fff;
+}
+
+/* Add Payment-specific styles below */

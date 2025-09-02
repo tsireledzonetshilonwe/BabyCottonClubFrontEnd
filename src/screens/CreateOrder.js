@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import "./CreateOrder.css";
+
 const mockProducts = [
   { productSKU: "BB-001", productName: "Baby Blanket", price: 50.0 },
   { productSKU: "CO-002", productName: "Cotton Onesie", price: 30.0 },

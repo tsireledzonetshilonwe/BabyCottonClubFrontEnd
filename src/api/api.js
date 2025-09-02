@@ -1,3 +1,13 @@
+// Create a new order
+export const createOrder = async (orderData) => {
+  const res = await api.post("/api/order/create", orderData);
+  return res.data;
+};
+// Create a new payment
+export const createPayment = async (paymentData) => {
+  const res = await api.post("/payment/create", paymentData);
+  return res.data;
+};
 // Fetch all products
 export const fetchProducts = async () => {
   const res = await api.get("/product/getall");
@@ -36,7 +46,19 @@ export const fetchOrdersByCustomer = async (email) => {
 // Fetch order details by orderId
 export const fetchOrderDetails = async (orderId) => {
   // Adjust endpoint as per your backend (e.g., /api/orders/${orderId})
-  const res = await api.get(`/api/orders/${orderId}`);
+  const res = await api.get(`/api/order/${orderId}`);
+  return res.data;
+};
+
+// Fetch all reviews
+export const fetchAllReviews = async () => {
+  const res = await api.get("/review/getall");
+  return res.data;
+};
+
+// Create a new review
+export const createReview = async (reviewData) => {
+  const res = await api.post("/review/create", reviewData);
   return res.data;
 };
 

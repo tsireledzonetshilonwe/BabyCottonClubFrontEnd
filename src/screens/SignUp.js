@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { createCustomer } from '../api/api';
 
+import "./SignUp.css";
+
 function SignUp() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
