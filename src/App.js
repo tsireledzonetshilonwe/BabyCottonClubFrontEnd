@@ -17,6 +17,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import { CartProvider } from "./context/CartContext";
 import "./App.css";
+import {AiFillFileAdd} from "react-icons/ai";
 
 function App() {
     return (
@@ -36,6 +37,7 @@ function App() {
                         <Route path="/order-line-details/:id" element={<OrderLineDetails />} />
                         <Route path="/cart" element={<CartPage />} />
                         <Route path="/payment" element={<Payment />} />
+                        <Route path="/add_product" element={<AddProduct />} />
                         <Route path="/products" element={<Products />} />
                         <Route path="/supplier-search" element={<SupplierSearch />} />
                     </Routes>
