@@ -1,0 +1,162 @@
+body, html, #root {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f7f8fa;
+    min-height: 100vh;
+}
+
+/* Minimal global resets and utility classes */
+h1, h2, h3, h4, h5, h6 {
+    font-family: inherit;
+    color: #2d3a4a;
+/* Removed CartPage-specific styles to CartPage.css */
+
+/* Minimal global resets and utility classes */
+    margin-bottom: 0.5em;
+}
+
+a {
+    color: #0077b6;
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+
+/* Utility: hide visually but keep accessible */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    border: 0;
+}
+
+/* Global Header Styles */
+.header {
+    background: linear-gradient(90deg, #a8dadc, #ffd6e0);
+    color: #1a1a1a;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    border-bottom: 1px solid #ffd6e0;
+}
+
+.user-links {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.user-links button {
+    background: none;
+    border: none;
+    color: #023e8a;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 1rem;
+    padding: 0.4rem 1rem;
+    border-radius: 0.5rem;
+    transition: background 0.2s, color 0.2s;
+}
+.user-links button:hover, .user-links button.active {
+    background: #ffd6e0;
+    color: #0077b6;
+    text-decoration: none;
+}
+
+/* Header Search Bar Styles */
+.search-bar {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    padding: 0.15rem 0.3rem;
+    margin-left: 1rem;
+    gap: 0;
+}
+.search-bar input[type="text"], .search-bar input[type="search"] {
+    border: none;
+    outline: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem 0 0 0.5rem;
+    font-size: 1rem;
+    background: transparent;
+    min-width: 180px;
+}
+.search-bar button {
+    background: #90e0ef;
+    color: #023e8a;
+    border: none;
+    border-radius: 0 0.5rem 0.5rem 0;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+.search-bar button:hover {
+    background: #48cae4;
+    color: #fff;
+}
+
+
+
+/* Global Footer Styles */
+footer {
+    background-color: #90e0ef;
+    color: #023e8a;
+    text-align: center;
+    padding: 1rem 0;
+    margin-top: auto;
+    font-weight: bold;
+}
+
+/* Header */
+.header {
+    background: linear-gradient(90deg, #a8dadc, #ffd6e0); /* soft baby blue to soft pink gradient */
+
+    body, html, #root {
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background: #f7f8fa;
+        min-height: 100vh;
+    }
+
+    /* Minimal global resets and utility classes */
+    h1, h2, h3, h4, h5, h6 {
+        font-family: inherit;
+        color: #2d3a4a;
+        margin-bottom: 0.5em;
+    }
+
+    a {
+        color: #0077b6;
+        text-decoration: none;
+    }
+    a:hover {
+        text-decoration: underline;
+    }
+
+    /* Utility: hide visually but keep accessible */
+    .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0,0,0,0);
+        border: 0;
+    }
+}
