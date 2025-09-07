@@ -1,214 +1,111 @@
-import React, { useState, useEffect } from "react";
-import { useCart } from "../context/CartContext";
-import { fetchAllReviews, createReview } from "../api/api";
-import "./Product.css";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { fetchProducts } from "../api/api";
 
-const productsData = [
-    { id: 1, name: "Baby Cotton Onesie", price: 199, inStock: true, category: "Clothing", brand: "TinyWear", image: "/images/onesie.jpg" },
-    { id: 2, name: "Soft Cotton Blanket", price: 250, inStock: true, category: "Bedding", brand: "SnuggleCo", image: "/images/bedding.jpg" },
-    { id: 3, name: "Baby Booties", price: 120, inStock: false, category: "Footwear", brand: "LittleSteps", image: "/images/boots.jpg" },
-    { id: 4, name: "Baby Cotton Onesie", price: 135, inStock: true, category: "Clothing", brand: "TinyWear", image: "/images/onesy.jpg" },
-    { id: 5, name: "Baby Cotton Onesie", price: 90, inStock: true, category: "Clothing", brand: "TinyWear", image: "/images/wolf.jpg" },
-    { id: 6, name: "Soft Cotton Blanket", price: 60, inStock: true, category: "Bedding", brand: "SnuggleCo", image: "/images/cotton.jpg" },
-    { id: 7, name: "Soft Cotton Blanket", price: 1500, inStock: false, category: "Bedding", brand: "SnuggleCo", image: "/images/fleece.jpg" },
-    { id: 8, name: "Baby Booties", price: 70, inStock: true, category: "Footwear", brand: "LittleSteps", image: "/images/loafers.jpg" },
-    { id: 9, name: "Baby Booties", price: 200, inStock: true, category: "Footwear", brand: "LittleSteps", image: "/images/sneakers.jpg" }
-];
+const ProductPage = () => {
+ const [products, setProducts] = useState([]);
+ const navigate = useNavigate();
 
-export default function Products() {
-    const [expandedProduct, setExpandedProduct] = useState(null);
-    const [reviews, setReviews] = useState({});
-    const [reviewInputs, setReviewInputs] = useState({});
-    const [selectedCategory, setSelectedCategory] = useState("All");
-    const [selectedBrand, setSelectedBrand] = useState("All");
-    const [allReviews, setAllReviews] = useState([]);
-    const [loadingReviews, setLoadingReviews] = useState(false);
-    const [reviewError, setReviewError] = useState("");
-    const { addToCart } = useCart();
+ // Fetch all products
+ const loadProducts = async () => {
+  try {
+   const data = await fetchProducts();
+   setProducts(data);
+  } catch (err) {
+   console.error(err);
+  }
+ };
 
-    useEffect(() => {
-        setLoadingReviews(true);
-        fetchAllReviews()
-            .then((data) => setAllReviews(data))
-            .catch(() => setReviewError("Failed to load reviews."))
-            .finally(() => setLoadingReviews(false));
-    }, []);
+ useEffect(() => {
+  loadProducts();
+ }, []);
 
-    const toggleExpand = (id) => {
-        setExpandedProduct(expandedProduct === id ? null : id);
-    };
+ // Helper: stock status display
+ const getStockLabel = (status) => {
+  if (!status) return { text: "Unknown", color: "#999" };
+  const s = status.toLowerCase();
+  if (s === "yes" || s === "available") return { text: "In Stock", color: "green" };
+  if (s === "low") return { text: "Low Stock", color: "orange" };
+  if (s === "preorder") return { text: "Pre-Order", color: "blue" };
+  if (s === "out" || s === "no") return { text: "Out of Stock", color: "red" };
+  return { text: status, color: "#666" };
+ };
 
-    const handleReviewSubmit = async (e, productId) => {
-        e.preventDefault();
-        const { name, comment, rating } = reviewInputs[productId] || {};
-        if (!name || !comment) return;
-        try {
-            await createReview({
-                productId,
-                name,
-                comment,
-                rating: rating || 5
-            });
-            // Refresh reviews after submit
-            const data = await fetchAllReviews();
-            setAllReviews(data);
-            setReviewInputs({ ...reviewInputs, [productId]: { name: "", comment: "", rating: 5 } });
-        } catch (err) {
-            setReviewError("Failed to submit review.");
-        }
-    };
+ return (
+  <div style={{ padding: "20px" }}>
+   <h1 style={{ textAlign: "center", marginBottom: "30px" }}>Products</h1>
 
-    const handleInputChange = (productId, field, value) => {
-        setReviewInputs({
-            ...reviewInputs,
-            [productId]: { ...reviewInputs[productId], [field]: value },
-        });
-    };
+   {/* Product List */}
+   <div
+    style={{
+     display: "grid",
+     gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+     gap: "20px",
+    }}
+   >
+    {products.map((p) => {
+     const stock = getStockLabel(p.inStock);
+     return (
+      <div
+       key={p.productId}
+       style={{
+        border: "1px solid #ddd",
+        borderRadius: "12px",
+        padding: "15px",
+        textAlign: "center",
+        boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+        backgroundColor: "#fff",
+       }}
+      >
+       <img
+        src={p.imageUrl}
+        alt={p.productName}
+        style={{
+         width: "100%",
+         maxWidth: "200px",
+         height: "auto",
+         objectFit: "contain",
+         borderRadius: "8px",
+         marginBottom: "10px",
+        }}
+        onError={(e) => (e.target.src = "https://via.placeholder.com/150?text=No+Image")}
+       />
+       <h3>{p.productName}</h3>
+       <p>Color: {p.color}</p>
+       <p>R{p.price}</p>
+       <p style={{ color: stock.color }}>{stock.text}</p>
 
-    // 🔥 Get unique categories & brands
-    const categories = ["All", ...new Set(productsData.map((p) => p.category))];
-    const brands = ["All", ...new Set(productsData.map((p) => p.brand))];
+       {/* Add to Cart */}
+       <button
+        onClick={() => navigate("/cart")}
+        disabled={stock.text === "Out of Stock"}
+       >
+        {stock.text === "Out of Stock" ? "Unavailable" : "Add to Cart"}
+       </button>
 
-    // 🔥 Filter products based on selected category + brand
-    const filteredProducts = productsData.filter((p) => {
-        const categoryMatch = selectedCategory === "All" || p.category === selectedCategory;
-        const brandMatch = selectedBrand === "All" || p.brand === selectedBrand;
-        return categoryMatch && brandMatch;
-    });
+       {/* Reviews */}
+       <div style={{ marginTop: "10px", textAlign: "left" }}>
+        {p.reviews && p.reviews.length > 0 ? (
+         <>
+          <h4 style={{ fontSize: "14px" }}>Reviews:</h4>
+          <ul style={{ paddingLeft: "20px", fontSize: "13px", color: "#555" }}>
+           {p.reviews.map((r, i) => (
+            <li key={i}>
+             {r.comment} <span style={{ fontStyle: "italic" }}>({r.rating}/5)</span>
+            </li>
+           ))}
+          </ul>
+         </>
+        ) : (
+         <p style={{ fontSize: "13px", color: "#aaa" }}>No reviews yet</p>
+        )}
+       </div>
+      </div>
+     );
+    })}
+   </div>
+  </div>
+ );
+};
 
-    return (
-        <div className="products-page">
-            <h1 className="products-title">All Products</h1>
-
-            {/* Filters */}
-            <div className="category-filter">
-                {/* Category Filter */}
-                <label htmlFor="category-select">Category: </label>
-                <select
-                    id="category-select"
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                >
-                    {categories.map((cat, idx) => (
-                        <option key={idx} value={cat}>
-                            {cat}
-                        </option>
-                    ))}
-                </select>
-
-                {/* Brand Filter */}
-                <label htmlFor="brand-select">Brand: </label>
-                <select
-                    id="brand-select"
-                    value={selectedBrand}
-                    onChange={(e) => setSelectedBrand(e.target.value)}
-                >
-                    {brands.map((brand, idx) => (
-                        <option key={idx} value={brand}>
-                            {brand}
-                        </option>
-                    ))}
-                </select>
-            </div>
-
-            {/* Products Grid */}
-            <div className="products-grid">
-                {filteredProducts.map((product) => (
-                    <div key={product.id} className="product-card">
-                        <img src={product.image} alt={product.name} className="product-image" />
-                        <div className="product-info">
-                            <h2 className="product-name">{product.name}</h2>
-                            <p className="product-category">{product.category}</p>
-                            <p className="product-price">R {product.price}</p>
-                            <p className="product-brand">Brand: {product.brand}</p>
-                            <p className={`category-stock ${product.inStock ? "in" : "out"}`}>
-                                {product.inStock ? "In Stock" : "Out of Stock"}
-                            </p>
-                        </div>
-
-                        <button className="product-buy-btn" onClick={() => toggleExpand(product.id)}>
-                            {expandedProduct === product.id ? "Hide Details" : "View Details"}
-                        </button>
-                        <button
-                            className="product-buy-btn"
-                            onClick={() => addToCart({
-                                id: product.id,
-                                name: product.name,
-                                price: product.price,
-                                image: product.image,
-                                quantity: 1
-                            })}
-                            disabled={!product.inStock}
-                            style={{ marginTop: 8, background: product.inStock ? '#90e0ef' : '#ccc', color: product.inStock ? '#023e8a' : '#888', cursor: product.inStock ? 'pointer' : 'not-allowed' }}
-                        >
-                            {product.inStock ? 'Add to Cart' : 'Out of Stock'}
-                        </button>
-
-                        {expandedProduct === product.id && (
-                            <div className="product-detail-section">
-                                <h3>Product Details</h3>
-                                <p>
-                                    This is a soft, high-quality {product.name} by {product.brand}.
-                                    Perfect for comfort and care.
-                                </p>
-
-                                {/* Reviews */}
-                                <div className="review-section">
-                                    <h4>Customer Reviews</h4>
-                                    <div className="review-list">
-                                        {loadingReviews && <p>Loading reviews...</p>}
-                                        {reviewError && <p className="error-message">{reviewError}</p>}
-                                        {allReviews.filter(r => r.productId === product.id).length === 0 && <p>No reviews yet.</p>}
-                                        {allReviews.filter(r => r.productId === product.id).map((rev, index) => (
-                                            <div key={index} className="review-card">
-                                                <div className="review-card-header">
-                                                    <span>{rev.name}</span>
-                                                    <span className="review-rating">{"⭐".repeat(rev.rating)}</span>
-                                                </div>
-                                                <p>{rev.comment}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {/* Add Review Form */}
-                                    <form
-                                        onSubmit={(e) => handleReviewSubmit(e, product.id)}
-                                        className="review-form"
-                                    >
-                                        <input
-                                            type="text"
-                                            placeholder="Your Name"
-                                            value={reviewInputs[product.id]?.name || ""}
-                                            onChange={(e) => handleInputChange(product.id, "name", e.target.value)}
-                                        />
-                                        <textarea
-                                            placeholder="Write your review..."
-                                            value={reviewInputs[product.id]?.comment || ""}
-                                            onChange={(e) => handleInputChange(product.id, "comment", e.target.value)}
-                                        />
-                                        <label>
-                                            Rating:
-                                            <select
-                                                value={reviewInputs[product.id]?.rating || 5}
-                                                onChange={(e) =>
-                                                    handleInputChange(product.id, "rating", Number(e.target.value))
-                                                }
-                                            >
-                                                {[1, 2, 3, 4, 5].map((n) => (
-                                                    <option key={n} value={n}>
-                                                        {n}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </label>
-                                        <button type="submit">Submit Review</button>
-                                    </form>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-}
+export default ProductPage;
