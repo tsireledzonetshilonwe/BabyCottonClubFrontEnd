@@ -45,7 +45,7 @@ function SignUp() {
         <div className="input-group">
           <label htmlFor="signup-firstname">First Name</label>
           <div className="input-icon">
-            <span className="material-icons">person</span>
+            <span className="material-icons"></span>
             <input
               id="signup-firstname"
               type="text"
@@ -61,7 +61,7 @@ function SignUp() {
         <div className="input-group">
           <label htmlFor="signup-lastname">Last Name</label>
           <div className="input-icon">
-            <span className="material-icons">person_outline</span>
+            <span className="material-icons"></span>
             <input
               id="signup-lastname"
               type="text"
@@ -77,7 +77,7 @@ function SignUp() {
         <div className="input-group">
           <label htmlFor="signup-email">Email</label>
           <div className="input-icon">
-            <span className="material-icons">mail</span>
+            <span className="material-icons"></span>
             <input
               id="signup-email"
               type="email"
@@ -94,7 +94,7 @@ function SignUp() {
         <div className="input-group">
           <label htmlFor="signup-phone">Phone Number</label>
           <div className="input-icon">
-            <span className="material-icons">phone</span>
+            <span className="material-icons"></span>
             <input
               id="signup-phone"
               type="tel"
@@ -110,7 +110,7 @@ function SignUp() {
         <div className="input-group">
           <label htmlFor="signup-password">Password</label>
           <div className="input-icon">
-            <span className="material-icons">lock</span>
+            <span className="material-icons"></span>
             <input
               id="signup-password"
               type={showPassword ? 'text' : 'password'}
