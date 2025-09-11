@@ -20,6 +20,10 @@ const ProductPage = () => {
   loadProducts();
  }, []);
 
+
+
+
+
  // Helper: stock status display
  const getStockLabel = (status) => {
   if (!status) return { text: "Unknown", color: "#999" };
@@ -73,31 +77,32 @@ const ProductPage = () => {
        <h3>{p.productName}</h3>
        <p>Color: {p.color}</p>
        <p>R{p.price}</p>
-       <p style={{ color: stock.color }}>{stock.text}</p>
+       <p style={{color: stock.color}}>{stock.text}</p>
 
-       {/* Add to Cart */}
        <button
+        className="product-cart-btn"
         onClick={() => navigate("/cart")}
         disabled={stock.text === "Out of Stock"}
        >
         {stock.text === "Out of Stock" ? "Unavailable" : "Add to Cart"}
        </button>
 
+
        {/* Reviews */}
-       <div style={{ marginTop: "10px", textAlign: "left" }}>
+       <div style={{marginTop: "10px", textAlign: "left"}}>
         {p.reviews && p.reviews.length > 0 ? (
          <>
-          <h4 style={{ fontSize: "14px" }}>Reviews:</h4>
-          <ul style={{ paddingLeft: "20px", fontSize: "13px", color: "#555" }}>
+          <h4 style={{fontSize: "14px"}}>Reviews:</h4>
+          <ul style={{paddingLeft: "20px", fontSize: "13px", color: "#555"}}>
            {p.reviews.map((r, i) => (
             <li key={i}>
-             {r.comment} <span style={{ fontStyle: "italic" }}>({r.rating}/5)</span>
+             {r.comment} <span style={{fontStyle: "italic"}}>({r.rating}/5)</span>
             </li>
            ))}
           </ul>
          </>
         ) : (
-         <p style={{ fontSize: "13px", color: "#aaa" }}>No reviews yet</p>
+         <p style={{fontSize: "13px", color: "#aaa"}}>No reviews yet</p>
         )}
        </div>
       </div>
