@@ -56,7 +56,7 @@ function Login() {
         <div className="input-group">
           <label htmlFor="login-email">Email</label>
           <div className="input-icon">
-            <span className="material-icons">mail</span>
+            <span className="material-icons"></span>
             <input
               id="login-email"
               type="email"
@@ -72,7 +72,7 @@ function Login() {
         <div className="input-group">
           <label htmlFor="login-password">Password</label>
           <div className="input-icon">
-            <span className="material-icons">lock</span>
+            <span className="material-icons"></span>
             <input
               id="login-password"
               type={showPassword ? 'text' : 'password'}
