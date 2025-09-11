@@ -8,7 +8,7 @@ const formatCurrency = (amount) =>
 import "./OrderLines.css";
 import React, { useEffect, useState } from "react";
 import { useCart } from "../context/CartContext";
-// import api from "../api/api";
+
 
 const productImages = {
   "Baby Blanket": "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=400&q=80",
@@ -33,7 +33,7 @@ function OrderLines({ isAuthenticated }) {
   const [type, setType] = useState("");
 
   useEffect(() => {
-    // Mock data for frontend-only use
+  
     const mockOrderLines = [
       {
         orderLineId: 1,
@@ -63,7 +63,7 @@ function OrderLines({ isAuthenticated }) {
     setOrderLines(mockOrderLines);
   }, []);
 
-  // Filtering logic
+  
   const filteredLines = orderLines.filter(line => {
     const matchesOrder = orderIdFilter ? String(line.orderId) === orderIdFilter : true;
     const matchesSearch = search

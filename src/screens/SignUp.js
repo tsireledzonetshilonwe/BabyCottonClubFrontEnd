@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createCustomer } from '../api/api';
-
+import { Person, Mail, Phone, Lock, Visibility, VisibilityOff } from '@mui/icons-material';
 import "./SignUp.css";
 
 function SignUp() {
@@ -45,7 +45,7 @@ function SignUp() {
         <div className="input-group">
           <label htmlFor="signup-firstname">First Name</label>
           <div className="input-icon">
-            <span className="material-icons"></span>
+            <Person style={{ marginRight: 8, color: '#888' }} />
             <input
               id="signup-firstname"
               type="text"
@@ -61,7 +61,7 @@ function SignUp() {
         <div className="input-group">
           <label htmlFor="signup-lastname">Last Name</label>
           <div className="input-icon">
-            <span className="material-icons"></span>
+            <Person style={{ marginRight: 8, color: '#888' }} />
             <input
               id="signup-lastname"
               type="text"
@@ -77,7 +77,7 @@ function SignUp() {
         <div className="input-group">
           <label htmlFor="signup-email">Email</label>
           <div className="input-icon">
-            <span className="material-icons"></span>
+            <Mail style={{ marginRight: 8, color: '#888' }} />
             <input
               id="signup-email"
               type="email"
@@ -94,7 +94,7 @@ function SignUp() {
         <div className="input-group">
           <label htmlFor="signup-phone">Phone Number</label>
           <div className="input-icon">
-            <span className="material-icons"></span>
+            <Phone style={{ marginRight: 8, color: '#888' }} />
             <input
               id="signup-phone"
               type="tel"
@@ -110,7 +110,7 @@ function SignUp() {
         <div className="input-group">
           <label htmlFor="signup-password">Password</label>
           <div className="input-icon">
-            <span className="material-icons"></span>
+            <Lock style={{ marginRight: 8, color: '#888' }} />
             <input
               id="signup-password"
               type={showPassword ? 'text' : 'password'}
@@ -120,14 +120,21 @@ function SignUp() {
               autoComplete="new-password"
               required
             />
-            <span
-              className="material-icons password-toggle"
-              onClick={() => setShowPassword(s => !s)}
-              title={showPassword ? 'Hide password' : 'Show password'}
-              style={{ cursor: 'pointer', marginLeft: 8 }}
-            >
-              {showPassword ? 'visibility_off' : 'visibility'}
-            </span>
+            {showPassword ? (
+              <VisibilityOff
+                className="password-toggle"
+                onClick={() => setShowPassword(s => !s)}
+                title="Hide password"
+                style={{ cursor: 'pointer', marginLeft: 8 }}
+              />
+            ) : (
+              <Visibility
+                className="password-toggle"
+                onClick={() => setShowPassword(s => !s)}
+                title="Show password"
+                style={{ cursor: 'pointer', marginLeft: 8 }}
+              />
+            )}
           </div>
         </div>
 

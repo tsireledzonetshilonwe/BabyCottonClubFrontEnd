@@ -1,4 +1,4 @@
-// Currency formatter for ZAR
+
 const formatCurrency = (amount) =>
   new Intl.NumberFormat("en-ZA", {
     style: "currency",
@@ -29,7 +29,7 @@ function Orders({ user }) {
 
 
 
-  // If backend already filters by user, just use orders
+  
   const userOrders = orders;
 
   return (

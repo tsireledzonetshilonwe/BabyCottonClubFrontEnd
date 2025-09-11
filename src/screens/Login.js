@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Mail, Lock, Visibility, VisibilityOff } from '@mui/icons-material';
 
 // API call to login customer
 const loginCustomer = async (email, password) => {
@@ -31,14 +32,14 @@ function Login() {
     try {
       const customer = await loginCustomer(email, password);
 
-      // Check using customerId instead of id
+      
       if (customer && customer.customerId) {
         alert('Login successful!');
 
-        // Store customer info in localStorage
+        
         localStorage.setItem('customer', JSON.stringify(customer));
 
-        // Redirect to homepage or dashboard
+      
         window.location.href = '/';
       } else {
         setError('Invalid email or password.');
@@ -56,7 +57,7 @@ function Login() {
         <div className="input-group">
           <label htmlFor="login-email">Email</label>
           <div className="input-icon">
-            <span className="material-icons"></span>
+            <Mail style={{ marginRight: 8, color: '#888' }} />
             <input
               id="login-email"
               type="email"
@@ -72,7 +73,7 @@ function Login() {
         <div className="input-group">
           <label htmlFor="login-password">Password</label>
           <div className="input-icon">
-            <span className="material-icons"></span>
+            <Lock style={{ marginRight: 8, color: '#888' }} />
             <input
               id="login-password"
               type={showPassword ? 'text' : 'password'}
@@ -82,14 +83,21 @@ function Login() {
               autoComplete="current-password"
               required
             />
-            <span
-              className="material-icons password-toggle"
-              onClick={() => setShowPassword((s) => !s)}
-              title={showPassword ? 'Hide password' : 'Show password'}
-              style={{ cursor: 'pointer', marginLeft: 8 }}
-            >
-              {showPassword ? 'visibility_off' : 'visibility'}
-            </span>
+            {showPassword ? (
+              <VisibilityOff
+                className="password-toggle"
+                onClick={() => setShowPassword((s) => !s)}
+                title="Hide password"
+                style={{ cursor: 'pointer', marginLeft: 8 }}
+              />
+            ) : (
+              <Visibility
+                className="password-toggle"
+                onClick={() => setShowPassword((s) => !s)}
+                title="Show password"
+                style={{ cursor: 'pointer', marginLeft: 8 }}
+              />
+            )}
           </div>
         </div>
 
