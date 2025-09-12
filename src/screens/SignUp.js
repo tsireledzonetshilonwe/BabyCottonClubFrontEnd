@@ -37,8 +37,8 @@ function SignUp() {
   };
 
   return (
-    <div className="auth-card">
-      <h2 className="auth-title">Sign Up</h2>
+  <div className="auth-card" style={{ fontFamily: 'Roboto, Arial, sans-serif' }}>
+  <h2 className="auth-title" style={{ color: '#d32f2f' }}>Sign Up</h2>
       <form onSubmit={handleSubmit} className="auth-form">
         
         {/* First Name */}
@@ -142,7 +142,7 @@ function SignUp() {
         {error && <div className="auth-error">{error}</div>}
 
         {/* Submit Button */}
-        <button className="auth-btn" type="submit">Sign Up</button>
+  <button className="auth-btn" type="submit" style={{ background: '#d32f2f', color: '#fff', fontWeight: 600 }}>Sign Up</button>
       </form>
 
       <div className="auth-footer">

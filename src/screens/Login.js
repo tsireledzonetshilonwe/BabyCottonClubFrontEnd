@@ -51,8 +51,8 @@ function Login() {
   };
 
   return (
-    <div className="auth-card">
-      <h2 className="auth-title">Login</h2>
+  <div className="auth-card" style={{ fontFamily: 'Roboto, Arial, sans-serif' }}>
+  <h2 className="auth-title" style={{ color: '#d32f2f' }}>Login</h2>
       <form onSubmit={handleSubmit} className="auth-form">
         <div className="input-group">
           <label htmlFor="login-email">Email</label>
@@ -103,13 +103,16 @@ function Login() {
 
         {error && <div className="auth-error">{error}</div>}
 
-        <button className="auth-btn" type="submit">
+        <button className="auth-btn" type="submit" style={{ background: '#d32f2f', color: '#fff', fontWeight: 600 }}>
           Login
         </button>
       </form>
 
       <div className="auth-footer">
-        <span>Don't have an account?</span> <a href="/signup">Sign Up</a>
+        <span>Don't have an account?</span>{' '}
+        <a href="/signup" style={{ textDecoration: 'underline', color: '#d32f2f', fontWeight: 600 }}>
+          Sign Up
+        </a>
       </div>
     </div>
   );

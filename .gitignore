@@ -25,6 +25,9 @@ functions/.DS_Store
 mobile-app/navigation/.DS_Store
 mobile-app/.DS_Store
 web-app/build
+public/*
+!public/images/
+!public/images/*
 
 common/dist
 
