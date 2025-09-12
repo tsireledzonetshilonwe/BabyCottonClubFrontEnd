@@ -6,16 +6,7 @@ import banner2 from "../assets/banner2.jpg";
 import banner3 from "../assets/banner3.webp";
 import SupplierSearch from "./SupplierSearch";
 import "./Home.css";
-
-// API call to fetch products
-const fetchProducts = async () => {
-    const res = await fetch("http://localhost:8080/api/products", {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-    });
-    if (!res.ok) throw new Error("Failed to fetch products");
-    return res.json();
-};
+import { fetchProducts } from "../api/api";
 
 const bannerImages = [banner1, banner2, banner3];
 
