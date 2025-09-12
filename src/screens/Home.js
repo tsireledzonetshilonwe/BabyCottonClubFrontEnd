@@ -133,7 +133,7 @@ export default function Home() {
              </main>
          </div>
 
-         <footer>© 2025 Baby Cotton Club | All Rights Reserved</footer>
+         {/* Footer removed to avoid duplication. Use the global Footer component instead. */}
      </div>
     );
 }
