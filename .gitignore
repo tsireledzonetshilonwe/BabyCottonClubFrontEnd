@@ -5,7 +5,6 @@ yarn.lock
 web-app/node_modules
 .firebase/hosting.d2ViLWFwcC9idWlsZA.cache
 mobile-app\dist
-public
 web-app\build
 mobile-app/dist
 .DS_Store
