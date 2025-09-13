@@ -4,7 +4,11 @@ import { useCart } from "../context/CartContext";
 import banner1 from "../assets/banner1.webp";
 import banner2 from "../assets/banner2.jpg";
 import banner3 from "../assets/banner3.webp";
-import SupplierSearch from "./SupplierSearch";
+import onesie from "../assets/onesie.webp";
+import img1 from "../assets/img_1.png";
+import img2 from "../assets/img_2.png";
+import img3 from "../assets/img_3.png";
+import img4 from "../assets/img_4.png";
 import "./Home.css";
 import { fetchProducts } from "../api/api";
 
@@ -18,6 +22,12 @@ export default function Home() {
     const [toast, setToast] = useState("");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [expandedProduct, setExpandedProduct] = useState(null);
+    const [reviewInputs, setReviewInputs] = useState({});
+    const [selectedCategory, setSelectedCategory] = useState("All");
+    const [allReviews, setAllReviews] = useState([]);
+    const [loadingReviews, setLoadingReviews] = useState(false);
+    const [reviewError, setReviewError] = useState("");
 
     const { addToCart } = useCart();
     const navigate = useNavigate();
@@ -38,93 +48,73 @@ export default function Home() {
         loadProducts();
     }, []);
 
-    // Banner slider
     useEffect(() => {
-        const interval = setInterval(() => {
-            setFade(false);
-            setTimeout(() => {
-                setCurrentBanner((prev) => (prev + 1) % bannerImages.length);
-                setFade(true);
-            }, 500);
-        }, 4000);
-        return () => clearInterval(interval);
+        setLoadingReviews(true);
+        // If you want to fetch reviews, do it here
+        // fetchAllReviews().then(...)
     }, []);
 
-    const handleAddToCart = (product) => {
-        addToCart(product);
-        setToast(`${product.name} added to cart`);
-        setTimeout(() => setToast(""), 2000);
-    };
+    // Featured categories
+    const categories = [
+        { name: "Onesies", image: onesie },
+        { name: "Blankets", image: img1 },
+        { name: "Shoes", image: img2 },
+        { name: "Accessories", image: img3 },
+        { name: "Gift Sets", image: img4 }
+    ];
 
-    if (viewSupplierSearch) {
-        return (
-         <div>
-             <SupplierSearch handleAddToCart={addToCart} />
-             <button
-              onClick={() => setViewSupplierSearch(false)}
-              style={{ margin: "2rem", padding: "0.7rem 1rem", cursor: "pointer" }}
-             >
-                 Back to Home
-             </button>
-         </div>
-        );
-    }
+    // Featured products (first 4)
+    const featuredProducts = products.slice(0, 4);
 
     return (
-     <div className="app">
-         {toast && <div className="toast">{toast}</div>}
+        <div className="home-page">
+            {/* Hero Section */}
+            <section className="hero-section">
+                <img src={banner1} alt="Main Banner" className="hero-banner" />
+                <div className="hero-content">
+                    <h1>Welcome to Baby Cotton Club</h1>
+                    <p>Discover the softest, cutest clothes for your little ones. Shop our new arrivals and best sellers!</p>
+                    <button className="shop-now-btn" onClick={() => navigate("/products")}>Shop Now</button>
+                </div>
+            </section>
 
-         <div className="banner">
-             <img
-              src={bannerImages[currentBanner]}
-              alt="Banner"
-              className={fade ? "fade-in" : "fade-out"}
-             />
-             <div className="banner-text">Want It Now?</div>
-         </div>
 
-         <div className="main">
-             <aside className="sidebar">
-                 <h2>Refine by Category</h2>
-                 <ul>
-                     <li>All Products</li>
-                     <li>Clothes</li>
-                     <li>Shoes</li>
-                     <li>Blankets</li>
-                     <li onClick={() => setViewSupplierSearch(true)}>See More</li>
-                 </ul>
-                 <div className="filters">
-                     <h2>Filters</h2>
-                     <label>
-                         <input type="checkbox" defaultChecked /> In Stock
-                     </label>
-                 </div>
-             </aside>
 
-             <main className="product-grid">
-                 {loading ? (
-                  <p>Loading products...</p>
-                 ) : error ? (
-                  <p>{error}</p>
-                 ) : products.length === 0 ? (
-                  <p>No products available.</p>
-                 ) : (
-                  products.map((product) => (
-                   <div key={product.id} className="product-card">
-                       <img src={product.image || ""} alt={product.name} />
-                       <div className="product-info">
-                           <h3>{product.name}</h3>
-                           <p>{product.supplier}</p>
-                           <p className="price">R {product.price}</p>
-                           <button onClick={() => handleAddToCart(product)}>Add to Cart</button>
-                       </div>
-                   </div>
-                  ))
-                 )}
-             </main>
-         </div>
+            {/* Featured Products */}
+            <section className="featured-products">
+                <h2>Featured Products</h2>
+                <div className="products-grid">
+                    {loading ? (
+                        <p>Loading products...</p>
+                    ) : error ? (
+                        <p>{error}</p>
+                    ) : featuredProducts.length === 0 ? (
+                        <p>No products available.</p>
+                    ) : (
+                        featuredProducts.map((product) => (
+                            <div key={product.productId || product.id} className="product-card">
+                                <img src={product.imageUrl || product.image || onesie} alt={product.productName || product.name} className="product-image" />
+                                <div className="product-info">
+                                    <h2 className="product-name">{product.productName || product.name}</h2>
+                                    <p className="product-category">{product.category?.categoryName}</p>
+                                    <p className="product-price">R {product.price}</p>
+                                </div>
+                                <button className="product-buy-btn" onClick={() => addToCart({
+                                    id: product.productId || product.id,
+                                    name: product.productName || product.name,
+                                    price: product.price,
+                                    image: product.imageUrl || product.image,
+                                    quantity: 1
+                                })}>
+                                    Add to Cart
+                                </button>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </section>
 
-         {/* Footer removed to avoid duplication. Use the global Footer component instead. */}
-     </div>
+
+        </div>
     );
 }

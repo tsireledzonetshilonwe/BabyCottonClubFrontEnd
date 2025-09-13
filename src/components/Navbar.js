@@ -32,7 +32,7 @@ function Navbar() {
             <form className="search-bar" onSubmit={handleSearch}>
                 <input
                     type="text"
-                    placeholder="Search for suppliers..."
+                    placeholder="Search for products..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                 />

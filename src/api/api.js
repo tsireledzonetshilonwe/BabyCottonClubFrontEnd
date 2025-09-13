@@ -1,3 +1,8 @@
+// Fetch products by name
+export const fetchProductsByName = async (name) => {
+  const res = await api.get(`/api/products/search?name=${encodeURIComponent(name)}`);
+  return res.data;
+};
 import axios from "axios";
 
 const api = axios.create({
