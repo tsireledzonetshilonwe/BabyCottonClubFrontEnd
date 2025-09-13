@@ -73,14 +73,14 @@ function OrderDetails({ user }) {
             {order.orderLines.map(line => (
               <tr key={line.orderLineId}>
                 <td>
-                  <Link to={`/orderlines/${line.orderLineId}`}>
-                    {line.productName}
+                  <Link to={`/orderline/${line.orderLineId}`}>
+                    {line.product?.name || "-"}
                   </Link>
                 </td>
-                <td>{line.productSKU}</td>
+                <td>{line.product?.sku || "-"}</td>
                 <td>{line.quantity}</td>
-                <td>{formatCurrency(line.price)}</td>
-                <td>{formatCurrency(line.price * line.quantity)}</td>
+                <td>{formatCurrency(line.unitPrice)}</td>
+                <td>{formatCurrency(line.subTotal)}</td>
               </tr>
             ))}
           </tbody>

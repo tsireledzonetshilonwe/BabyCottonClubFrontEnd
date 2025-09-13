@@ -46,7 +46,7 @@ function OrderLineDetails() {
           <div><b>Discount:</b> {orderLine.discount.description} ({orderLine.discount.amount})</div>
         )}
         <div style={{ marginTop: "1rem" }}>
-          <Link to={"/orders/" + orderLine.customerOrder?.orderId}>Back to Order</Link>
+          <Link to={"/orders/" + (orderLine.order?.orderId || orderLine.customerOrder?.orderId)}>Back to Order</Link>
         </div>
       </div>
     </div>

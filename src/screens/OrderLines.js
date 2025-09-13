@@ -7,7 +7,9 @@ const formatCurrency = (amount) =>
   }).format(amount);
 import "./OrderLines.css";
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import api from "../api/api";
 
 
 const productImages = {
@@ -31,36 +33,32 @@ function OrderLines({ isAuthenticated }) {
   const [showPrompt, setShowPrompt] = useState(false);
   const [category, setCategory] = useState("");
   const [type, setType] = useState("");
+  const location = useLocation();
 
   useEffect(() => {
-  
-    const mockOrderLines = [
-      {
-        orderLineId: 1,
-        orderId: 1,
-        productName: "Baby Blanket",
-        productSKU: "BB-001",
-        quantity: 2,
-        price: 50.0
-      },
-      {
-        orderLineId: 2,
-        orderId: 1,
-        productName: "Cotton Onesie",
-        productSKU: "CO-002",
-        quantity: 3,
-        price: 30.0
-      },
-      {
-        orderLineId: 3,
-        orderId: 2,
-        productName: "Baby Hat",
-        productSKU: "BH-003",
-        quantity: 1,
-        price: 20.0
-      }
-    ];
-    setOrderLines(mockOrderLines);
+    // Get orderId from query string if present
+    const params = new URLSearchParams(location.search);
+    const orderId = params.get("orderId") || "";
+    setOrderIdFilter(orderId);
+  }, [location.search]);
+
+  useEffect(() => {
+    api.get("/api/orderline/getall")
+      .then(res => {
+        // Map backend order line data to frontend format
+        const lines = res.data.map(line => ({
+          orderLineId: line.orderLineId,
+          orderId: line.order?.orderId,
+          productName: line.product?.name || "Unknown",
+          productSKU: line.product?.sku || "",
+          quantity: line.quantity,
+          price: line.unitPrice
+        }));
+        setOrderLines(lines);
+      })
+      .catch(() => {
+        setOrderLines([]);
+      });
   }, []);
 
   
@@ -127,6 +125,7 @@ function OrderLines({ isAuthenticated }) {
             >
               Add to Cart
             </button>
+            <a href={`/orderline/${line.orderLineId}`} className="orderline-details-link" style={{display:'block',marginTop:'0.5rem'}}>View Details</a>
             {isAuthenticated ? (
               <button className="auth-btn product-buy-btn" onClick={() => alert('Buying...')}>Buy</button>
             ) : (

@@ -26,14 +26,14 @@ function App() {
                     <Navbar />
                     <Routes>
                         <Route path="/" element={<Home />} />
-                        <Route path="/order-lines" element={<OrderLines />} />
-                        <Route path="/orders" element={<Orders />} />
                         <Route path="/customers" element={<Customers />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/signup" element={<SignUp />} />
+                            <Route path="/order-lines" element={<OrderLines />} />
+                            <Route path="/orders" element={<Orders />} />
                         <Route path="/create-order" element={<CreateOrder />} />
-                        <Route path="/order-details/:id" element={<OrderDetails />} />
-                        <Route path="/order-line-details/:id" element={<OrderLineDetails />} />
+                            <Route path="/order-details/:id" element={<OrderDetails />} />
+                            <Route path="/order-line-details/:id" element={<OrderLineDetails />} />
                         <Route path="/cart" element={<CartPage />} />
                         <Route path="/payment" element={<Payment />} />
                         <Route path="/products" element={<Products />} />
