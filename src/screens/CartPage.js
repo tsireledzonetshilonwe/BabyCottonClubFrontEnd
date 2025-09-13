@@ -15,7 +15,7 @@ export default function CartPage() {
     const navigate = useNavigate();
 
     const totalAmount = cartItems.reduce(
-        (sum, item) => sum + parseFloat(item.price.replace("R ", "")) * item.quantity,
+        (sum, item) => sum + parseFloat(item.price) * item.quantity,
         0
     );
 
@@ -36,7 +36,7 @@ export default function CartPage() {
             const orderData = {
                 customer: { customerId: customer.customerId },
                 orderLines: cartItems.map(item => {
-                    const unitPrice = parseFloat(item.price.replace("R ", ""));
+                    const unitPrice = parseFloat(item.price);
                     const quantity = item.quantity;
                     return {
                         quantity,
