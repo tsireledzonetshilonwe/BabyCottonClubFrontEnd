@@ -15,7 +15,7 @@ export default function Payment() {
     const [cvv, setCvv] = useState("");
 
     const totalAmount = cartItems.reduce((sum, item) => {
-        const price = parseFloat(item.price.replace("R ", "")) || 0;
+        const price = parseFloat(item.price) || 0;
         return sum + price * (item.quantity || 1);
     }, 0);
 
