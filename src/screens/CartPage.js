@@ -20,51 +20,9 @@ export default function CartPage() {
         0
     );
 
-    // Handle checkout: create order, store orderId, then navigate to payment
-    const handleCheckout = async () => {
-        try {
-            // Get customer from localStorage
-            const customer = JSON.parse(localStorage.getItem("customer"));
-            if (!customer || !customer.customerId) {
-                alert("No customer found. Please log in first.");
-                return;
-            }
-            // 1. Create the shipment first
-            const shipmentData = {
-                shipmentMethod: "Standard",
-                status: "Pending",
-                trackingNumber: "N/A"
-            };
-            const shipmentRes = await api.post("/shipment/create", shipmentData);
-            const shipment = shipmentRes.data;
-
-            // 2. Prepare order data with persisted shipment
-            const orderData = {
-                orderDate: new Date().toISOString().slice(0,10),
-                totalAmount: cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
-                orderLines: null,
-                customer: { customerId: customer.customerId },
-                shipment: shipment
-            };
-            console.log("Order payload:", orderData);
-            // 3. Create the order
-            const order = await createOrder(orderData);
-            // 4. Create order lines for each cart item
-            await Promise.all(cartItems.map(item => {
-                const orderLineData = {
-                    quantity: item.quantity,
-                    unitPrice: item.price,
-                    subTotal: item.price * item.quantity,
-                    order: { orderId: order.orderId },
-                    product: { productId: item.id }
-                };
-                return api.post("/api/orderline/create", orderLineData);
-            }));
-            localStorage.setItem("orderId", order.orderId); // Save for payment page
-            navigate("/payment");
-        } catch (err) {
-            alert("Failed to create order. Please try again.");
-        }
+    // Handle checkout: just navigate to payment
+    const handleCheckout = () => {
+        navigate("/payment");
     };
 
     return (
