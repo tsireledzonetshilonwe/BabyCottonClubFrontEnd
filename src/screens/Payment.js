@@ -26,12 +26,10 @@ export default function Payment() {
             return;
         }
 
-        // Get today's date in YYYY-MM-DD format to match backend
         const today = new Date().toISOString().split("T")[0];
 
-        // Prepare payment data matching backend domain
         const paymentData = {
-            paymentDate: today, // ✅ Send date in correct format
+            paymentDate: today,
             paymentMethod,
             customerOrder: { orderId: Number(orderId) }
         };
