@@ -54,17 +54,26 @@ export default function Products() {
 
   const handleReviewSubmit = async (e, product) => {
     e.preventDefault();
-    const { name, comment, rating } = reviewInputs[product.productId] || {};
-    if (!name || !comment) return;
+  const { comment, rating } = reviewInputs[product.productId] || {};
+  if (!comment) return;
 
     try {
+      // Get customerId from localStorage customer object
+      const customerObj = localStorage.getItem("customer");
+      const customer = customerObj ? JSON.parse(customerObj) : null;
+      const customerId = customer ? customer.customerId : null;
+      if (!customerId) {
+        setReviewError("You must be logged in to submit a review.");
+        return;
+      }
+
       // Build review payload for backend
       const reviewPayload = {
         rating: rating || 5,
         reviewDate: new Date().toISOString().split("T")[0],
         reviewComment: comment,
         productId: product.productId,
-        customerName: name
+        customerId: customerId
       };
       console.log("Submitting review payload:", reviewPayload);
 
@@ -76,8 +85,8 @@ export default function Products() {
 
       // Clear inputs only if review was submitted
       setReviewInputs({
-        ...reviewInputs,
-        [product.productId]: { name: "", comment: "", rating: 5 },
+  ...reviewInputs,
+  [product.productId]: { comment: "", rating: 5 },
       });
       setReviewError("");
     } catch (err) {
@@ -138,8 +147,9 @@ export default function Products() {
             ? product.imageUrl
             : process.env.PUBLIC_URL + product.imageUrl;
 
+          // Filter reviews for this product only
           const productReviews = allReviews.filter(
-            () => true // Show all reviews for every product
+            (rev) => rev.product && rev.product.productId === product.productId
           );
 
           return (
@@ -186,7 +196,7 @@ export default function Products() {
                       {productReviews.map((rev, idx) => (
                         <div key={idx} className="review-card">
                           <div className="review-card-header">
-                            <span>{rev.customerName ? rev.customerName : "Anonymous"}</span>
+                            <span>{rev.customer && rev.customer.firstName ? rev.customer.firstName : "Anonymous"}</span>
                             <span className="review-rating">{"⭐".repeat(rev.rating)}</span>
                           </div>
                           <p>{rev.reviewComment}</p>
@@ -195,16 +205,7 @@ export default function Products() {
                     </div>
 
                     <form onSubmit={(e) => handleReviewSubmit(e, product)} className="review-form">
-  <TextField
-    label="Your Name"
-    variant="outlined"
-    fullWidth
-    margin="normal"
-    value={reviewInputs[product.productId]?.name || ""}
-    onChange={(e) =>
-      handleInputChange(product.productId, "name", e.target.value)
-    }
-  />
+
 
   <TextField
     label="Write your Review"
