@@ -55,12 +55,12 @@ export const loginCustomer = async (email, password) => {
 
 // ----------------- REVIEWS -----------------
 export const fetchAllReviews = async () => {
-  const res = await api.get("/review/getall");
+  const res = await api.get("/api/review/getall");
   return res.data;
 };
 
 export const createReview = async (reviewData) => {
-  const res = await api.post("/review/create", reviewData);
+  const res = await api.post("/api/review/create", reviewData);
   return res.data;
 };
 
