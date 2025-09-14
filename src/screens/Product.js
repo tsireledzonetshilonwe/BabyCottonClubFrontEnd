@@ -143,14 +143,18 @@ export default function Products() {
 
       <div className="products-grid">
         {filteredProducts.map((product) => {
+          // Debug: log all reviews and current productId
+          console.log('All reviews:', allReviews);
+          console.log('Current productId:', product.productId);
           const imageSrc = product.imageUrl?.startsWith("http")
             ? product.imageUrl
             : process.env.PUBLIC_URL + product.imageUrl;
 
           // Filter reviews for this product only
           const productReviews = allReviews.filter(
-            (rev) => rev.product && rev.product.productId === product.productId
+            (rev) => Number(rev.productId) === Number(product.productId)
           );
+          console.log('Filtered reviews for product', product.productId, productReviews);
 
           return (
             <div key={product.productId} className="product-card">

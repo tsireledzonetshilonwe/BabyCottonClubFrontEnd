@@ -1,13 +1,19 @@
-// Fetch products by name
+import axios from "axios";
+
+const api = axios.create({
+  baseURL: "http://localhost:8080",
+});
+
+// ----------------- PRODUCTS -----------------
+export const fetchProducts = async () => {
+  const res = await api.get("/api/products/getall");
+  return res.data;
+};
+
 export const fetchProductsByName = async (name) => {
   const res = await api.get(`/api/products/search?name=${encodeURIComponent(name)}`);
   return res.data;
 };
-import axios from "axios";
-
-const api = axios.create({
-  baseURL: "http://localhost:8080", 
-});
 
 // ----------------- ORDERS -----------------
 export const createOrder = async (orderData) => {
@@ -32,13 +38,7 @@ export const fetchOrderLineDetails = async (orderLineId) => {
 
 // ----------------- PAYMENTS -----------------
 export const createPayment = async (paymentData) => {
-  const res = await api.post("/payment/create", paymentData);
-  return res.data;
-};
-
-// ----------------- PRODUCTS -----------------
-export const fetchProducts = async () => {
-  const res = await api.get("/api/products/getall");
+  const res = await api.post("/payment/create", paymentData); // no /api if backend doesn’t have it
   return res.data;
 };
 
@@ -55,7 +55,7 @@ export const loginCustomer = async (email, password) => {
 
 // ----------------- REVIEWS -----------------
 export const fetchAllReviews = async () => {
-  const res = await api.get("/review/getall");
+  const res = await api.get("/review/getall"); 
   return res.data;
 };
 
