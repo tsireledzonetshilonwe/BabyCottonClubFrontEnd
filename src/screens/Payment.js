@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { createPayment } from "../api/api";
 import { useNavigate } from "react-router-dom";
@@ -21,17 +20,22 @@ export default function Payment() {
 
     const handlePayment = async (e) => {
         e.preventDefault();
-        // Retrieve orderId from localStorage (should be set after order creation)
         const orderId = localStorage.getItem("orderId");
         if (!orderId) {
             alert("Order not found. Please complete checkout first.");
             return;
         }
+
+        // Get today's date in YYYY-MM-DD format to match backend
+        const today = new Date().toISOString().split("T")[0];
+
         // Prepare payment data matching backend domain
         const paymentData = {
+            paymentDate: today, // ✅ Send date in correct format
             paymentMethod,
             customerOrder: { orderId: Number(orderId) }
         };
+
         try {
             await createPayment(paymentData);
             alert(`Payment successful with ${paymentMethod}!`);
