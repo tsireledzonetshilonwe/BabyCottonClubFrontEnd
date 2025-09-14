@@ -32,7 +32,7 @@ export const fetchOrderLineDetails = async (orderLineId) => {
 
 // ----------------- PAYMENTS -----------------
 export const createPayment = async (paymentData) => {
-  const res = await api.post("/api/payment/create", paymentData);
+  const res = await api.post("/payment/create", paymentData);
   return res.data;
 };
 
