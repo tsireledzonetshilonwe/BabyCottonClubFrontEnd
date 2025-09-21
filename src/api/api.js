@@ -1,3 +1,4 @@
+
 import axios from "axios";
 
 const api = axios.create({
@@ -61,6 +62,16 @@ export const fetchAllReviews = async () => {
 
 export const createReview = async (reviewData) => {
   const res = await api.post("/review/create", reviewData);
+  return res.data;
+};
+// ----------------- ADMINS -----------------
+export const createAdmin = async (adminData) => {
+  const res = await api.post("/api/admin/create", adminData);
+  return res.data;
+};
+
+export const loginAdmin = async (email, password) => {
+  const res = await api.post("/api/admin/login", { email, password });
   return res.data;
 };
 

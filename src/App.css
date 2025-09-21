@@ -1,3 +1,6 @@
+ .profile-icon {
+    color: #fff !important;
+}
 body, html, #root {
     margin: 0;
     padding: 0;
@@ -37,18 +40,105 @@ a:hover {
 }
 
 /* Global Header Styles */
-.header {
-    background: linear-gradient(90deg, #a8dadc, #ffd6e0);
-    color: #1a1a1a;
-    padding: 1rem 2rem;
+
+.adidas-navbar {
+    background: #fff;
+    color: #222;
+    padding: 0.5rem 2rem;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    border-bottom: 1px solid #ffd6e0;
+    justify-content: space-between;
+    border-bottom: 1px solid #eee;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.navbar-left {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.adidas-logo {
+    font-size: 2rem;
+    font-weight: bold;
+    letter-spacing: 2px;
+    color: #222;
+    margin-right: 2rem;
+}
+
+.main-nav {
+    display: flex;
+    gap: 1.5rem;
+}
+.main-nav button {
+    background: none;
+    border: none;
+    color: #222;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    border-radius: 2px;
+    transition: background 0.2s, color 0.2s;
+}
+.main-nav button:hover {
+    background: #eee;
+    color: #0077b6;
+}
+
+.search-bar {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    max-width: 350px;
+    margin: 0 2rem;
+    background: #f7f8fa;
+    border-radius: 2px;
+    box-shadow: none;
+    padding: 0.1rem 0.5rem;
+}
+.search-bar input[type="text"] {
+    border: none;
+    outline: none;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    background: transparent;
+    min-width: 120px;
+}
+.search-bar button {
+    background: none;
+    color: #222;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.5rem 0.7rem;
+    border-radius: 2px;
+    transition: background 0.2s, color 0.2s;
+}
+.search-bar button:hover {
+    background: #eee;
+    color: #0077b6;
+}
+
+.navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+}
+.cart-icon, .profile-icon {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #222;
+    cursor: pointer;
+    padding: 0.3rem 0.7rem;
+    border-radius: 2px;
+    transition: background 0.2s, color 0.2s;
+}
+.cart-icon:hover, .profile-icon:hover {
+    background: #eee;
+    color: #0077b6;
 }
 
 .user-links {
