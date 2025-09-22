@@ -24,6 +24,16 @@ export const fetchOrderLineDetails = async (orderLineId) => {
   const res = await api.get(`/api/orderline/read/${orderLineId}`);
   return res.data;
 };
+// ----------------- ADDRESSES -----------------
+export const createAddress = async (addressData) => {
+  const res = await api.post("/api/address/create", addressData);
+  return res.data;
+};
+
+export const fetchAddressById = async (addressId) => {
+  const res = await api.get(`/api/address/${addressId}`);
+  return res.data;
+};
 
 // ----------------- PAYMENTS -----------------
 export const createPayment = async (paymentData) => {

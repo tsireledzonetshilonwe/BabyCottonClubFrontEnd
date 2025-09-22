@@ -20,7 +20,7 @@ export default function CartPage() {
         0
     );
 
-    // Handle checkout: create order, store orderId, then navigate to payment
+    // Handle checkout: create order, store orderId, then navigate to shipping
     const handleCheckout = async () => {
         try {
             // Get customer from localStorage
@@ -60,8 +60,8 @@ export default function CartPage() {
                 };
                 return api.post("/api/orderline/create", orderLineData);
             }));
-            localStorage.setItem("orderId", order.orderId); // Save for payment page
-            navigate("/payment");
+            localStorage.setItem("orderId", order.orderId); // Save for next step
+            navigate("/shipping"); // <-- Go to shipping, not payment
         } catch (err) {
             alert("Failed to create order. Please try again.");
         }
@@ -95,7 +95,7 @@ export default function CartPage() {
                 <div className="cart-actions">
                     <button onClick={clearCart} className="clear-btn">Clear Cart</button>
                     <button onClick={handleCheckout} className="checkout-btn">
-                        Proceed to Payment
+                        Proceed to Shipping
                     </button>
                 </div>
             </div>

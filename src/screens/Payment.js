@@ -1,17 +1,25 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { createPayment } from "../api/api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import "./Payment.css";
 
 export default function Payment() {
     const { cartItems, clearCart } = useCart();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [paymentMethod, setPaymentMethod] = useState("Credit Card");
     const [cardNumber, setCardNumber] = useState("");
     const [expiry, setExpiry] = useState("");
     const [cvv, setCvv] = useState("");
+    const [shippingInfo, setShippingInfo] = useState(location.state?.address || null);
+
+    useEffect(() => {
+        if (!shippingInfo) {
+            navigate("/shipping");
+        }
+    }, [shippingInfo, navigate]);
 
     const totalAmount = cartItems.reduce((sum, item) => {
         const price = parseFloat(item.price) || 0;
@@ -64,6 +72,19 @@ export default function Payment() {
             </div>
 
             <div className="payment-content">
+                {/* Shipping Info */}
+                {shippingInfo && (
+                    <section className="shipping-summary">
+                        <h2>Shipping Address</h2>
+                        <div>
+                            {shippingInfo.streetNumber} {shippingInfo.streetName}, {shippingInfo.suburb}
+                        </div>
+                        <div>
+                            {shippingInfo.city}, {shippingInfo.province}, {shippingInfo.postalCode}
+                        </div>
+                    </section>
+                )}
+
                 {/* Order Summary */}
                 <section className="payment-summary">
                     <h2>Order Summary</h2>
