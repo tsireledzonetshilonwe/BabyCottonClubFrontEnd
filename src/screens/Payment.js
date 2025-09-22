@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { createPayment } from "../api/api";
 import { useNavigate, useLocation } from "react-router-dom";
-import React, { useState } from "react";
-import { createPayment, createOrder } from "../api/api";
-import api from "../api/api";
-import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import "./Payment.css";
+
 
 export default function Payment() {
     const { cartItems, clearCart } = useCart();
