@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { createPayment } from "../api/api";
 import { useNavigate, useLocation } from "react-router-dom";
+import React, { useState } from "react";
+import { createPayment, createOrder } from "../api/api";
+import api from "../api/api";
+import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import "./Payment.css";
 
@@ -28,20 +32,61 @@ export default function Payment() {
 
     const handlePayment = async (e) => {
         e.preventDefault();
-        const orderId = localStorage.getItem("orderId");
-        if (!orderId) {
-            alert("Order not found. Please complete checkout first.");
+        // Get customer from localStorage
+        const customer = JSON.parse(localStorage.getItem("customer"));
+        if (!customer || !customer.customerId) {
+            alert("No customer found. Please log in first.");
+            return;
+        }
+        // 1. Create the shipment first
+        const shipmentData = {
+            shipmentMethod: "Standard",
+            status: "Pending",
+            trackingNumber: "N/A"
+        };
+        const shipmentRes = await api.post("/shipment/create", shipmentData);
+        const shipment = shipmentRes.data;
+
+        // 2. Prepare order data with persisted shipment
+        const orderData = {
+            orderDate: new Date().toISOString().slice(0,10),
+            totalAmount: cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
+            orderLines: null,
+            customer: { customerId: customer.customerId },
+            shipment: shipment
+        };
+        // 3. Create the order
+        let order;
+        try {
+            order = await createOrder(orderData);
+        } catch (err) {
+            alert("Failed to create order. Please try again.");
+            return;
+        }
+        // 4. Create order lines for each cart item
+        try {
+            await Promise.all(cartItems.map(item => {
+                const orderLineData = {
+                    quantity: item.quantity,
+                    unitPrice: item.price,
+                    subTotal: item.price * item.quantity,
+                    order: { orderId: order.orderId },
+                    product: { productId: item.id }
+                };
+                return api.post("/api/orderline/create", orderLineData);
+            }));
+        } catch (err) {
+            alert("Failed to create order lines. Please try again.");
             return;
         }
 
+        // 5. Create payment
         const today = new Date().toISOString().split("T")[0];
-
         const paymentData = {
             paymentDate: today,
             paymentMethod,
-            customerOrder: { orderId: Number(orderId) }
+            customerOrder: { orderId: order.orderId }
         };
-
         try {
             await createPayment(paymentData);
             alert(`Payment successful with ${paymentMethod}!`);

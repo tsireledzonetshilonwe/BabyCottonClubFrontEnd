@@ -65,6 +65,9 @@ export default function CartPage() {
         } catch (err) {
             alert("Failed to create order. Please try again.");
         }
+    // Handle checkout: just navigate to payment
+    const handleCheckout = () => {
+        navigate("/payment");
     };
 
     return (
@@ -101,4 +104,5 @@ export default function CartPage() {
             </div>
         </div>
     );
+}
 }

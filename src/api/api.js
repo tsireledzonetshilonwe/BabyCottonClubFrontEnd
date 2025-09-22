@@ -1,8 +1,20 @@
+
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:8080", 
+  baseURL: "http://localhost:8080",
 });
+
+// ----------------- PRODUCTS -----------------
+export const fetchProducts = async () => {
+  const res = await api.get("/api/products/getall");
+  return res.data;
+};
+
+export const fetchProductsByName = async (name) => {
+  const res = await api.get(`/api/products/search?name=${encodeURIComponent(name)}`);
+  return res.data;
+};
 
 // ----------------- ORDERS -----------------
 export const createOrder = async (orderData) => {
@@ -37,13 +49,7 @@ export const fetchAddressById = async (addressId) => {
 
 // ----------------- PAYMENTS -----------------
 export const createPayment = async (paymentData) => {
-  const res = await api.post("/payment/create", paymentData);
-  return res.data;
-};
-
-// ----------------- PRODUCTS -----------------
-export const fetchProducts = async () => {
-  const res = await api.get("/api/products/getall");
+  const res = await api.post("/payment/create", paymentData); // no /api if backend doesn’t have it
   return res.data;
 };
 
@@ -60,12 +66,22 @@ export const loginCustomer = async (email, password) => {
 
 // ----------------- REVIEWS -----------------
 export const fetchAllReviews = async () => {
-  const res = await api.get("/review/getall");
+  const res = await api.get("/review/getall"); 
   return res.data;
 };
 
 export const createReview = async (reviewData) => {
   const res = await api.post("/review/create", reviewData);
+  return res.data;
+};
+// ----------------- ADMINS -----------------
+export const createAdmin = async (adminData) => {
+  const res = await api.post("/api/admin/create", adminData);
+  return res.data;
+};
+
+export const loginAdmin = async (email, password) => {
+  const res = await api.post("/api/admin/login", { email, password });
   return res.data;
 };
 

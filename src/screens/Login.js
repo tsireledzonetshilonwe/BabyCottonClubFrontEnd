@@ -34,13 +34,11 @@ function Login() {
 
       
       if (customer && customer.customerId) {
-        alert('Login successful!');
-
-        
-        localStorage.setItem('customer', JSON.stringify(customer));
-
-      
-        window.location.href = '/';
+  alert('Login successful!');
+  // Store customer object and customerId for review submission
+  localStorage.setItem('customer', JSON.stringify(customer));
+  localStorage.setItem('customerId', customer.customerId);
+  window.location.href = '/';
       } else {
         setError('Invalid email or password.');
       }

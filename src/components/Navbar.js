@@ -6,11 +6,13 @@ import "../App.css";
 function Navbar() {
     const [search, setSearch] = useState("");
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
     const navigate = useNavigate();
     const { cartItems } = useCart();
 
     useEffect(() => {
-        setIsLoggedIn(!!localStorage.getItem("customer"));
+    setIsLoggedIn(!!localStorage.getItem("customer"));
+    setIsAdmin(!!localStorage.getItem("admin"));
     }, []);
 
     const handleSearch = (e) => {
@@ -20,36 +22,52 @@ function Navbar() {
 
     const handleLogout = () => {
         localStorage.removeItem("customer");
+        localStorage.removeItem("admin");
         setIsLoggedIn(false);
+        setIsAdmin(false);
         navigate("/");
     };
 
     return (
-        <header className="header">
-            <div className="header-left">
-                <h1 style={{ cursor: "pointer" }} onClick={() => navigate("/")}>Baby Cotton Club</h1>
+        <header className="header adidas-navbar">
+            <div className="navbar-left">
+                <span className="adidas-logo" onClick={() => navigate("/")} style={{cursor: "pointer", fontSize: "2rem", fontWeight: "bold", letterSpacing: "2px"}}>
+                  
+                </span>
+                <nav className="main-nav">
+                    {!isAdmin && <>
+                        <button onClick={() => navigate("/")}>Home</button>
+                        {!isLoggedIn && <button onClick={() => navigate("/login")}>Login</button>}
+                        {!isLoggedIn && <button onClick={() => navigate("/signup")}>Register</button>}
+                        <button onClick={() => navigate("/orders")}>Orders</button>
+                        <button onClick={() => navigate("/products")}>Products</button>
+                        {isLoggedIn && <button onClick={handleLogout}>Logout</button>}
+                    </>}
+                    {isAdmin && <>
+                        <button onClick={() => navigate("/admin/dashboard")}>Admin Dashboard</button>
+                        <button onClick={() => navigate("/admin/products")}>Manage Products</button>
+                        <button onClick={() => navigate("/admin/orders")}>Manage Orders</button>
+                        <button onClick={handleLogout}>Logout</button>
+                    </>}
+                </nav>
             </div>
-            <form className="search-bar" onSubmit={handleSearch}>
-                <input
-                    type="text"
-                    placeholder="Search for suppliers..."
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                />
-                <button type="submit">Search</button>
-            </form>
-            <div className="header-right">
-                <div className="user-links">
-                    <button onClick={() => navigate("/")}>Home</button>
-                    {!isLoggedIn && <button onClick={() => navigate("/login")}>Login</button>}
-                    {!isLoggedIn && <button onClick={() => navigate("/signup")}>Register</button>}
-                    <button onClick={() => navigate("/orders")}>Orders</button>
-                    <button onClick={() => navigate("/customers")}>My Account</button>
-                    <button onClick={() => navigate("/products")}>Products</button>
-                    <button onClick={() => navigate("/cart")}>Cart{cartItems.length > 0 && ` (${cartItems.length})`}</button>
-                    {isLoggedIn && <button onClick={handleLogout}>Logout</button>}
+            {!isAdmin && (
+                <>
+                <form className="search-bar" onSubmit={handleSearch}>
+                    <input
+                        type="text"
+                        placeholder="Search..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                    />
+                    <button type="submit" aria-label="Search">🔍</button>
+                </form>
+                <div className="navbar-right">
+                    <button onClick={() => navigate("/cart")} className="cart-icon" aria-label="Cart">🛒{cartItems.length > 0 && ` (${cartItems.length})`}</button>
+                    <button onClick={() => navigate("/customers")} className="profile-icon" aria-label="Profile">👤</button>
                 </div>
-            </div>
+                </>
+            )}
         </header>
     );
 }

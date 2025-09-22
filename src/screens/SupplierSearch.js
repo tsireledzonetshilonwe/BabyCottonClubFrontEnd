@@ -1,22 +1,7 @@
 import React, { useState } from "react";
 import { useCart } from "../context/CartContext";
-import img_1 from "../assets/img_1.png";
-import img from "../assets/img.png";
-import onesie from "../assets/onesie.webp";
-import img_2 from "../assets/img_2.png";
-import img_3 from "../assets/img_3.png";
-import img_4 from "../assets/img_4.png";
 import "./SupplierSearch.css";
-
-// Example product data
-const products = [
-    { id: 1, name: "Baby Cotton Onesie", supplier: "Cotton Suppliers SA", price: "R 199", image: onesie },
-    { id: 2, name: "Soft Cotton Blanket", supplier: "Cozy Fabrics Ltd", price: "R 250", image: img },
-    { id: 3, name: "Baby Booties", supplier: "Cotton Suppliers SA", price: "R 120", image: img_1 },
-    { id: 4, name: "Baby Dress", supplier: "Cotton Suppliers SA", price: "R 250", image: img_2 },
-    { id: 5, name: "Baby Princess Dress", supplier: "Cozy Fabrics Ltd", price: "R 450", image: img_4 },
-    { id: 6, name: "Baby Long sleeve top", supplier: "Cozy Fabrics Ltd", price: "R 299", image: img_3 },
-];
+import { fetchProducts } from "../api/api";
 
 export default function SupplierSearch() {
     const { addToCart } = useCart();
@@ -24,15 +9,20 @@ export default function SupplierSearch() {
     const [results, setResults] = useState([]);
     const [notification, setNotification] = useState(""); // For toast
 
-    const handleSearch = () => {
+    const handleSearch = async () => {
         if (!query.trim()) {
             setResults([]);
             return;
         }
-        const filtered = products.filter((p) =>
-            p.supplier.toLowerCase().includes(query.toLowerCase().trim())
-        );
-        setResults(filtered);
+        try {
+            const allProducts = await fetchProducts();
+            const filtered = allProducts.filter((p) =>
+                (p.productName || p.name || "").toLowerCase().includes(query.trim().toLowerCase())
+            );
+            setResults(filtered);
+        } catch (err) {
+            setResults([]);
+        }
     };
 
     const handleAdd = (product) => {
@@ -44,13 +34,13 @@ export default function SupplierSearch() {
     return (
         <div style={{ maxWidth: "1000px", margin: "2rem auto", textAlign: "center" }}>
             <h2 style={{ marginBottom: "1rem", color: "#0077b6" }}>
-                Search by Supplier
+                Search Products
             </h2>
 
             <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem" }}>
                 <input
                     type="text"
-                    placeholder="Enter supplier name..."
+                    placeholder="Search for a product..."
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onKeyPress={(e) => e.key === "Enter" && handleSearch()}
@@ -78,7 +68,7 @@ export default function SupplierSearch() {
 
             {results.length > 0 ? (
                 <div>
-                    <h3>Products from "{query}"</h3>
+                    <h3>Search results for "{query}"</h3>
                     <div
                         style={{
                             display: "grid",
@@ -135,7 +125,7 @@ export default function SupplierSearch() {
                     </div>
                 </div>
             ) : (
-                query && <p>No products found for supplier "{query}"</p>
+                query && <p>No products found for "{query}"</p>
             )}
 
             {/* Toast notification */}
