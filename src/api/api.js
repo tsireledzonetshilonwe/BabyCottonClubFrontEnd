@@ -36,6 +36,12 @@ export const fetchOrderLineDetails = async (orderLineId) => {
   const res = await api.get(`/api/orderline/read/${orderLineId}`);
   return res.data;
 };
+
+// ----------------- ORDER LINES -----------------
+export const createOrderLine = async (orderLineData) => {
+  const res = await api.post("/api/orderline/create", orderLineData);
+  return res.data;
+};
 // ----------------- ADDRESSES -----------------
 export const createAddress = async (addressData) => {
   const res = await api.post("/address/create", addressData);
@@ -82,6 +88,27 @@ export const createAdmin = async (adminData) => {
 
 export const loginAdmin = async (email, password) => {
   const res = await api.post("/api/admin/login", { email, password });
+  return res.data;
+};
+
+// ----------------- CART PERSISTENCE -----------------
+export const createCart = async (cartData) => {
+  const res = await api.post("/api/cart/create", cartData);
+  return res.data;
+};
+
+export const getCartFromBackend = async (customerId) => {
+  const res = await api.get(`/api/cart/${customerId}`);
+  return res.data;
+};
+
+export const updateCart = async (cartData) => {
+  const res = await api.put("/api/cart/update", cartData);
+  return res.data;
+};
+
+export const clearCartFromBackend = async (customerId) => {
+  const res = await api.delete(`/api/cart/${customerId}`);
   return res.data;
 };
 

@@ -26,8 +26,14 @@ export default function SupplierSearch() {
     };
 
     const handleAdd = (product) => {
-        addToCart(product);
-        setNotification(`${product.name} added to cart!`);
+        const cartItem = {
+            id: product.productId,
+            name: product.productName,
+            price: product.price,
+            image: product.imageUrl
+        };
+        addToCart(cartItem);
+        setNotification(`${product.productName} added to cart!`);
         setTimeout(() => setNotification(""), 2000); // disappears after 2s
     };
 

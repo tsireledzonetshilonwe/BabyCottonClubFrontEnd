@@ -54,8 +54,17 @@ export default function Product() {
 
           <div className="product-grid">
             {sortedProducts.map((product, index) => (
-              <div className="product-card" key={product.id || index}>
-                <img src={product.image} alt={product.name} className="product-img" />
+              <div className="product-card modern-card" key={product.id || index}>
+                <div className="product-image-wrapper">
+                  <img
+                    src={product.imageUrl && product.imageUrl.trim() ? product.imageUrl : require('../assets/img.png')}
+                    alt={product.name}
+                    className="product-image"
+                  />
+                  <span className={`product-stock-badge ${(product.inStock === 'In Stock' || product.inStock === 'available') ? 'in' : 'out'}`}>{(product.inStock === 'In Stock' || product.inStock === 'available') ? 'In Stock' : 'Out of Stock'}</span>
+                </div>
+                <div className="product-brand">{product.supplier?.supplierName || "Baby Cotton Club"}</div>
+                <div className="product-category">{product.category?.categoryName || "Baby Clothes"}</div>
                 <div className="product-info">
                   <div className="product-name">{product.name}</div>
                   <div className="product-desc">{product.description}</div>
@@ -65,7 +74,14 @@ export default function Product() {
                       <span key={i} className={i < product.rating ? "star filled" : "star"}>★</span>
                     ))}
                   </div>
-                  <button className="add-to-cart-btn" onClick={() => addToCart(product)}>Add to Cart</button>
+                  <button className="product-cart-btn" onClick={() => addToCart({
+                    id: product.productId,
+                    name: product.productName, 
+                    price: product.price,
+                    image: product.imageUrl
+                  })} disabled={!(product.inStock === 'In Stock' || product.inStock === 'available')}>
+                    {(product.inStock === 'In Stock' || product.inStock === 'available') ? 'Add to Cart' : 'Unavailable'}
+                  </button>
                 </div>
               </div>
             ))}
