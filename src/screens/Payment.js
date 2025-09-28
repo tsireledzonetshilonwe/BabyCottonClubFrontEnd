@@ -4,17 +4,14 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import "./Payment.css";
 
-
 export default function Payment() {
     const { cartItems, clearCart } = useCart();
     const navigate = useNavigate();
     const location = useLocation();
 
-    const [paymentMethod, setPaymentMethod] = useState("Credit Card");
-    const [cardNumber, setCardNumber] = useState("");
-    const [expiry, setExpiry] = useState("");
-    const [cvv, setCvv] = useState("");
+    const [paymentMethod, setPaymentMethod] = useState("");
     const [shippingInfo, setShippingInfo] = useState(location.state?.address || null);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     useEffect(() => {
         if (!shippingInfo) {
@@ -29,26 +26,40 @@ export default function Payment() {
 
     const handlePayment = async (e) => {
         e.preventDefault();
+        if (!paymentMethod) {
+            alert("Please select a payment method.");
+            return;
+        }
+
+        setIsProcessing(true);
         const orderId = localStorage.getItem("orderId");
         if (!orderId) {
             alert("No order found. Please checkout again.");
             navigate("/cart");
             return;
         }
-        const today = new Date().toISOString().split("T")[0];
-        const paymentData = {
-            paymentDate: today,
-            paymentMethod,
-            customerOrder: { orderId: Number(orderId) }
-        };
+
         try {
+            // Simulate payment processing
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+
+            // Create payment record
+            const today = new Date().toISOString().split("T")[0];
+            const paymentData = {
+                paymentDate: today,
+                paymentMethod,
+                customerOrder: { orderId: Number(orderId) },
+            };
             await createPayment(paymentData);
+
             alert(`Payment successful with ${paymentMethod}!`);
             clearCart();
             localStorage.removeItem("orderId");
             navigate("/");
         } catch (err) {
             alert("Payment failed. Please try again.");
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -92,7 +103,7 @@ export default function Payment() {
                             <li key={item.id} className="payment-summary-item">
                                 <span className="payment-summary-name">{item.name}</span>
                                 <span className="payment-summary-qty">× {item.quantity}</span>
-                                <span className="payment-summary-price">{item.price}</span>
+                                <span className="payment-summary-price">R {item.price}</span>
                             </li>
                         ))}
                     </ul>
@@ -111,65 +122,44 @@ export default function Payment() {
                                 value={paymentMethod}
                                 onChange={(e) => setPaymentMethod(e.target.value)}
                                 className="payment-method-select"
+                                required
                             >
-                                <option>Credit Card</option>
-                                <option>EFT</option>
-                                <option>Cash on Delivery</option>
+                                <option value="">Select a method</option>
+                                <option value="Credit Card">Credit Card</option>
+                                <option value="EFT">EFT</option>
+                                <option value="Cash on Delivery">Cash on Delivery</option>
                             </select>
                         </div>
 
+                        {/* Simulated Credit Card */}
                         {paymentMethod === "Credit Card" && (
-                            <div className="credit-card-fields">
-                                <div className="input-group">
-                                    <label>Card Number</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Card Number"
-                                        value={cardNumber}
-                                        onChange={(e) => setCardNumber(e.target.value)}
-                                        required
-                                    />
-                                    <span className="card-icons">💳</span>
-                                </div>
-                                <div className="input-row">
-                                    <div className="input-group">
-                                        <label>Expiry</label>
-                                        <input
-                                            type="text"
-                                            placeholder="MM/YY"
-                                            value={expiry}
-                                            onChange={(e) => setExpiry(e.target.value)}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="input-group">
-                                        <label>CVV</label>
-                                        <input
-                                            type="text"
-                                            placeholder="CVV"
-                                            value={cvv}
-                                            onChange={(e) => setCvv(e.target.value)}
-                                            required
-                                        />
-                                    </div>
-                                </div>
+                            <div className="payment-simulation">
+                                <p>
+                                    Click confirm to pay <strong>R {totalAmount.toFixed(2)}</strong> with Credit Card (simulated).
+                                </p>
+                                <p>In a real system, you would be redirected to a secure payment gateway like Stripe.</p>
                             </div>
                         )}
 
+                        {/* EFT Info */}
                         {paymentMethod === "EFT" && (
                             <div className="eft-info">
-                                <p>Please transfer to <strong>FNB Account: 1234567890</strong>, Ref: Your Order ID</p>
+                                <p>
+                                    Please transfer <strong>R {totalAmount.toFixed(2)}</strong> to{" "}
+                                    <strong>FNB Account: 1234567890</strong> using your Order ID as reference.
+                                </p>
                             </div>
                         )}
 
+                        {/* Cash on Delivery */}
                         {paymentMethod === "Cash on Delivery" && (
                             <div className="cod-info">
-                                <p>You will pay the driver upon delivery.</p>
+                                <p>You will pay <strong>R {totalAmount.toFixed(2)}</strong> to the driver upon delivery.</p>
                             </div>
                         )}
 
-                        <button className="payment-confirm-btn" type="submit">
-                            Confirm Payment
+                        <button className="payment-confirm-btn" type="submit" disabled={isProcessing}>
+                            {isProcessing ? "Processing..." : "Confirm Payment"}
                         </button>
                     </form>
                 </section>

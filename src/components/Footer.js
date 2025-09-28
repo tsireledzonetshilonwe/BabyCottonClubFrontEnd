@@ -1,11 +1,48 @@
-import React from "react";
+// Footer.js
+import React from 'react';
+import { Link } from 'react-router-dom';
 
-function Footer() {
-  return (
-    <footer style={{ textAlign: 'center', padding: '1.5rem 0', fontFamily: 'Segoe UI, Arial, sans-serif', color: '#1a1a1a', background: 'linear-gradient(90deg, #a8dadc, #ffd6e0)', fontWeight: 500, fontSize: '1rem', borderTop: '1px solid #ffd6e0' }}>
-      &copy; {new Date().getFullYear()} Baby Cotton Club | All Rights Reserved
-    </footer>
-  );
-}
+const Footer = () => {
+    return (
+        <footer>
+            <div className="container">
+                <div className="footer-content">
+                    <div className="footer-section">
+                        <h3>Baby Cotton Club</h3>
+                        <p>Soft, comfortable, and adorable clothing for your little ones. Because happy babies make happy parents!</p>
+                    </div>
+
+                    <div className="footer-section">
+                        <h3>Quick Links</h3>
+                        <Link to="/">Home</Link>
+                        <Link to="/productspage">Products</Link>
+                        <Link to="/about">About Us</Link>
+                        <Link to="/contact">Contact</Link>
+                    </div>
+
+                    <div className="footer-section">
+                        <h3>Contact Us</h3>
+                        <p>Email: info@babycottonclub.com</p>
+                        <p>Phone: +27 21 123 4567</p>
+                        <p>Cape Town, South Africa</p>
+                    </div>
+
+                    <div className="footer-section">
+                        <h3>Follow Us</h3>
+                        <div className="social-links">
+                            <a href="#"><i className="fab fa-facebook"></i></a>
+                            <a href="#"><i className="fab fa-instagram"></i></a>
+                            <a href="#"><i className="fab fa-pinterest"></i></a>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="footer-bottom">
+                    <p>&copy; 2025 Baby Cotton Club. All rights reserved.</p>
+                </div>
+            </div>
+        </footer>
+    );
+};
 
 export default Footer;

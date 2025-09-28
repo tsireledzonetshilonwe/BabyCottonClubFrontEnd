@@ -38,12 +38,12 @@ export const fetchOrderLineDetails = async (orderLineId) => {
 };
 // ----------------- ADDRESSES -----------------
 export const createAddress = async (addressData) => {
-  const res = await api.post("/api/address/create", addressData);
+  const res = await api.post("/address/create", addressData);
   return res.data;
 };
 
 export const fetchAddressById = async (addressId) => {
-  const res = await api.get(`/api/address/${addressId}`);
+  const res = await api.get(`/address/${addressId}`);
   return res.data;
 };
 

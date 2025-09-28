@@ -1,4 +1,5 @@
-import React from "react";
+// App.js
+import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./screens/Home";
 import AdminLogin from "./screens/AdminLogin";
@@ -20,9 +21,14 @@ import Shipping from "./screens/Shipping";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import { useState, useEffect } from "react";
 import { CartProvider } from "./context/CartContext";
 import "./App.css";
+
+// Import your new pages
+import HomePage from './components/HomePage';
+import AboutPage from './components/AboutPage';
+import ProductsPage from './components/ProductsPage';
+import ContactPage from './components/ContactPage';
 
 function App() {
     const [isAdmin, setIsAdmin] = useState(!!localStorage.getItem("admin"));
@@ -38,29 +44,38 @@ function App() {
     return (
         <CartProvider>
             <Router>
-                <div className="app">
+                <div className="app" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
                     <Navbar />
-                    <Routes>
-                        <Route path="/" element={<Home />} />
-                        <Route path="/customers" element={<Customers />} />
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/signup" element={<SignUp />} />
-                        <Route path="/login/admin" element={<AdminLogin setIsAdmin={setIsAdmin} />} />
-                        <Route path="/signup/admin" element={<AdminSignUp setIsAdmin={setIsAdmin} />} />
-                        <Route path="/admin/dashboard" element={
-                            isAdmin ? <AdminDashboard /> : <AdminLogin setIsAdmin={setIsAdmin} />
-                        } />
-                        <Route path="/order-lines" element={<OrderLines />} />
-                        <Route path="/orders" element={<Orders />} />
-                        <Route path="/create-order" element={<CreateOrder />} />
-                        <Route path="/order-details/:id" element={<OrderDetails />} />
-                        <Route path="/order-line-details/:id" element={<OrderLineDetails />} />
-                        <Route path="/cart" element={<CartPage />} />
-                        <Route path="/payment" element={<Payment />} />
-                        <Route path="/shipping" element={<Shipping />} />
-                        <Route path="/products" element={<Products />} />
-                        <Route path="/supplier-search" element={<SupplierSearch />} />
-                    </Routes>
+                    <main style={{ flex: 1 }}>
+                        <Routes>
+                            <Route path="/" element={<HomePage />} />
+                            <Route path="/homepage" element={<HomePage />} />
+                            <Route path="/customers" element={<Customers />} />
+                            <Route path="/login" element={<Login />} />
+                            <Route path="/signup" element={<SignUp />} />
+                            <Route path="/login/admin" element={<AdminLogin setIsAdmin={setIsAdmin} />} />
+                            <Route path="/signup/admin" element={<AdminSignUp setIsAdmin={setIsAdmin} />} />
+                            <Route path="/admin/dashboard" element={
+                                isAdmin ? <AdminDashboard /> : <AdminLogin setIsAdmin={setIsAdmin} />
+                            } />
+                            <Route path="/order-lines" element={<OrderLines />} />
+                            <Route path="/orders" element={<Orders />} />
+                            <Route path="/create-order" element={<CreateOrder />} />
+                            <Route path="/order-details/:id" element={<OrderDetails />} />
+                            <Route path="/order-line-details/:id" element={<OrderLineDetails />} />
+                            <Route path="/cart" element={<CartPage />} />
+                            <Route path="/payment" element={<Payment />} />
+                            <Route path="/shipping" element={<Shipping />} />
+                            {/* Use the Products component from screens folder */}
+                            <Route path="/products" element={<Products />} />
+                            <Route path="/supplier-search" element={<SupplierSearch />} />
+                            {/* New static pages */}
+                            <Route path="/about" element={<AboutPage />} />
+                            {/* Keep productspage route for backward compatibility */}
+                            <Route path="/productspage" element={<Products />} />
+                            <Route path="/contact" element={<ContactPage />} />
+                        </Routes>
+                    </main>
                     <Footer />
                 </div>
             </Router>

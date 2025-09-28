@@ -1,73 +1,69 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+// Navbar.js
+import React from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import "../App.css";
 
 function Navbar() {
-    const [search, setSearch] = useState("");
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [isAdmin, setIsAdmin] = useState(false);
     const navigate = useNavigate();
     const { cartItems } = useCart();
-
-    useEffect(() => {
-    setIsLoggedIn(!!localStorage.getItem("customer"));
-    setIsAdmin(!!localStorage.getItem("admin"));
-    }, []);
-
-    const handleSearch = (e) => {
-        e.preventDefault();
-        navigate("/supplier-search");
-    };
+    const isLoggedIn = !!localStorage.getItem("customer");
+    const isAdmin = !!localStorage.getItem("admin");
 
     const handleLogout = () => {
         localStorage.removeItem("customer");
         localStorage.removeItem("admin");
-        setIsLoggedIn(false);
-        setIsAdmin(false);
         navigate("/");
     };
 
     return (
-        <header className="header adidas-navbar">
-            <div className="navbar-left">
-                <span className="adidas-logo" onClick={() => navigate("/")} style={{cursor: "pointer", fontSize: "2rem", fontWeight: "bold", letterSpacing: "2px"}}>
-                  
-                </span>
-                <nav className="main-nav">
-                    {!isAdmin && <>
-                        <button onClick={() => navigate("/")}>Home</button>
-                        {!isLoggedIn && <button onClick={() => navigate("/login")}>Login</button>}
-                        {!isLoggedIn && <button onClick={() => navigate("/signup")}>Register</button>}
-                        <button onClick={() => navigate("/orders")}>Orders</button>
-                        <button onClick={() => navigate("/products")}>Products</button>
-                        {isLoggedIn && <button onClick={handleLogout}>Logout</button>}
-                    </>}
-                    {isAdmin && <>
-                        <button onClick={() => navigate("/admin/dashboard")}>Admin Dashboard</button>
-                        <button onClick={() => navigate("/admin/products")}>Manage Products</button>
-                        <button onClick={() => navigate("/admin/orders")}>Manage Orders</button>
-                        <button onClick={handleLogout}>Logout</button>
-                    </>}
-                </nav>
-            </div>
-            {!isAdmin && (
-                <>
-                <form className="search-bar" onSubmit={handleSearch}>
-                    <input
-                        type="text"
-                        placeholder="Search..."
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                    />
-                    <button type="submit" aria-label="Search">🔍</button>
-                </form>
-                <div className="navbar-right">
-                    <button onClick={() => navigate("/cart")} className="cart-icon" aria-label="Cart">🛒{cartItems.length > 0 && ` (${cartItems.length})`}</button>
-                    <button onClick={() => navigate("/customers")} className="profile-icon" aria-label="Profile">👤</button>
+        <header className="header navbar-homepage">
+            <nav className="navbar-container">
+                {/* Logo section with the style from Header.js */}
+                <div className="navbar-logo">
+                    <Link to="/" style={{ textDecoration: "none" }}>
+                        <h1 style={{
+                            fontSize: '2rem',
+                            fontWeight: 'bold',
+                            color: 'var(--primary)',
+                            margin: 0,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-start'
+                        }}>
+                            BABY COTTON CLUB
+                            <span style={{
+                                fontSize: '0.9rem',
+                                color: 'var(--accent)',
+                                fontWeight: 'normal',
+                                marginTop: '0.2rem'
+                            }}>
+                                Comfy Clothes | Happy Babies
+                            </span>
+                        </h1>
+                    </Link>
                 </div>
-                </>
-            )}
+
+                <ul className="navbar-links">
+                    <li><Link to="/">Home</Link></li>
+                    <li><Link to="/about">About</Link></li>
+                    <li><Link to="/productspage">Products</Link></li>
+                    <li><Link to="/contact">Contact</Link></li>
+                    <li>
+                        <Link to="/cart" data-count={cartItems.length}>
+                            Cart ({cartItems.length})
+                        </Link>
+                    </li>
+                    {!isLoggedIn && <li><Link to="/login">Login</Link></li>}
+                    {!isLoggedIn && <li><Link to="/signup">Register</Link></li>}
+                    {isLoggedIn && <li><button className="navbar-logout-btn" onClick={handleLogout}>Logout</button></li>}
+                    {isAdmin && <>
+                        <li><Link to="/admin/dashboard">Admin Dashboard</Link></li>
+                        <li><Link to="/admin/products">Manage Products</Link></li>
+                        <li><Link to="/admin/orders">Manage Orders</Link></li>
+                    </>}
+                </ul>
+            </nav>
         </header>
     );
 }
