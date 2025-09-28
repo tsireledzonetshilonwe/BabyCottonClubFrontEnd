@@ -74,7 +74,12 @@ export default function Product() {
                       <span key={i} className={i < product.rating ? "star filled" : "star"}>★</span>
                     ))}
                   </div>
-                  <button className="product-cart-btn" onClick={() => addToCart(product)} disabled={!(product.inStock === 'In Stock' || product.inStock === 'available')}>
+                  <button className="product-cart-btn" onClick={() => addToCart({
+                    id: product.productId,
+                    name: product.productName, 
+                    price: product.price,
+                    image: product.imageUrl
+                  })} disabled={!(product.inStock === 'In Stock' || product.inStock === 'available')}>
                     {(product.inStock === 'In Stock' || product.inStock === 'available') ? 'Add to Cart' : 'Unavailable'}
                   </button>
                 </div>

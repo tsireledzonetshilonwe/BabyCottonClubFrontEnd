@@ -97,6 +97,34 @@
 	background-color: #023e8a;
 }
 
+.save-cart-btn {
+	background-color: #28a745;
+	color: #fff;
+	border: none;
+	padding: 8px 16px;
+	border-radius: 6px;
+	cursor: pointer;
+	font-weight: 500;
+}
+
+.save-cart-btn:hover {
+	background-color: #218838;
+}
+
+.test-btn {
+	background-color: #6f42c1;
+	color: #fff;
+	border: none;
+	padding: 8px 16px;
+	border-radius: 6px;
+	cursor: pointer;
+	font-weight: 500;
+}
+
+.test-btn:hover {
+	background-color: #5a32a3;
+}
+
 /* Quantity controls */
 .quantity-control {
 	display: flex;

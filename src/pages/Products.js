@@ -101,13 +101,18 @@ export default function Products() {
                         </button>
                         <button
                             className="product-buy-btn"
-                            onClick={() => addToCart({
-                                id: product.productId,
-                                name: product.productName,
-                                price: product.price,
-                                image: product.imageUrl,
-                                quantity: 1
-                            })}
+                            onClick={() => {
+                                const cartItem = {
+                                    id: product.productId,        // ✅ Map productId to id
+                                    name: product.productName,    // ✅ Map productName to name  
+                                    price: product.price,         // ✅ Keep price as is
+                                    image: product.imageUrl,      // ✅ Map imageUrl to image
+                                };
+                                console.log("🛍️ Product clicked:", product);
+                                console.log("� Cart item being added:", cartItem);
+                                console.log("� Cart item ID:", cartItem.id, "Type:", typeof cartItem.id);
+                                addToCart(cartItem);
+                            }}
                             disabled={product.inStock !== 'available'}
                             style={{ marginTop: 8, background: product.inStock === 'available' ? '#90e0ef' : '#ccc', color: product.inStock === 'available' ? '#023e8a' : '#888', cursor: product.inStock === 'available' ? 'pointer' : 'not-allowed' }}
                         >
