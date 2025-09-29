@@ -27,19 +27,43 @@ const SimpleFilters = ({
         }}>
           Search Products
         </label>
-        <input
-          type="text"
-          placeholder="Search products..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{
-            width: '100%',
-            padding: '0.75rem',
-            border: '1px solid #d1d5db',
-            borderRadius: '4px',
-            fontSize: '0.875rem'
-          }}
-        />
+        <div style={{ position: 'relative' }}>
+          <div style={{
+            position: 'absolute',
+            left: '0.75rem',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: '#FFB6C1',
+            fontSize: '1.1rem',
+            pointerEvents: 'none'
+          }}>
+            🔍
+          </div>
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '0.75rem 0.75rem 0.75rem 2.5rem',
+              border: '2px solid #FFB6C1',
+              borderRadius: '12px',
+              fontSize: '0.875rem',
+              outline: 'none',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 8px rgba(255, 182, 193, 0.1)'
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#ff9bb3';
+              e.target.style.boxShadow = '0 4px 12px rgba(255, 182, 193, 0.2)';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = '#FFB6C1';
+              e.target.style.boxShadow = '0 2px 8px rgba(255, 182, 193, 0.1)';
+            }}
+          />
+        </div>
       </div>
 
       {/* Price Range */}
@@ -58,10 +82,22 @@ const SimpleFilters = ({
           style={{
             width: '100%',
             padding: '0.75rem',
-            border: '1px solid #d1d5db',
-            borderRadius: '4px',
+            border: '2px solid #FFB6C1',
+            borderRadius: '12px',
             fontSize: '0.875rem',
-            backgroundColor: 'white'
+            backgroundColor: 'white',
+            outline: 'none',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            boxShadow: '0 2px 8px rgba(255, 182, 193, 0.1)'
+          }}
+          onFocus={(e) => {
+            e.target.style.borderColor = '#ff9bb3';
+            e.target.style.boxShadow = '0 4px 12px rgba(255, 182, 193, 0.2)';
+          }}
+          onBlur={(e) => {
+            e.target.style.borderColor = '#FFB6C1';
+            e.target.style.boxShadow = '0 2px 8px rgba(255, 182, 193, 0.1)';
           }}
         >
           <option value="all">All Prices</option>
@@ -87,10 +123,22 @@ const SimpleFilters = ({
           style={{
             width: '100%',
             padding: '0.75rem',
-            border: '1px solid #d1d5db',
-            borderRadius: '4px',
+            border: '2px solid #FFB6C1',
+            borderRadius: '12px',
             fontSize: '0.875rem',
-            backgroundColor: 'white'
+            backgroundColor: 'white',
+            outline: 'none',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            boxShadow: '0 2px 8px rgba(255, 182, 193, 0.1)'
+          }}
+          onFocus={(e) => {
+            e.target.style.borderColor = '#ff9bb3';
+            e.target.style.boxShadow = '0 4px 12px rgba(255, 182, 193, 0.2)';
+          }}
+          onBlur={(e) => {
+            e.target.style.borderColor = '#FFB6C1';
+            e.target.style.boxShadow = '0 2px 8px rgba(255, 182, 193, 0.1)';
           }}
         >
           <option value="name">Name A-Z</option>
