@@ -45,24 +45,24 @@ export default function CartPage() {
                 console.log("No customer found, skipping cart save");
                 return;
             }
-            
+
             if (cartItems.length === 0) {
                 console.log("Cart is empty, skipping save");
                 return;
             }
-            
+
             // Try to update existing cart first, then create if needed
             try {
                 // First, try to update existing cart
                 const updatePayload = {
-                    customer: { 
+                    customer: {
                         customerId: customer.customerId,
                         firstName: customer.firstName || "Customer",
-                        lastName: customer.lastName || "User", 
+                        lastName: customer.lastName || "User",
                         email: customer.email || "customer@example.com"
                     },
                     items: cartItems.map(item => ({
-                        product: { 
+                        product: {
                             productId: item.id,
                             productName: item.name,
                             price: parseFloat(item.price)
@@ -73,25 +73,25 @@ export default function CartPage() {
                     })),
                     isCheckedOut: false
                 };
-                
+
                 const response = await api.put("/api/cart/update", updatePayload);
                 console.log("Cart updated successfully:", response.data);
-                
+
             } catch (updateError) {
                 // If update fails (cart doesn't exist), try to create new cart
                 console.log("Cart update failed, trying to create new cart:", updateError.response?.status);
-                
+
                 if (updateError.response?.status === 404) {
                     // Cart doesn't exist, create new one
                     const createPayload = {
-                        customer: { 
+                        customer: {
                             customerId: customer.customerId,
                             firstName: customer.firstName || "Customer",
-                            lastName: customer.lastName || "User", 
+                            lastName: customer.lastName || "User",
                             email: customer.email || "customer@example.com"
                         },
                         items: cartItems.map(item => ({
-                            product: { 
+                            product: {
                                 productId: item.id,
                                 productName: item.name,
                                 price: parseFloat(item.price)
@@ -102,21 +102,21 @@ export default function CartPage() {
                         })),
                         isCheckedOut: false
                     };
-                    
+
                     const response = await api.post("/api/cart/create", createPayload);
                     console.log("New cart created successfully:", response.data);
                 } else {
                     throw updateError; // Re-throw if it's not a 404 error
                 }
             }
-            
+
         } catch (error) {
             // Handle duplicate cart error gracefully
             if (error.response?.data?.message?.includes("Duplicate entry")) {
                 console.log("⚠️ Customer already has a cart, skipping cart save");
                 return; // Don't throw error for duplicate cart
             }
-            
+
             console.error("Failed to save cart to backend:", error);
             throw error; // Re-throw other errors
         }
@@ -126,7 +126,7 @@ export default function CartPage() {
     const handleCheckout = async () => {
         try {
             console.log("🛒 Starting checkout process...");
-            
+
             // Get customer from localStorage
             const customer = JSON.parse(localStorage.getItem("customer"));
             if (!customer || !customer.customerId) {
@@ -151,7 +151,7 @@ export default function CartPage() {
                 console.log("⚠️ Cart save failed, but continuing with checkout:", error);
                 // Don't block checkout if cart save fails
             }
-            
+
             // 0.5. Mark cart as checked out (to avoid duplicate constraint issues)
             try {
                 console.log("📦 Marking cart as checked out...");
@@ -174,7 +174,7 @@ export default function CartPage() {
                 trackingNumber: "N/A"
             };
             console.log("Shipment payload:", shipmentData);
-            
+
             const shipmentRes = await api.post("/shipment/create", shipmentData);
             const shipment = shipmentRes.data;
             console.log("✅ Shipment created:", shipment);
@@ -189,11 +189,11 @@ export default function CartPage() {
                 shipment: shipment
             };
             console.log("Order payload:", orderData);
-            
+
             // 3. Create the order
             const order = await createOrder(orderData);
             console.log("✅ Order created:", order);
-            
+
             // 4. Create order lines for each cart item
             console.log("📝 Creating order lines...");
             const orderLinePromises = cartItems.map(async (item, index) => {
@@ -205,12 +205,12 @@ export default function CartPage() {
                     product: { productId: item.id } // Backend must fetch Product entity
                 };
                 console.log(`Order line ${index + 1}:`, orderLineData);
-                
+
                 try {
                     return await createOrderLine(orderLineData);
                 } catch (orderLineError) {
                     console.error(`❌ Failed to create order line ${index + 1}:`, orderLineError);
-                    
+
                     // If Product reference fails, try with just productId
                     if (orderLineError.message?.includes("transient instance")) {
                         console.log(`🔄 Retrying order line ${index + 1} with productId only...`);
@@ -223,25 +223,21 @@ export default function CartPage() {
                         };
                         return await createOrderLine(simpleOrderLineData);
                     }
-                    
+
                     throw orderLineError; // Re-throw if it's a different error
                 }
             });
 
             const orderLines = await Promise.all(orderLinePromises);
             console.log("✅ All order lines created:", orderLines.length);
-            
-            // 5. Clear cart after successful order creation
-            clearCart();
-            console.log("✅ Cart cleared");
-            
-            // 6. Save order ID and navigate to shipping
+
+            // 5. Save order ID and navigate to shipping
             localStorage.setItem("orderId", order.orderId);
             console.log("✅ Order ID saved:", order.orderId);
-            
+
             alert("Order created successfully!");
             navigate("/shipping");
-            
+
         } catch (err) {
             console.error("❌ Checkout error:", err);
             console.error("Error details:", {
@@ -250,7 +246,7 @@ export default function CartPage() {
                 data: err.response?.data,
                 config: err.config
             });
-            
+
             let errorMessage = "Failed to create order: ";
             if (err.response?.status === 404) {
                 errorMessage += "Endpoint not found. Check if backend server is running.";
@@ -261,7 +257,7 @@ export default function CartPage() {
             } else {
                 errorMessage += err.message || "Unknown error";
             }
-            
+
             alert(errorMessage);
         }
     };
