@@ -16,9 +16,29 @@ export const fetchProductsByName = async (name) => {
   return res.data;
 };
 
+export const createProduct = async (productData) => {
+  const res = await api.post("/api/products/create", productData);
+  return res.data;
+};
+
+export const updateProduct = async (productData) => {
+  const res = await api.put(`/api/products/update/${productData.productId}`, productData);
+  return res.data;
+};
+
+export const deleteProduct = async (productId) => {
+  const res = await api.delete(`/api/products/delete/${productId}`);
+  return res.data;
+};
+
 // ----------------- ORDERS -----------------
 export const createOrder = async (orderData) => {
   const res = await api.post("/api/order/create", orderData);
+  return res.data;
+};
+
+export const fetchAllOrders = async () => {
+  const res = await api.get("/api/order/getall");
   return res.data;
 };
 
@@ -28,7 +48,12 @@ export const fetchOrdersByCustomer = async (email) => {
 };
 
 export const fetchOrderDetails = async (orderId) => {
-  const res = await api.get(`/api/order/${orderId}`);
+  const res = await api.get(`/api/order/read/${orderId}`);
+  return res.data;
+};
+
+export const updateOrder = async (orderId, orderData) => {
+  const res = await api.put(`/api/order/update/${orderId}`, orderData);
   return res.data;
 };
 
@@ -67,6 +92,16 @@ export const createCustomer = async (customerData) => {
 
 export const loginCustomer = async (email, password) => {
   const res = await api.post("/api/customer/login", { email, password });
+  return res.data;
+};
+
+export const fetchAllCustomers = async () => {
+  const res = await api.get("/api/customer/findAll");
+  return res.data;
+};
+
+export const fetchCustomerById = async (customerId) => {
+  const res = await api.get(`/api/customer/read/${customerId}`);
   return res.data;
 };
 

@@ -17,7 +17,13 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     // Implement login logic here
     setIsAuthenticated(true);
-    setUser({ ...credentials });
+    setUser({ 
+      firstName: credentials.firstName || 'John',
+      lastName: credentials.lastName || 'Doe', 
+      email: credentials.email || 'john@example.com',
+      role: credentials.role || 'customer',
+      ...credentials 
+    });
   };
 
   const logout = () => {

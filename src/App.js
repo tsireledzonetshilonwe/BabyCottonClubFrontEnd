@@ -2,9 +2,11 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./screens/Home";
-import AdminLogin from "./screens/AdminLogin";
 import AdminSignUp from "./screens/AdminSignUp";
 import AdminDashboard from "./screens/AdminDashboard";
+import AdminOrders from "./screens/AdminOrders";
+import AdminCustomers from "./screens/AdminCustomers";
+import AdminProducts from "./screens/AdminProducts";
 import OrderLines from "./screens/OrderLines";
 import Orders from "./screens/Orders";
 import Customers from "./screens/Customers";
@@ -57,11 +59,12 @@ function App() {
                             <Route path="/customers" element={<Customers />} />
                             <Route path="/login" element={<Login />} />
                             <Route path="/signup" element={<SignUp />} />
-                            <Route path="/login/admin" element={<AdminLogin setIsAdmin={setIsAdmin} />} />
                             <Route path="/signup/admin" element={<AdminSignUp setIsAdmin={setIsAdmin} />} />
-                            <Route path="/admin/dashboard" element={
-                                isAdmin ? <AdminDashboard /> : <AdminLogin setIsAdmin={setIsAdmin} />
-                            } />
+                            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+                            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                            <Route path="/admin/orders" element={<AdminOrders />} />
+                            <Route path="/admin/customers" element={<AdminCustomers />} />
+                            <Route path="/admin/products" element={<AdminProducts />} />
                             <Route path="/order-lines" element={<OrderLines />} />
                             <Route path="/orders" element={<Orders />} />
                             <Route path="/create-order" element={<CreateOrder />} />

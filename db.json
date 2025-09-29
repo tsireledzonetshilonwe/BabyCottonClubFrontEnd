@@ -1,12 +1,73 @@
 {
+  "products": [
+    { "id": 1, "name": "Baby Onesie", "price": 25.99, "image": "onesie.jpg", "category": "clothing" },
+    { "id": 2, "name": "Baby Dress", "price": 35.99, "image": "dress.jpg", "category": "clothing" },
+    { "id": 3, "name": "Baby Boots", "price": 29.99, "image": "boots.jpg", "category": "shoes" },
+    { "id": 4, "name": "Baby Sneakers", "price": 32.99, "image": "sneakers.jpg", "category": "shoes" },
+    { "id": 5, "name": "Baby Bedding", "price": 45.99, "image": "bedding.jpg", "category": "bedding" },
+    { "id": 6, "name": "Baby Duvet", "price": 55.99, "image": "duvet.jpg", "category": "bedding" },
+    { "id": 7, "name": "Princess Dress", "price": 42.99, "image": "princess_dress.jpg", "category": "clothing" },
+    { "id": 8, "name": "Wool Onesie", "price": 38.99, "image": "wool_onesy.jpg", "category": "clothing" }
+  ],
   "orders": [
-    { "orderId": 1, "orderDate": "2025-08-10", "totalAmount": 250.00 },
-    { "orderId": 2, "orderDate": "2025-08-11", "totalAmount": 300.00 }
+    { 
+      "id": 1, 
+      "customerName": "John Doe", 
+      "customerId": 1,
+      "total": 250.00, 
+      "status": "delivered",
+      "date": "2025-08-10",
+      "createdAt": "2025-08-10T10:30:00Z"
+    },
+    { 
+      "id": 2, 
+      "customerName": "Jane Smith", 
+      "customerId": 2,
+      "total": 300.00, 
+      "status": "shipped",
+      "date": "2025-08-11",
+      "createdAt": "2025-08-11T14:20:00Z"
+    },
+    { 
+      "id": 3, 
+      "customerName": "Bob Johnson", 
+      "customerId": 3,
+      "total": 125.50, 
+      "status": "pending",
+      "date": "2025-08-12",
+      "createdAt": "2025-08-12T09:15:00Z"
+    },
+    { 
+      "id": 4, 
+      "customerName": "Alice Brown", 
+      "customerId": 4,
+      "total": 189.99, 
+      "status": "processing",
+      "date": "2025-08-13",
+      "createdAt": "2025-08-13T16:45:00Z"
+    },
+    { 
+      "id": 5, 
+      "customerName": "Mike Wilson", 
+      "customerId": 5,
+      "total": 95.75, 
+      "status": "delivered",
+      "date": "2025-08-14",
+      "createdAt": "2025-08-14T11:30:00Z"
+    }
   ],
   "customers": [
-    { "customerId": 1, "firstName": "John", "lastName": "Doe", "email": "john@example.com" }
+    { "id": 1, "name": "John Doe", "firstName": "John", "lastName": "Doe", "email": "john@example.com" },
+    { "id": 2, "name": "Jane Smith", "firstName": "Jane", "lastName": "Smith", "email": "jane@example.com" },
+    { "id": 3, "name": "Bob Johnson", "firstName": "Bob", "lastName": "Johnson", "email": "bob@example.com" },
+    { "id": 4, "name": "Alice Brown", "firstName": "Alice", "lastName": "Brown", "email": "alice@example.com" },
+    { "id": 5, "name": "Mike Wilson", "firstName": "Mike", "lastName": "Wilson", "email": "mike@example.com" },
+    { "id": 6, "name": "Sarah Davis", "firstName": "Sarah", "lastName": "Davis", "email": "sarah@example.com" },
+    { "id": 7, "name": "Tom Clark", "firstName": "Tom", "lastName": "Clark", "email": "tom@example.com" }
   ],
   "orderlines": [
-    { "orderLineId": 1, "quantity": 2, "unitPrice": 100.0, "orderId": 1 }
+    { "orderLineId": 1, "quantity": 2, "unitPrice": 100.0, "orderId": 1 },
+    { "orderLineId": 2, "quantity": 1, "unitPrice": 50.0, "orderId": 1 },
+    { "orderLineId": 3, "quantity": 3, "unitPrice": 75.0, "orderId": 2 }
   ]
 }
