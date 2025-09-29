@@ -209,7 +209,7 @@ export default function CartPage() {
                         Discover our beautiful collection of baby clothing
                     </p>
                     <Button asChild>
-                        <Link to="/product">Continue Shopping</Link>
+                        <Link to="/products">Continue Shopping</Link>
                     </Button>
                 </div>
             </div>
@@ -273,7 +273,7 @@ export default function CartPage() {
                             </Button>
                             
                             <Button variant="outline" asChild className="w-full">
-                                <Link to="/product">Continue Shopping</Link>
+                                <Link to="/products">Continue Shopping</Link>
                             </Button>
                         </CardContent>
                     </Card>

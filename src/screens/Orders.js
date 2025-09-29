@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../api/api";
-import { Link } from "react-router-dom";
 import "./Orders.css";
 
 const formatCurrency = (amount) =>
@@ -10,12 +10,21 @@ const formatCurrency = (amount) =>
     minimumFractionDigits: 2,
   }).format(amount);
 
+const formatDate = (dateString) => {
+  return new Date(dateString).toLocaleDateString("en-ZA", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
+
 const statusColors = {
-  Pending: "#fbc02d",
-  Completed: "#388e3c",
-  Cancelled: "#d32f2f",
-  Processing: "#1976d2",
-  Shipped: "#0288d1"
+  Pending: { bg: "#fff3cd", color: "#856404", border: "#ffc107" },
+  Processing: { bg: "#cce5ff", color: "#004085", border: "#007bff" },
+  Shipped: { bg: "#d1ecf1", color: "#0c5460", border: "#17a2b8" },
+  Delivered: { bg: "#d4edda", color: "#155724", border: "#28a745" },
+  Completed: { bg: "#d4edda", color: "#155724", border: "#28a745" },
+  Cancelled: { bg: "#f8d7da", color: "#721c24", border: "#dc3545" }
 };
 
 function Orders() {
@@ -23,94 +32,234 @@ function Orders() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [expandedOrderId, setExpandedOrderId] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    api.get("/api/order/getall")
-      .then(res => {
-        setOrders(res.data);
+    // Get the logged-in customer
+    const customer = JSON.parse(localStorage.getItem("customer") || "{}");
+    
+    console.log("Customer from localStorage:", customer); // Debug log
+    
+    if (!customer.customerId && !customer.email) {
+      setError("Please log in to view your orders.");
+      setLoading(false);
+      return;
+    }
+
+    // Try multiple approaches to fetch customer orders
+    const fetchCustomerOrders = async () => {
+      try {
+        // Approach 1: Try fetching by email if available
+        if (customer.email) {
+          try {
+            const res = await api.get(`/api/orders/customer/${encodeURIComponent(customer.email)}`);
+            console.log("Orders by email:", res.data);
+            setOrders(res.data);
+            setLoading(false);
+            return;
+          } catch (emailErr) {
+            console.log("Email-based fetch failed, trying customer ID...", emailErr);
+          }
+        }
+
+        // Approach 2: Try fetching by customer ID
+        if (customer.customerId) {
+          try {
+            const res = await api.get(`/api/order/customer/${customer.customerId}`);
+            console.log("Orders by customer ID:", res.data);
+            setOrders(res.data);
+            setLoading(false);
+            return;
+          } catch (idErr) {
+            console.log("Customer ID-based fetch failed, using fallback...", idErr);
+          }
+        }
+
+        // Approach 3: Fallback - get all orders and filter by customer ID or email
+        const res = await api.get("/api/order/getall");
+        console.log("All orders fetched for filtering:", res.data);
+        
+        const customerOrders = res.data.filter(order => {
+          const matchesId = customer.customerId && order.customer?.customerId === customer.customerId;
+          const matchesEmail = customer.email && order.customer?.email === customer.email;
+          return matchesId || matchesEmail;
+        });
+        
+        console.log("Filtered customer orders:", customerOrders);
+        setOrders(customerOrders);
         setLoading(false);
-      })
-      .catch(() => {
-        setError("Failed to load orders.");
+
+      } catch (fallbackErr) {
+        console.error("All order fetching approaches failed:", fallbackErr);
+        setError("Failed to load your orders. Please try again later.");
         setLoading(false);
-      });
+      }
+    };
+
+    fetchCustomerOrders();
   }, []);
 
   return (
-    <div className="orders-page" style={{ maxWidth: 900, margin: "0 auto", padding: "2rem 1rem" }}>
-      <h1 style={{ textAlign: "center", color: "#d32f2f", marginBottom: "2rem" }}>Your Orders</h1>
-      {loading ? (
-        <div className="orders-loading" style={{ textAlign: "center", color: "#1976d2" }}>Loading orders...</div>
-      ) : error ? (
-        <div className="orders-error" style={{ textAlign: "center", color: "#d32f2f" }}>{error}</div>
-      ) : orders.length === 0 ? (
-        <div className="orders-empty" style={{ textAlign: "center", color: "#757575" }}>No orders found.</div>
-      ) : (
-        <div className="orders-list" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "2rem" }}>
-          {orders.map(order => (
-            <div className="order-card" key={order.orderId} style={{ background: "#fff", borderRadius: 16, boxShadow: "0 4px 24px rgba(211,47,47,0.08)", border: "2px solid #ffeaea", padding: "2rem 1.5rem", position: "relative" }}>
-              <div style={{ position: "absolute", top: 20, right: 20 }}>
-                <span style={{
-                  background: statusColors[order.status] || "#e0e0e0",
-                  color: "#fff",
-                  borderRadius: 12,
-                  padding: "0.4rem 1rem",
-                  fontWeight: 600,
-                  fontSize: "1rem"
-                }}>{order.status || "Pending"}</span>
-              </div>
-              <div style={{ fontSize: "1.2rem", fontWeight: 700, color: "#d32f2f", marginBottom: "0.5rem" }}>Order #{order.orderId}</div>
-              <div style={{ color: "#757575", marginBottom: "0.5rem" }}><b>Date:</b> {order.orderDate}</div>
-              <div style={{ color: "#757575", marginBottom: "0.5rem" }}><b>Total:</b> {formatCurrency(order.totalAmount)}</div>
-              <div style={{ display: "flex", gap: "1rem", marginTop: "1.5rem" }}>
-                <button
-                  style={{ background: "#d32f2f", color: "#fff", borderRadius: 8, padding: "0.7rem 1.2rem", fontWeight: 600, border: "none", cursor: "pointer" }}
-                  onClick={() => setExpandedOrderId(expandedOrderId === order.orderId ? null : order.orderId)}
-                >
-                  {expandedOrderId === order.orderId ? "Hide Details" : "View Details"}
-                </button>
-              </div>
-              {expandedOrderId === order.orderId && (
-                <div style={{ marginTop: "2rem", background: "#f9f9f9", borderRadius: 12, padding: "1.5rem", boxShadow: "0 2px 8px rgba(211,47,47,0.04)" }}>
-                  <div style={{ marginBottom: "1rem" }}><b>Status:</b> <span style={{ color: statusColors[order.status] || "#757575" }}>{order.status || "Pending"}</span></div>
-                  <div style={{ marginBottom: "1rem" }}><b>Order ID:</b> {order.orderId}</div>
-                  <div style={{ marginBottom: "1rem" }}><b>Date:</b> {order.orderDate}</div>
-                  <div style={{ marginBottom: "1rem" }}><b>Total Amount:</b> {formatCurrency(order.totalAmount)}</div>
-                  <div style={{ marginBottom: "1rem" }}><b>Customer:</b> {order.customer?.name || order.customer?.firstName || order.customer?.email || order.customer?.customerId || "-"}</div>
-                  <div style={{ marginBottom: "1rem" }}><b>Shipment:</b> {order.shipment?.shipmentMethod || "-"} ({order.shipment?.status || "-"})</div>
-                  <h4 style={{ marginTop: "1.5rem", marginBottom: "0.5rem" }}>Order Lines</h4>
-                  {order.orderLines && order.orderLines.length > 0 ? (
-                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                      <thead>
-                        <tr style={{ background: "#ffeaea" }}>
-                          <th style={{ padding: "0.5rem", textAlign: "left" }}>Product</th>
-                          <th style={{ padding: "0.5rem", textAlign: "left" }}>SKU</th>
-                          <th style={{ padding: "0.5rem", textAlign: "left" }}>Quantity</th>
-                          <th style={{ padding: "0.5rem", textAlign: "left" }}>Price</th>
-                          <th style={{ padding: "0.5rem", textAlign: "left" }}>Subtotal</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {order.orderLines.map(line => (
-                          <tr key={line.orderLineId}>
-                            <td>{line.product?.name || "-"}</td>
-                            <td>{line.product?.sku || "-"}</td>
-                            <td>{line.quantity}</td>
-                            <td>{formatCurrency(line.unitPrice)}</td>
-                            <td>{formatCurrency(line.subTotal)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  ) : (
-                    <div style={{ color: "#757575" }}>No items in this order.</div>
+    <div className="orders-page-wrapper">
+      <div className="orders-container">
+        <div className="orders-header">
+          <h1 className="orders-title">My Orders</h1>
+          <p className="orders-subtitle">Track and manage your orders</p>
+        </div>
+
+        {loading ? (
+          <div className="orders-loading">
+            <div className="loading-spinner"></div>
+            <p>Loading your orders...</p>
+          </div>
+        ) : error ? (
+          <div className="orders-error">
+            <div className="error-icon">⚠️</div>
+            <h3>Oops! Something went wrong</h3>
+            <p>{error}</p>
+            {error.includes("log in") && (
+              <button 
+                className="btn-primary" 
+                onClick={() => navigate("/login")}
+              >
+                Go to Login
+              </button>
+            )}
+          </div>
+        ) : orders.length === 0 ? (
+          <div className="orders-empty">
+            <div className="empty-icon">📦</div>
+            <h3>No orders yet</h3>
+            <p>You haven't placed any orders yet. Start shopping to see your orders here!</p>
+            <Link to="/products" className="btn-primary">
+              Start Shopping
+            </Link>
+          </div>
+        ) : (
+          <div className="orders-list">
+            {orders.map(order => (
+              <div className="order-card" key={order.orderId}>
+                <div className="order-header">
+                  <div className="order-info">
+                    <h3 className="order-number">Order #{order.orderId}</h3>
+                    <p className="order-date">Placed on {formatDate(order.orderDate)}</p>
+                  </div>
+                  <div className="order-status">
+                    <span 
+                      className="status-badge"
+                      style={{
+                        backgroundColor: statusColors[order.status]?.bg || statusColors.Pending.bg,
+                        color: statusColors[order.status]?.color || statusColors.Pending.color,
+                        borderColor: statusColors[order.status]?.border || statusColors.Pending.border
+                      }}
+                    >
+                      {order.status || "Pending"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="order-summary">
+                  <div className="order-total">
+                    <span className="total-label">Total:</span>
+                    <span className="total-amount">{formatCurrency(order.totalAmount)}</span>
+                  </div>
+                  
+                  {order.orderLines && order.orderLines.length > 0 && (
+                    <div className="order-items-preview">
+                      <span className="items-count">
+                        {order.orderLines.length} item{order.orderLines.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+
+                <div className="order-actions">
+                  <button
+                    className="btn-secondary"
+                    onClick={() => setExpandedOrderId(expandedOrderId === order.orderId ? null : order.orderId)}
+                  >
+                    {expandedOrderId === order.orderId ? "Hide Details" : "View Details"}
+                  </button>
+                  
+                  {(order.status === "Shipped" || order.status === "Processing") && (
+                    <button className="btn-outline">
+                      Track Order
+                    </button>
+                  )}
+                </div>
+
+                {expandedOrderId === order.orderId && (
+                  <div className="order-details">
+                    <div className="details-grid">
+                      <div className="detail-item">
+                        <span className="detail-label">Order ID:</span>
+                        <span className="detail-value">{order.orderId}</span>
+                      </div>
+                      
+                      <div className="detail-item">
+                        <span className="detail-label">Date:</span>
+                        <span className="detail-value">{formatDate(order.orderDate)}</span>
+                      </div>
+                      
+                      <div className="detail-item">
+                        <span className="detail-label">Status:</span>
+                        <span 
+                          className="detail-value status-text"
+                          style={{ color: statusColors[order.status]?.color || statusColors.Pending.color }}
+                        >
+                          {order.status || "Pending"}
+                        </span>
+                      </div>
+                      
+                      <div className="detail-item">
+                        <span className="detail-label">Total:</span>
+                        <span className="detail-value total-text">{formatCurrency(order.totalAmount)}</span>
+                      </div>
+
+                      {order.shipment && (
+                        <>
+                          <div className="detail-item">
+                            <span className="detail-label">Shipping Method:</span>
+                            <span className="detail-value">{order.shipment.shipmentMethod || "Standard"}</span>
+                          </div>
+                          
+                          <div className="detail-item">
+                            <span className="detail-label">Tracking Number:</span>
+                            <span className="detail-value">{order.shipment.trackingNumber || "Not available"}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {order.orderLines && order.orderLines.length > 0 && (
+                      <div className="order-items">
+                        <h4 className="items-title">Order Items</h4>
+                        <div className="items-list">
+                          {order.orderLines.map(line => (
+                            <div key={line.orderLineId} className="item-row">
+                              <div className="item-info">
+                                <h5 className="item-name">{line.product?.name || line.product?.productName || "Product"}</h5>
+                                {line.product?.sku && (
+                                  <p className="item-sku">SKU: {line.product.sku}</p>
+                                )}
+                              </div>
+                              <div className="item-details">
+                                <span className="item-quantity">Qty: {line.quantity}</span>
+                                <span className="item-price">{formatCurrency(line.unitPrice)}</span>
+                                <span className="item-subtotal">{formatCurrency(line.subTotal)}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
