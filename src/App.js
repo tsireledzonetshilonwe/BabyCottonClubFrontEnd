@@ -22,6 +22,7 @@ import Shipping from "./screens/Shipping";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import { CartProvider } from "./context/CartContext";
+import ErrorBoundary from "./components/ErrorBoundary";
 import "./App.css";
 
 // Import your new pages
@@ -47,6 +48,7 @@ function App() {
                 <div className="app" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
                     <Navbar />
                     <main style={{ flex: 1 }}>
+                        <ErrorBoundary>
                         <Routes>
                             <Route path="/" element={<HomePage />} />
                             <Route path="/homepage" element={<HomePage />} />
@@ -75,6 +77,7 @@ function App() {
                             <Route path="/productspage" element={<Products />} />
                             <Route path="/contact" element={<ContactPage />} />
                         </Routes>
+                        </ErrorBoundary>
                     </main>
                     <Footer />
                 </div>

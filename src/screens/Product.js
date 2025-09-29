@@ -1,108 +1,240 @@
-import React, { useEffect, useState } from "react";
-import { fetchProducts } from "../api/api";
-import { useCart } from "../context/CartContext";
-import "./Product.css";
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Button } from "../components/ui/button";
+import { Filter, Loader2 } from 'lucide-react';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../hooks/use-toast';
+import { useDebounce } from '../hooks/useDebounce';
+import { fetchProducts } from '../services/simpleApi';
+import ProductCard from '../components/ProductCard';
+import SimpleFilters from '../components/SimpleFilters';
 
-const categories = ["Newborn", "Baby Boys", "Baby Girls"];
-const sortOptions = ["Newest", "Price: Low to High", "Price: High to Low"];
+const Products = () => {
+  const [searchParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [sortBy, setSortBy] = useState('name');
+  const [priceRange, setPriceRange] = useState('all');
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState(['all']);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  const { addToCart } = useCart();
+  const { toast } = useToast();
 
-export default function Product() {
-    const [products, setProducts] = useState([]);
-    const [selectedCategory, setSelectedCategory] = useState("");
-    const [sortBy, setSortBy] = useState("Newest");
-    const [email, setEmail] = useState("");
-    const { addToCart } = useCart();
+  // Use debounced search term for better performance
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-    useEffect(() => {
-      fetchProducts().then(setProducts);
-    }, []);
+  // Convert backend product to frontend product (memoized)
+  const convertBackendProduct = useCallback((backendProduct) => {
+    const converted = {
+      id: backendProduct.productId?.toString() || '',
+      name: backendProduct.productName || backendProduct.name || 'Unnamed Product',
+      price: backendProduct.price || 0,
+      image: backendProduct.imageUrl || require('../assets/img.png'),
+      rating: backendProduct.reviews && backendProduct.reviews.length > 0 
+        ? backendProduct.reviews[0].rating || 4.0 
+        : 4.0,
+      category: backendProduct.category?.categoryName || 'Baby Items',
+      sizes: ['One Size'],
+      colors: [backendProduct.color || 'Default'],
+      description: backendProduct.description || `High-quality ${(backendProduct.productName || backendProduct.name || 'baby item').toLowerCase()} for your little one.`,
+      inStock: backendProduct.inStock === 'available' || backendProduct.inStock === 'In Stock',
+      backendData: backendProduct
+    };
+    
+    return converted;
+  }, []);
 
-    // Filter and sort logic
-    const filteredProducts = products.filter(p =>
-      !selectedCategory || p.category === selectedCategory
-    );
-    const sortedProducts = [...filteredProducts].sort((a, b) => {
-      if (sortBy === "Price: Low to High") return a.price - b.price;
-      if (sortBy === "Price: High to Low") return b.price - a.price;
-      return 0;
-    });
+  // Load products from backend (memoized)
+  const loadProducts = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      console.log('Loading products from backend...');
+      
+      const backendProducts = await fetchProducts();
+      
+      // Extract unique categories from products
+      const backendCategories = ['all', ...new Set(backendProducts.map(product => 
+        product.category?.categoryName || 'Baby Items'
+      ))];
+      
+      console.log('Successfully loaded', backendProducts.length, 'products from backend');
+      
+      const convertedProducts = backendProducts.map(convertBackendProduct);
+      setProducts(convertedProducts);
+      
+      setCategories(backendCategories);
+      
+      console.log('Products successfully loaded and converted');
+      
+    } catch (error) {
+      console.error('Failed to load products:', error);
+      setError(`Failed to load products: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast({
+        title: 'Error',
+        description: `Failed to load products: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [convertBackendProduct, toast]);
 
+  // Load products on component mount
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
+
+  // Handle search parameter from URL
+  useEffect(() => {
+    const searchFromUrl = searchParams.get('search');
+    if (searchFromUrl) {
+      setSearchTerm(searchFromUrl);
+    }
+  }, [searchParams]);
+
+  // Memoized filtered and sorted products for performance
+  const filteredProducts = useMemo(() => {
+    return products
+      .filter(product => {
+        const matchesSearch = product.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
+        const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
+        const matchesPrice = priceRange === 'all' || 
+          (priceRange === 'under25' && product.price < 25) ||
+          (priceRange === '25to40' && product.price >= 25 && product.price <= 40) ||
+          (priceRange === 'over40' && product.price > 40);
+        
+        return matchesSearch && matchesCategory && matchesPrice;
+      })
+      .sort((a, b) => {
+        switch (sortBy) {
+          case 'price-low':
+            return a.price - b.price;
+          case 'price-high':
+            return b.price - a.price;
+          case 'rating':
+            return b.rating - a.rating;
+          default:
+            return a.name.localeCompare(b.name);
+        }
+      });
+  }, [products, debouncedSearchTerm, selectedCategory, priceRange, sortBy]);
+
+  // Memoized add to cart handler
+  const handleAddToCart = useCallback(async (product) => {
+    if (!product.backendData) {
+      toast({
+        title: 'Error',
+        description: 'Unable to add product to cart',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      await addToCart({
+        id: product.backendData.productId,
+        name: product.backendData.productName || product.backendData.name,
+        price: product.backendData.price,
+        image: product.backendData.imageUrl
+      });
+      toast({
+        title: 'Added to cart',
+        description: `${product.name} has been added to your cart`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to add item to cart',
+        variant: 'destructive',
+      });
+    }
+  }, [addToCart, toast]);
+
+  if (isLoading) {
     return (
-      <div className="product-page-bg">
-
-
-        <main className="product-main">
-          <h1 className="product-title">Shop Baby Cotton Club</h1>
-          <p className="product-subtitle">Comfy clothes made with love, for every little one.</p>
-
-          <div className="product-filters">
-            <select value={sortBy} onChange={e => setSortBy(e.target.value)}>
-              {sortOptions.map(opt => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-            {categories.map(cat => (
-              <button
-                key={cat}
-                className={selectedCategory === cat ? "active" : ""}
-                onClick={() => setSelectedCategory(cat)}
-              >
-                {cat}
-              </button>
-            ))}
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading products...</p>
           </div>
-
-          <div className="product-grid">
-            {sortedProducts.map((product, index) => (
-              <div className="product-card modern-card" key={product.id || index}>
-                <div className="product-image-wrapper">
-                  <img
-                    src={product.imageUrl && product.imageUrl.trim() ? product.imageUrl : require('../assets/img.png')}
-                    alt={product.name}
-                    className="product-image"
-                  />
-                  <span className={`product-stock-badge ${(product.inStock === 'In Stock' || product.inStock === 'available') ? 'in' : 'out'}`}>{(product.inStock === 'In Stock' || product.inStock === 'available') ? 'In Stock' : 'Out of Stock'}</span>
-                </div>
-                <div className="product-brand">{product.supplier?.supplierName || "Baby Cotton Club"}</div>
-                <div className="product-category">{product.category?.categoryName || "Baby Clothes"}</div>
-                <div className="product-info">
-                  <div className="product-name">{product.name}</div>
-                  <div className="product-desc">{product.description}</div>
-                  <div className="product-price">R{product.price}</div>
-                  <div className="product-rating">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <span key={i} className={i < product.rating ? "star filled" : "star"}>★</span>
-                    ))}
-                  </div>
-                  <button className="product-cart-btn" onClick={() => addToCart({
-                    id: product.productId,
-                    name: product.productName, 
-                    price: product.price,
-                    image: product.imageUrl
-                  })} disabled={!(product.inStock === 'In Stock' || product.inStock === 'available')}>
-                    {(product.inStock === 'In Stock' || product.inStock === 'available') ? 'Add to Cart' : 'Unavailable'}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <section className="newsletter-section">
-            <h2>Join our Baby Cotton Club family</h2>
-            <p>for exclusive offers & new arrivals!</p>
-            <form className="newsletter-form" onSubmit={e => { e.preventDefault(); alert("Subscribed!"); }}>
-              <input
-                type="email"
-                placeholder="Email address"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-              />
-              <button type="submit">Subscribe</button>
-            </form>
-            <div className="baby-illustration">{/* Add your baby SVG or image here */}</div>
-          </section>
-        </main>
+        </div>
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <p className="text-destructive mb-4">{error}</p>
+            <Button onClick={loadProducts}>Try Again</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Filters Sidebar */}
+        <SimpleFilters 
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          priceRange={priceRange}
+          setPriceRange={setPriceRange}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+        />
+
+        {/* Products Grid */}
+        <div className="flex-1">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold">Products</h1>
+            <div className="flex items-center space-x-2 text-muted-foreground">
+              <Filter className="h-4 w-4" />
+              <span>{filteredProducts.length} products</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onAddToCart={handleAddToCart}
+              />
+            ))}
+          </div>
+
+          {filteredProducts.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground text-lg">No products found matching your criteria.</p>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedCategory('all');
+                  setPriceRange('all');
+                }}
+                className="mt-4"
+              >
+                Clear Filters
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
-}
+};
+
+export default Products;

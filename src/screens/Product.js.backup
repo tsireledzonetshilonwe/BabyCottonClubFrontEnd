@@ -1,0 +1,108 @@
+import React, { useEffect, useState } from "react";
+import { fetchProducts } from "../api/api";
+import { useCart } from "../context/CartContext";
+import "./Product.css";
+
+const categories = ["Newborn", "Baby Boys", "Baby Girls"];
+const sortOptions = ["Newest", "Price: Low to High", "Price: High to Low"];
+
+export default function Product() {
+    const [products, setProducts] = useState([]);
+    const [selectedCategory, setSelectedCategory] = useState("");
+    const [sortBy, setSortBy] = useState("Newest");
+    const [email, setEmail] = useState("");
+    const { addToCart } = useCart();
+
+    useEffect(() => {
+      fetchProducts().then(setProducts);
+    }, []);
+
+    // Filter and sort logic
+    const filteredProducts = products.filter(p =>
+      !selectedCategory || p.category === selectedCategory
+    );
+    const sortedProducts = [...filteredProducts].sort((a, b) => {
+      if (sortBy === "Price: Low to High") return a.price - b.price;
+      if (sortBy === "Price: High to Low") return b.price - a.price;
+      return 0;
+    });
+
+    return (
+      <div className="product-page-bg">
+
+
+        <main className="product-main">
+          <h1 className="product-title">Shop Baby Cotton Club</h1>
+          <p className="product-subtitle">Comfy clothes made with love, for every little one.</p>
+
+          <div className="product-filters">
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)}>
+              {sortOptions.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+            {categories.map(cat => (
+              <button
+                key={cat}
+                className={selectedCategory === cat ? "active" : ""}
+                onClick={() => setSelectedCategory(cat)}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          <div className="product-grid">
+            {sortedProducts.map((product, index) => (
+              <div className="product-card modern-card" key={product.id || index}>
+                <div className="product-image-wrapper">
+                  <img
+                    src={product.imageUrl && product.imageUrl.trim() ? product.imageUrl : require('../assets/img.png')}
+                    alt={product.name}
+                    className="product-image"
+                  />
+                  <span className={`product-stock-badge ${(product.inStock === 'In Stock' || product.inStock === 'available') ? 'in' : 'out'}`}>{(product.inStock === 'In Stock' || product.inStock === 'available') ? 'In Stock' : 'Out of Stock'}</span>
+                </div>
+                <div className="product-brand">{product.supplier?.supplierName || "Baby Cotton Club"}</div>
+                <div className="product-category">{product.category?.categoryName || "Baby Clothes"}</div>
+                <div className="product-info">
+                  <div className="product-name">{product.name}</div>
+                  <div className="product-desc">{product.description}</div>
+                  <div className="product-price">R{product.price}</div>
+                  <div className="product-rating">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <span key={i} className={i < product.rating ? "star filled" : "star"}>★</span>
+                    ))}
+                  </div>
+                  <button className="product-cart-btn" onClick={() => addToCart({
+                    id: product.productId,
+                    name: product.productName, 
+                    price: product.price,
+                    image: product.imageUrl
+                  })} disabled={!(product.inStock === 'In Stock' || product.inStock === 'available')}>
+                    {(product.inStock === 'In Stock' || product.inStock === 'available') ? 'Add to Cart' : 'Unavailable'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <section className="newsletter-section">
+            <h2>Join our Baby Cotton Club family</h2>
+            <p>for exclusive offers & new arrivals!</p>
+            <form className="newsletter-form" onSubmit={e => { e.preventDefault(); alert("Subscribed!"); }}>
+              <input
+                type="email"
+                placeholder="Email address"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+              />
+              <button type="submit">Subscribe</button>
+            </form>
+            <div className="baby-illustration">{/* Add your baby SVG or image here */}</div>
+          </section>
+        </main>
+      </div>
+  );
+}
