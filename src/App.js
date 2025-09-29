@@ -19,9 +19,10 @@ import CartPage from "./screens/CartPage";
 import Products from "./screens/Product";
 import Shipping from "./screens/Shipping";
 
-import Navbar from "./components/Navbar";
+import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { CartProvider } from "./context/CartContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import "./App.css";
 
@@ -43,10 +44,11 @@ function App() {
     }, []);
 
     return (
-        <CartProvider>
-            <Router>
-                <div className="app" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-                    <Navbar />
+        <AuthProvider>
+            <CartProvider>
+                <Router>
+                    <div className="app" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+                        <Header />
                     <main style={{ flex: 1 }}>
                         <ErrorBoundary>
                         <Routes>
@@ -80,9 +82,10 @@ function App() {
                         </ErrorBoundary>
                     </main>
                     <Footer />
-                </div>
-            </Router>
-        </CartProvider>
+                    </div>
+                </Router>
+            </CartProvider>
+        </AuthProvider>
     );
 }
 
