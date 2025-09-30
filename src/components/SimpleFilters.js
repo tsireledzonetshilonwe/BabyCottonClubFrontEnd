@@ -37,7 +37,7 @@ const SimpleFilters = ({
             fontSize: '1.1rem',
             pointerEvents: 'none'
           }}>
-            🔍
+            Search
           </div>
           <input
             type="text"

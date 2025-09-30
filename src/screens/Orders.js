@@ -46,10 +46,28 @@ function Orders() {
       return;
     }
 
-    // Try multiple approaches to fetch customer orders
+    // Fetch customer orders by getting the customer data (which includes orders)
     const fetchCustomerOrders = async () => {
       try {
-        // Approach 1: Try fetching by email if available
+        // Primary approach: Get customer data with orders
+        if (customer.customerId) {
+          try {
+            const res = await api.get(`/api/customer/read/${customer.customerId}`);
+            console.log("Customer data with orders:", res.data);
+            
+            // Get orders from customer data
+            const customerOrders = res.data.orders || res.data.customerOrders || [];
+            console.log("Customer orders found:", customerOrders);
+            
+            setOrders(customerOrders);
+            setLoading(false);
+            return;
+          } catch (customerErr) {
+            console.log("Customer-based fetch failed, trying email approach...", customerErr);
+          }
+        }
+
+        // Fallback 1: Try fetching by email if available
         if (customer.email) {
           try {
             const res = await api.get(`/api/orders/customer/${encodeURIComponent(customer.email)}`);
@@ -58,24 +76,11 @@ function Orders() {
             setLoading(false);
             return;
           } catch (emailErr) {
-            console.log("Email-based fetch failed, trying customer ID...", emailErr);
+            console.log("Email-based fetch failed, using fallback...", emailErr);
           }
         }
 
-        // Approach 2: Try fetching by customer ID
-        if (customer.customerId) {
-          try {
-            const res = await api.get(`/api/order/customer/${customer.customerId}`);
-            console.log("Orders by customer ID:", res.data);
-            setOrders(res.data);
-            setLoading(false);
-            return;
-          } catch (idErr) {
-            console.log("Customer ID-based fetch failed, using fallback...", idErr);
-          }
-        }
-
-        // Approach 3: Fallback - get all orders and filter by customer ID or email
+        // Fallback 2: Get all orders and filter by customer ID or email
         const res = await api.get("/api/order/getall");
         console.log("All orders fetched for filtering:", res.data);
         
@@ -114,7 +119,7 @@ function Orders() {
           </div>
         ) : error ? (
           <div className="orders-error">
-            <div className="error-icon">⚠️</div>
+            <div className="error-icon">!</div>
             <h3>Oops! Something went wrong</h3>
             <p>{error}</p>
             {error.includes("log in") && (
@@ -128,7 +133,7 @@ function Orders() {
           </div>
         ) : orders.length === 0 ? (
           <div className="orders-empty">
-            <div className="empty-icon">📦</div>
+            <div className="empty-icon">[ ]</div>
             <h3>No orders yet</h3>
             <p>You haven't placed any orders yet. Start shopping to see your orders here!</p>
             <Link to="/products" className="btn-primary">

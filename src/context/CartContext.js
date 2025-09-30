@@ -24,43 +24,28 @@ export const CartProvider = ({ children }) => {
     }
   }, [cartItems]);
 
-  // Auto-save to backend with debouncing (DISABLED for debugging)
+  // Auto-save to backend with debouncing (DISABLED - Backend constraints)
   useEffect(() => {
-    // Temporarily disabled auto-save to avoid spamming backend during debugging
-    // Uncomment the code below once cart endpoint is working properly
+    // Cart auto-save to backend is disabled due to backend constraints:
+    // 1. Unique constraint prevents multiple carts per customer
+    // 2. Detached entity errors when creating cart items
+    // 3. Complex entity relationships requiring full object structures
     
-    /*
-    const saveToBackend = async () => {
-      try {
-        const customer = JSON.parse(localStorage.getItem("customer") || "{}");
-        if (customer.customerId && cartItems.length > 0) {
-          const cartPayload = {
-            customerId: customer.customerId,  // Send just the ID
-            items: cartItems.map(item => ({
-              productId: item.id,  // Send just the ID
-              quantity: item.quantity,
-              price: parseFloat(item.price)
-            })),
-            isCheckedOut: false
-          };
-          await api.post("/api/cart/create", cartPayload);
-          console.log("Cart automatically saved to backend");
-        }
-      } catch (error) {
-        console.error("Auto-save to backend failed:", error);
-      }
-    };
+    // Cart items are still persisted to localStorage and will be saved
+    // to database during checkout process when it's more critical
     
-    // Debounce the backend save to avoid too many API calls
-    const timeoutId = setTimeout(saveToBackend, 2000);
-    return () => clearTimeout(timeoutId);
-    */
+    console.log("Cart auto-save to backend is disabled - using localStorage only");
+    console.log("Cart will be saved to database during checkout process");
+    
+    // Keep localStorage working as backup
+    // (This is already handled in the useEffect above)
+    
   }, [cartItems]);
 
   const addToCart = (item) => {
     // Validate item structure
     if (!item.id) {
-      console.error("❌ Item missing ID:", item);
+      console.error("Item missing ID:", item);
       return;
     }
     

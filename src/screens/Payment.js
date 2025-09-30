@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createPayment } from "../api/api";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import "./Payment.css";
 
@@ -14,7 +14,15 @@ export default function Payment() {
     const [isProcessing, setIsProcessing] = useState(false);
 
     useEffect(() => {
+        console.log("Payment component mounted");
+        console.log("Shipping info:", shippingInfo);
+        console.log("Cart items:", cartItems);
+        
+        const orderId = localStorage.getItem("orderId");
+        console.log("Order ID in localStorage:", orderId);
+        
         if (!shippingInfo) {
+            console.log("No shipping info, redirecting to shipping...");
             navigate("/shipping");
         }
     }, [shippingInfo, navigate]);
@@ -31,13 +39,58 @@ export default function Payment() {
             return;
         }
 
-        setIsProcessing(true);
-        const orderId = localStorage.getItem("orderId");
+        // Check for existing orderId first
+        let orderId = localStorage.getItem("orderId");
+        
+        // If no orderId exists but we have cart items, try to create an order on the fly
+        if (!orderId && cartItems.length > 0) {
+            console.log("No orderId found, creating order during payment...");
+            try {
+                const customer = JSON.parse(localStorage.getItem("customer"));
+                if (!customer || !customer.customerId) {
+                    alert("Please log in to complete your order.");
+                    navigate("/login");
+                    return;
+                }
+
+                // Create a simple order for payment
+                const orderData = {
+                    orderDate: new Date().toISOString().slice(0,10),
+                    totalAmount: totalAmount,
+                    customer: { customerId: customer.customerId }
+                };
+
+                const response = await fetch('http://localhost:8080/api/order/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderData)
+                });
+
+                if (response.ok) {
+                    const order = await response.json();
+                    orderId = order.orderId;
+                    localStorage.setItem("orderId", orderId);
+                    console.log("Order created during payment:", orderId);
+                } else {
+                    throw new Error("Failed to create order");
+                }
+            } catch (err) {
+                console.error("Failed to create order during payment:", err);
+                alert("Unable to process order. Please try starting from your cart.");
+                navigate("/cart");
+                return;
+            }
+        }
+
+        // If still no orderId and no cart items, redirect to cart
         if (!orderId) {
-            alert("No order found. Please checkout again.");
+            console.log("No order ID and no cart items, redirecting to cart...");
+            alert("No order found. Please add items to your cart first.");
             navigate("/cart");
             return;
         }
+
+        console.log("Processing payment for order:", orderId);
 
         try {
             // Simulate payment processing
@@ -57,16 +110,23 @@ export default function Payment() {
             localStorage.removeItem("orderId");
             navigate("/");
         } catch (err) {
+            console.error("Payment processing failed:", err);
             alert("Payment failed. Please try again.");
-        } finally {
-            setIsProcessing(false);
         }
     };
 
-    if (cartItems.length === 0) {
+    // Check if we have either cart items OR an existing order
+    const hasCartItems = cartItems.length > 0;
+    const hasExistingOrder = localStorage.getItem("orderId");
+    
+    if (!hasCartItems && !hasExistingOrder) {
         return (
             <div style={{ textAlign: "center", marginTop: "2rem" }}>
-                <h2>Your cart is empty</h2>
+                <h2>No order found</h2>
+                <p>Please add items to your cart and proceed through checkout.</p>
+                <Link to="/products" style={{ color: "#FFB6C1", textDecoration: "underline" }}>
+                    Continue Shopping
+                </Link>
             </div>
         );
     }
@@ -98,18 +158,27 @@ export default function Payment() {
                 {/* Order Summary */}
                 <section className="payment-summary">
                     <h2>Order Summary</h2>
-                    <ul>
-                        {cartItems.map((item) => (
-                            <li key={item.id} className="payment-summary-item">
-                                <span className="payment-summary-name">{item.name}</span>
-                                <span className="payment-summary-qty">× {item.quantity}</span>
-                                <span className="payment-summary-price">R {item.price}</span>
-                            </li>
-                        ))}
-                    </ul>
-                    <div className="payment-summary-total">
-                        <strong>Total:</strong> R {totalAmount.toFixed(2)}
-                    </div>
+                    {cartItems.length > 0 ? (
+                        <>
+                            <ul>
+                                {cartItems.map((item) => (
+                                    <li key={item.id} className="payment-summary-item">
+                                        <span className="payment-summary-name">{item.name}</span>
+                                        <span className="payment-summary-qty">× {item.quantity}</span>
+                                        <span className="payment-summary-price">R {item.price}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                            <div className="payment-summary-total">
+                                <strong>Total:</strong> R {totalAmount.toFixed(2)}
+                            </div>
+                        </>
+                    ) : (
+                        <div style={{ textAlign: "center", padding: "1rem" }}>
+                            <p>Order details will be processed based on your previous checkout.</p>
+                            <p><strong>Order ID:</strong> {localStorage.getItem("orderId") || "Processing..."}</p>
+                        </div>
+                    )}
                 </section>
 
                 {/* Payment Form */}

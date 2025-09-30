@@ -158,8 +158,8 @@
 
 /* Payment Confirm Button */
 .payment-confirm-btn {
-    background: linear-gradient(90deg, #90e0ef, #ffd6e0);
-    color: #023e8a;
+    background: #FFB6C1;
+    color: #fff;
     border: none;
     border-radius: 0.7rem;
     padding: 0.9rem 2.2rem;
@@ -170,8 +170,8 @@
     transition: all 0.2s;
 }
 .payment-confirm-btn:hover {
-    background: linear-gradient(90deg, #48cae4, #ffb4c6);
-    color: #023e8a;
+    background: #ff9bb3;
+    color: #fff;
     transform: translateY(-2px);
 }
 

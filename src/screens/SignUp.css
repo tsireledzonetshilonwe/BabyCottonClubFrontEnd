@@ -59,7 +59,7 @@
 }
 
 .auth-btn {
-	background: linear-gradient(90deg, #667eea 0%, #5a67d8 100%);
+	background: #3182ce;
 	color: #fff;
 	border: none;
 	border-radius: 8px;
@@ -71,13 +71,13 @@
 	transition: background 0.2s;
 }
 .auth-btn:hover {
-	background: linear-gradient(90deg, #5a67d8 0%, #667eea 100%);
+	background: #2c5282;
 }
 
 .auth-error {
-	color: #e53e3e;
-	background: #fff5f5;
-	border: 1px solid #fed7d7;
+	color: #2b6cb0;
+	background: #ebf8ff;
+	border: 1px solid #bee3f8;
 	border-radius: 6px;
 	padding: 0.5rem 0.75rem;
 	margin-bottom: 0.5rem;

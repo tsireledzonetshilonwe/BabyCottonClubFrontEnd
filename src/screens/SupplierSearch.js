@@ -122,7 +122,7 @@ export default function SupplierSearch() {
                                         borderRadius: "8px",
                                         cursor: "pointer",
                                     }}
-                                    onClick={() => handleAdd(product)} // ✅ now safe
+                                    onClick={() => handleAdd(product)} // now safe
                                 >
                                     Add to Cart
                                 </button>

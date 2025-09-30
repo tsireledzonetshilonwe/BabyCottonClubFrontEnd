@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useCart } from "../context/CartContext";
 import { fetchAllReviews, createReview, fetchProducts } from "../api/api";
+import SimpleFilters from "../components/SimpleFilters";
 import "./Product.css";
 
 export default function Products() {
@@ -12,6 +13,12 @@ export default function Products() {
     const [allReviews, setAllReviews] = useState([]);
     const [loadingReviews, setLoadingReviews] = useState(false);
     const [reviewError, setReviewError] = useState("");
+    
+    // Search and filter states
+    const [searchTerm, setSearchTerm] = useState("");
+    const [priceRange, setPriceRange] = useState("all");
+    const [sortBy, setSortBy] = useState("name");
+    
     const { addToCart } = useCart();
 
     useEffect(() => {
@@ -62,30 +69,123 @@ export default function Products() {
     const brands = ["All"]; // If you have a brand field, update this accordingly
 
     const filteredProducts = products.filter((p) => {
+        // Category filter
         const categoryMatch = selectedCategory === "All" || (p.category?.categoryName === selectedCategory);
-        // If you have a brand field, add brand filtering here
-        return categoryMatch;
+        
+        // Search filter
+        const searchMatch = searchTerm === "" || 
+            p.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (p.category?.categoryName || "").toLowerCase().includes(searchTerm.toLowerCase());
+        
+        // Price range filter
+        let priceMatch = true;
+        const price = parseFloat(p.price);
+        switch (priceRange) {
+            case "under25":
+                priceMatch = price < 25;
+                break;
+            case "25to40":
+                priceMatch = price >= 25 && price <= 40;
+                break;
+            case "over40":
+                priceMatch = price > 40;
+                break;
+            default:
+                priceMatch = true;
+        }
+        
+        return categoryMatch && searchMatch && priceMatch;
+    });
+
+    // Sort products
+    const sortedProducts = [...filteredProducts].sort((a, b) => {
+        switch (sortBy) {
+            case "name":
+                return a.productName.localeCompare(b.productName);
+            case "price-low":
+                return parseFloat(a.price) - parseFloat(b.price);
+            case "price-high":
+                return parseFloat(b.price) - parseFloat(a.price);
+            case "rating":
+                // Calculate average rating for each product
+                const aRating = allReviews.filter(r => r.productId === a.productId)
+                    .reduce((sum, r) => sum + r.rating, 0) / 
+                    Math.max(1, allReviews.filter(r => r.productId === a.productId).length);
+                const bRating = allReviews.filter(r => r.productId === b.productId)
+                    .reduce((sum, r) => sum + r.rating, 0) / 
+                    Math.max(1, allReviews.filter(r => r.productId === b.productId).length);
+                return bRating - aRating;
+            default:
+                return 0;
+        }
     });
 
     return (
         <div className="products-page">
             <h1 className="products-title">All Products</h1>
-            <div className="category-filter">
-                <label htmlFor="category-select">Category: </label>
-                <select
-                    id="category-select"
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                >
-                    {categories.map((cat, idx) => (
-                        <option key={idx} value={cat}>
-                            {cat}
-                        </option>
-                    ))}
-                </select>
-            </div>
-            <div className="products-grid">
-                {filteredProducts.map((product) => (
+            
+            <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
+                {/* Filters Section */}
+                <div style={{ flexShrink: 0 }}>
+                    <SimpleFilters
+                        searchTerm={searchTerm}
+                        setSearchTerm={setSearchTerm}
+                        priceRange={priceRange}
+                        setPriceRange={setPriceRange}
+                        sortBy={sortBy}
+                        setSortBy={setSortBy}
+                    />
+                    
+                    {/* Category Filter */}
+                    <div style={{ 
+                        width: '300px', 
+                        padding: '1rem', 
+                        backgroundColor: 'white', 
+                        border: '1px solid #e5e7eb', 
+                        borderRadius: '8px',
+                        marginTop: '1rem'
+                    }}>
+                        <label style={{ 
+                            display: 'block', 
+                            fontWeight: 'bold', 
+                            marginBottom: '0.5rem',
+                            color: '#374151'
+                        }}>
+                            Category
+                        </label>
+                        <select
+                            value={selectedCategory}
+                            onChange={(e) => setSelectedCategory(e.target.value)}
+                            style={{
+                                width: '100%',
+                                padding: '0.75rem',
+                                border: '2px solid #FFB6C1',
+                                borderRadius: '12px',
+                                fontSize: '0.875rem',
+                                backgroundColor: 'white',
+                                outline: 'none',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                boxShadow: '0 2px 8px rgba(255, 182, 193, 0.1)'
+                            }}
+                        >
+                            {categories.map((cat, idx) => (
+                                <option key={idx} value={cat}>
+                                    {cat}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                {/* Products Grid */}
+                <div style={{ flex: 1 }}>
+                    <div style={{ marginBottom: '1rem', color: '#666' }}>
+                        Showing {sortedProducts.length} of {products.length} products
+                    </div>
+                    
+                    <div className="products-grid">
+                        {sortedProducts.map((product) => (
                     <div key={product.productId} className="product-card">
                         <img src={product.imageUrl} alt={product.productName} className="product-image" />
                         <div className="product-info">
@@ -103,14 +203,14 @@ export default function Products() {
                             className="product-buy-btn"
                             onClick={() => {
                                 const cartItem = {
-                                    id: product.productId,        // ✅ Map productId to id
-                                    name: product.productName,    // ✅ Map productName to name  
-                                    price: product.price,         // ✅ Keep price as is
-                                    image: product.imageUrl,      // ✅ Map imageUrl to image
+                                    id: product.productId,        // Map productId to id
+                                    name: product.productName,    // Map productName to name
+                                    price: product.price,         // Keep price as is
+                                    image: product.imageUrl,      // Map imageUrl to image
                                 };
-                                console.log("🛍️ Product clicked:", product);
-                                console.log("� Cart item being added:", cartItem);
-                                console.log("� Cart item ID:", cartItem.id, "Type:", typeof cartItem.id);
+                                console.log("Product clicked:", product);
+                                console.log("Cart item being added:", cartItem);
+                                console.log("Cart item ID:", cartItem.id, "Type:", typeof cartItem.id);
                                 addToCart(cartItem);
                             }}
                             disabled={product.inStock !== 'available'}
@@ -135,7 +235,7 @@ export default function Products() {
                                             <div key={index} className="review-card">
                                                 <div className="review-card-header">
                                                     <span>{rev.name}</span>
-                                                    <span className="review-rating">{"⭐".repeat(rev.rating)}</span>
+                                                    <span className="review-rating">{"★".repeat(rev.rating)}</span>
                                                 </div>
                                                 <p>{rev.comment}</p>
                                             </div>
@@ -178,6 +278,8 @@ export default function Products() {
                         )}
                     </div>
                 ))}
+                    </div>
+                </div>
             </div>
         </div>
     );
