@@ -52,8 +52,8 @@ export const fetchOrderDetails = async (orderId) => {
   return res.data;
 };
 
-export const updateOrder = async (orderId, orderData) => {
-  const res = await api.put(`/api/order/update/${orderId}`, orderData);
+export const updateOrder = async (orderData) => {
+  const res = await api.put("/api/order/update", orderData);
   return res.data;
 };
 
