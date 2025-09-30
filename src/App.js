@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./screens/Home";
 import AdminSignUp from "./screens/AdminSignUp";
+import AdminLogin from "./screens/AdminLogin";
 import AdminDashboard from "./screens/AdminDashboard";
 import AdminOrders from "./screens/AdminOrders";
 import AdminCustomers from "./screens/AdminCustomers";
@@ -19,6 +20,7 @@ import Payment from "./screens/Payment";
 import SupplierSearch from "./screens/SupplierSearch";
 import CartPage from "./screens/CartPage";
 import Products from "./screens/Product";
+import Profile from "./screens/Profile";
 import Shipping from "./screens/Shipping";
 
 import Header from "./components/Header";
@@ -60,6 +62,7 @@ function App() {
                             <Route path="/login" element={<Login />} />
                             <Route path="/signup" element={<SignUp />} />
                             <Route path="/signup/admin" element={<AdminSignUp setIsAdmin={setIsAdmin} />} />
+                            <Route path="/login/admin" element={<AdminLogin setIsAdmin={setIsAdmin} />} />
                             <Route path="/admin-dashboard" element={<AdminDashboard />} />
                             <Route path="/admin/dashboard" element={<AdminDashboard />} />
                             <Route path="/admin/orders" element={<AdminOrders />} />
@@ -71,6 +74,7 @@ function App() {
                             <Route path="/order-details/:id" element={<OrderDetails />} />
                             <Route path="/order-line-details/:id" element={<OrderLineDetails />} />
                             <Route path="/cart" element={<CartPage />} />
+                            <Route path="/profile" element={<Profile />} />
                             <Route path="/payment" element={<Payment />} />
                             <Route path="/shipping" element={<Shipping />} />
                             {/* Use the Products component from screens folder */}

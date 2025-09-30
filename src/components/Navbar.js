@@ -56,6 +56,9 @@ function Navbar() {
                     </li>
                     {!isLoggedIn && <li><Link to="/login">Login</Link></li>}
                     {!isLoggedIn && <li><Link to="/signup">Register</Link></li>}
+                    {!isLoggedIn && !isAdmin && <li><Link to="/login/admin">Admin Login</Link></li>}
+                    {isLoggedIn && <li><Link to="/profile">My Profile</Link></li>}
+                    {isLoggedIn && <li><Link to="/orders">My Orders</Link></li>}
                     {isLoggedIn && <li><button className="navbar-logout-btn" onClick={handleLogout}>Logout</button></li>}
                     {isAdmin && <>
                         <li><Link to="/admin/dashboard">Admin Dashboard</Link></li>

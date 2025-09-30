@@ -11,20 +11,126 @@ function SignUp() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  // Validation functions
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePhone = (phone) => {
+    const phoneRegex = /^[\+]?[\d\s\-\(\)]{10,15}$/;
+    return phoneRegex.test(phone.replace(/\s/g, ''));
+  };
+
+  const validateName = (name) => {
+    const nameRegex = /^[a-zA-Z\s]+$/;
+    return nameRegex.test(name) && name.length >= 2;
+  };
+
+  const validatePassword = (password) => {
+    return password.length >= 6;
+  };
+
+  // Real-time field validation
+  const handleEmailChange = (e) => {
+    const value = e.target.value;
+    setEmail(value);
+    if (value && !validateEmail(value)) {
+      setFieldErrors(prev => ({ ...prev, email: 'Please enter a valid email address' }));
+    } else {
+      setFieldErrors(prev => ({ ...prev, email: '' }));
+    }
+  };
+
+  const handlePhoneChange = (e) => {
+    const value = e.target.value;
+    setPhoneNumber(value);
+    if (value && !validatePhone(value)) {
+      setFieldErrors(prev => ({ ...prev, phone: 'Please enter a valid phone number' }));
+    } else {
+      setFieldErrors(prev => ({ ...prev, phone: '' }));
+    }
+  };
+
+  const handleFirstNameChange = (e) => {
+    const value = e.target.value;
+    setFirstName(value);
+    if (value && !validateName(value)) {
+      setFieldErrors(prev => ({ ...prev, firstName: 'Name should only contain letters (min 2 chars)' }));
+    } else {
+      setFieldErrors(prev => ({ ...prev, firstName: '' }));
+    }
+  };
+
+  const handleLastNameChange = (e) => {
+    const value = e.target.value;
+    setLastName(value);
+    if (value && !validateName(value)) {
+      setFieldErrors(prev => ({ ...prev, lastName: 'Name should only contain letters (min 2 chars)' }));
+    } else {
+      setFieldErrors(prev => ({ ...prev, lastName: '' }));
+    }
+  };
+
+  const handlePasswordChange = (e) => {
+    const value = e.target.value;
+    setPassword(value);
+    if (value && !validatePassword(value)) {
+      setFieldErrors(prev => ({ ...prev, password: 'Password must be at least 6 characters long' }));
+    } else {
+      setFieldErrors(prev => ({ ...prev, password: '' }));
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Basic field validation
     if (!firstName || !lastName || !email || !phoneNumber || !password) {
       setError('Please fill in all fields.');
       return;
     }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+
+    // Phone number validation (basic format check)
+    const phoneRegex = /^[\+]?[\d\s\-\(\)]{10,15}$/;
+    if (!phoneRegex.test(phoneNumber.replace(/\s/g, ''))) {
+      setError('Please enter a valid phone number (10-15 digits).');
+      return;
+    }
+
+    // Password validation
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return;
+    }
+
+    // Name validation (no numbers or special characters)
+    const nameRegex = /^[a-zA-Z\s]+$/;
+    if (!nameRegex.test(firstName)) {
+      setError('First name should only contain letters.');
+      return;
+    }
+    if (!nameRegex.test(lastName)) {
+      setError('Last name should only contain letters.');
+      return;
+    }
+
     setError('');
     try {
       const customerData = {
-        firstName,
-        lastName,
-        email,
-        phoneNumber,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim().toLowerCase(),
+        phoneNumber: phoneNumber.trim(),
         password
       };
       await createCustomer(customerData);
@@ -32,7 +138,13 @@ function SignUp() {
       window.location.href = '/login';
     } catch (err) {
       console.error('Sign up error:', err, err?.response?.data);
-      setError('Sign up failed. Please try again.');
+      if (err?.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err?.response?.status === 409) {
+        setError('Email already exists. Please use a different email or login.');
+      } else {
+        setError('Sign up failed. Please try again.');
+      }
     }
   };
 
@@ -51,10 +163,11 @@ function SignUp() {
               type="text"
               placeholder="Enter your first name"
               value={firstName}
-              onChange={e => setFirstName(e.target.value)}
+              onChange={handleFirstNameChange}
               required
             />
           </div>
+          {fieldErrors.firstName && <div className="field-error">{fieldErrors.firstName}</div>}
         </div>
 
         {/* Last Name */}
@@ -67,10 +180,11 @@ function SignUp() {
               type="text"
               placeholder="Enter your last name"
               value={lastName}
-              onChange={e => setLastName(e.target.value)}
+              onChange={handleLastNameChange}
               required
             />
           </div>
+          {fieldErrors.lastName && <div className="field-error">{fieldErrors.lastName}</div>}
         </div>
 
         {/* Email */}
@@ -81,13 +195,14 @@ function SignUp() {
             <input
               id="signup-email"
               type="email"
-              placeholder="Enter your email"
+              placeholder="Enter your email (e.g., john@example.com)"
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={handleEmailChange}
               autoComplete="username"
               required
             />
           </div>
+          {fieldErrors.email && <div className="field-error">{fieldErrors.email}</div>}
         </div>
 
         {/* Phone Number */}
@@ -98,12 +213,13 @@ function SignUp() {
             <input
               id="signup-phone"
               type="tel"
-              placeholder="Enter your phone number"
+              placeholder="Enter your phone number (e.g., +27 123 456 7890)"
               value={phoneNumber}
-              onChange={e => setPhoneNumber(e.target.value)}
+              onChange={handlePhoneChange}
               required
             />
           </div>
+          {fieldErrors.phone && <div className="field-error">{fieldErrors.phone}</div>}
         </div>
 
         {/* Password */}
@@ -114,9 +230,9 @@ function SignUp() {
             <input
               id="signup-password"
               type={showPassword ? 'text' : 'password'}
-              placeholder="Create a password"
+              placeholder="Create a password (min. 6 characters)"
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={handlePasswordChange}
               autoComplete="new-password"
               required
             />
@@ -136,6 +252,7 @@ function SignUp() {
               />
             )}
           </div>
+          {fieldErrors.password && <div className="field-error">{fieldErrors.password}</div>}
         </div>
 
         {/* Error Message */}
