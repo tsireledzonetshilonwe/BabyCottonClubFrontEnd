@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createCustomer } from '../api/api';
 import './SignUp.css';
 
 function SignUp() {
@@ -68,18 +69,7 @@ function SignUp() {
         phoneNumber: formData.phoneNumber || null
       };
 
-      const response = await fetch('http://localhost:8080/api/customer/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(customerData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(errorData || 'Registration failed');
-      }
-
-      const customer = await response.json();
+      const customer = await createCustomer(customerData);
 
       if (customer && customer.customerId) {
         // Store customer data

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { loginCustomer } from '../api/api';
 import './Login.css';
 
 function Login() {
@@ -22,17 +23,7 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8080/api/customer/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Login failed');
-      }
-
-      const customer = await response.json();
+      const customer = await loginCustomer(email, password);
 
       if (customer && customer.customerId) {
         localStorage.setItem('customer', JSON.stringify(customer));
