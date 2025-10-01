@@ -1,23 +1,14 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Visibility, VisibilityOff } from '@mui/icons-material';
-
-// API call to login customer
-const loginCustomer = async (email, password) => {
-  const res = await fetch('http://localhost:8080/api/customer/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
-
-  if (!res.ok) throw new Error('Login failed');
-  return res.json();
-};
+import { useNavigate } from 'react-router-dom';
+import './Login.css';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,89 +19,114 @@ function Login() {
     }
 
     setError('');
+    setLoading(true);
 
     try {
-      const customer = await loginCustomer(email, password);
+      const response = await fetch('http://localhost:8080/api/customer/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-      
+      if (!response.ok) {
+        throw new Error('Login failed');
+      }
+
+      const customer = await response.json();
+
       if (customer && customer.customerId) {
-  alert('Login successful!');
-  // Store customer object and customerId for review submission
-  localStorage.setItem('customer', JSON.stringify(customer));
-  localStorage.setItem('customerId', customer.customerId);
-  window.location.href = '/';
+        localStorage.setItem('customer', JSON.stringify(customer));
+        localStorage.setItem('customerId', customer.customerId);
+        navigate('/');
       } else {
         setError('Invalid email or password.');
       }
     } catch (err) {
-      setError('Login failed. Please try again.');
+      setError('Login failed. Please check your credentials.');
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-  <div className="auth-card" style={{ fontFamily: 'Roboto, Arial, sans-serif' }}>
-  <h2 className="auth-title">Login</h2>
-      <form onSubmit={handleSubmit} className="auth-form">
-        <div className="input-group">
-          <label htmlFor="login-email">Email</label>
-          <div className="input-icon">
-            <Mail style={{ marginRight: 8, color: '#888' }} />
-            <input
-              id="login-email"
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="username"
-              required
-            />
+    <div className="login-page">
+      <div className="login-container">
+        <div className="login-card">
+          <div className="login-header">
+            <h1 className="login-title">Welcome Back</h1>
+            <p className="login-subtitle">Sign in to your Baby Cotton Club account</p>
           </div>
-        </div>
 
-        <div className="input-group">
-          <label htmlFor="login-password">Password</label>
-          <div className="input-icon">
-            <Lock style={{ marginRight: 8, color: '#888' }} />
-            <input
-              id="login-password"
-              type={showPassword ? 'text' : 'password'}
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-            />
-            {showPassword ? (
-              <VisibilityOff
-                className="password-toggle"
-                onClick={() => setShowPassword((s) => !s)}
-                title="Hide password"
-                style={{ cursor: 'pointer', marginLeft: 8 }}
-              />
-            ) : (
-              <Visibility
-                className="password-toggle"
-                onClick={() => setShowPassword((s) => !s)}
-                title="Show password"
-                style={{ cursor: 'pointer', marginLeft: 8 }}
-              />
+          <form onSubmit={handleSubmit} className="login-form">
+            <div className="form-group">
+              <label htmlFor="email" className="form-label">Email Address</label>
+              <div className="input-wrapper">
+                <input
+                  id="email"
+                  type="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="form-input"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="password" className="form-label">Password</label>
+              <div className="input-wrapper">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="form-input"
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {error && (
+              <div className="error-message">
+                {error}
+              </div>
             )}
+
+            <button 
+              type="submit" 
+              className="login-button"
+              disabled={loading}
+            >
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
+
+          <div className="login-footer">
+            <p>Don't have an account? 
+              <a href="/signup" className="signup-link">Sign up here</a>
+            </p>
           </div>
         </div>
-
-        {error && <div className="auth-error">{error}</div>}
-
-        <button className="auth-btn" type="submit">
-          Login
-        </button>
-      </form>
-
-      <div className="auth-footer">
-        <span>Don't have an account?</span>{' '}
-        <a href="/signup" style={{ textDecoration: 'underline', fontWeight: 600 }}>
-          Sign Up
-        </a>
       </div>
     </div>
   );
