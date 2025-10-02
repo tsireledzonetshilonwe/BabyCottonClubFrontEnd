@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./screens/Home";
 import AdminLogin from "./screens/AdminLogin";
-import AdminSignUp from "./screens/AdminSignUp";
 import AdminDashboard from "./screens/AdminDashboard";
 import AdminOrders from "./screens/AdminOrders";
 import AdminCustomers from "./screens/AdminCustomers";
@@ -62,9 +61,6 @@ function App() {
                             <Route path="/signup" element={<SignUp />} />
                             {/* Admin Authentication Routes */}
                             <Route path="/admin/login" element={<AdminLogin setIsAdmin={setIsAdmin} />} />
-                            <Route path="/admin/signup" element={<AdminSignUp setIsAdmin={setIsAdmin} />} />
-                            {/* Legacy admin signup route for backward compatibility */}
-                            <Route path="/signup/admin" element={<AdminSignUp setIsAdmin={setIsAdmin} />} />
                             <Route path="/admin-dashboard" element={<AdminDashboard />} />
                             <Route path="/admin/dashboard" element={<AdminDashboard />} />
                             <Route path="/admin/orders" element={<AdminOrders />} />

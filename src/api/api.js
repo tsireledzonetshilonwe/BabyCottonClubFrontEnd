@@ -1,8 +1,10 @@
-
 import axios from "axios";
 
 const api = axios.create({
   baseURL: "http://localhost:8080",
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 // ----------------- PRODUCTS -----------------
@@ -31,6 +33,33 @@ export const deleteProduct = async (productId) => {
   return res.data;
 };
 
+// ----------------- PAYMENTS -----------------
+export const createPayment = async (paymentData) => {
+  const res = await api.post("/api/payment/create", paymentData);
+  return res.data;
+};
+
+// ----------------- CUSTOMERS -----------------
+export const createCustomer = async (customerData) => {
+  const res = await api.post("/api/customer/create", customerData);
+  return res.data;
+};
+
+export const loginCustomer = async (email, password) => {
+  const res = await api.post("/api/customer/login", { email, password });
+  return res.data;
+};
+
+export const fetchAllCustomers = async () => {
+  const res = await api.get("/api/customer/findAll");
+  return res.data;
+};
+
+export const fetchCustomerById = async (customerId) => {
+  const res = await api.get(`/api/customer/read/${customerId}`);
+  return res.data;
+};
+
 // ----------------- ORDERS -----------------
 export const createOrder = async (orderData) => {
   const res = await api.post("/api/order/create", orderData);
@@ -53,7 +82,9 @@ export const fetchOrderDetails = async (orderId) => {
 };
 
 export const updateOrder = async (orderId, orderData) => {
-  const res = await api.put(`/api/order/update/${orderId}`, orderData);
+  // Include the orderId in the data payload since backend expects it in the body
+  const dataWithId = { ...orderData, orderId };
+  const res = await api.put(`/api/order/update`, dataWithId);
   return res.data;
 };
 
@@ -67,6 +98,13 @@ export const createOrderLine = async (orderLineData) => {
   const res = await api.post("/api/orderline/create", orderLineData);
   return res.data;
 };
+
+// ----------------- ADMINS -----------------
+export const loginAdmin = async (email, password) => {
+  const res = await api.post("/api/admin/login", { email, password });
+  return res.data;
+};
+
 // ----------------- ADDRESSES -----------------
 export const createAddress = async (addressData) => {
   const res = await api.post("/address/create", addressData);
@@ -78,74 +116,6 @@ export const fetchAddressById = async (addressId) => {
   return res.data;
 };
 
-// ----------------- PAYMENTS -----------------
-export const createPayment = async (paymentData) => {
-  const res = await api.post("/payment/create", paymentData); // no /api if backend doesn’t have it
-  return res.data;
-};
-
-// ----------------- CUSTOMERS -----------------
-export const createCustomer = async (customerData) => {
-  // Temporary workaround: Since backend POST endpoints have issues,
-  // we'll simulate customer creation by returning mock data
-  // TODO: Fix backend @RequestBody annotations and Jackson configuration
-  
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Create mock customer response
-  const mockCustomer = {
-    customerId: Date.now(), // Use timestamp as mock ID
-    firstName: customerData.firstName,
-    lastName: customerData.lastName,
-    email: customerData.email,
-    phoneNumber: customerData.phoneNumber,
-    // Don't store password in response for security
-  };
-  
-  return mockCustomer;
-};
-
-export const loginCustomer = async (email, password) => {
-  // Temporary workaround: Since backend login endpoint returns 415,
-  // we'll use the existing customer data from the GET endpoint
-  // TODO: Fix backend controller to accept JSON with @RequestBody
-  
-  try {
-    // Get all customers to check credentials
-    const customers = await fetchAllCustomers();
-    
-    // Find customer by email
-    const customer = customers.find(c => c.email === email);
-    
-    if (!customer) {
-      throw new Error('Customer not found');
-    }
-    
-    // In a real backend, password would be hashed and compared securely
-    // For now, we'll check against the known password from the data
-    if (customer.password === password) {
-      // Remove password from response for security
-      const { password: _, ...customerWithoutPassword } = customer;
-      return customerWithoutPassword;
-    } else {
-      throw new Error('Invalid password');
-    }
-  } catch (error) {
-    throw new Error('Login failed: ' + error.message);
-  }
-};
-
-export const fetchAllCustomers = async () => {
-  const res = await api.get("/api/customer/findAll");
-  return res.data;
-};
-
-export const fetchCustomerById = async (customerId) => {
-  const res = await api.get(`/api/customer/read/${customerId}`);
-  return res.data;
-};
-
 // ----------------- REVIEWS -----------------
 export const fetchAllReviews = async () => {
   const res = await api.get("/review/getall"); 
@@ -154,16 +124,6 @@ export const fetchAllReviews = async () => {
 
 export const createReview = async (reviewData) => {
   const res = await api.post("/review/create", reviewData);
-  return res.data;
-};
-// ----------------- ADMINS -----------------
-export const createAdmin = async (adminData) => {
-  const res = await api.post("/api/admin/create", adminData);
-  return res.data;
-};
-
-export const loginAdmin = async (email, password) => {
-  const res = await api.post("/api/admin/login", { email, password });
   return res.data;
 };
 

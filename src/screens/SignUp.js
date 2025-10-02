@@ -72,12 +72,11 @@ function SignUp() {
       const customer = await createCustomer(customerData);
 
       if (customer && customer.customerId) {
-        // Store customer data
-        localStorage.setItem('customer', JSON.stringify(customer));
-        localStorage.setItem('customerId', customer.customerId);
+        console.log('✅ User successfully registered:', customer);
         
-        // Redirect to home page
-        navigate('/');
+        // Don't auto-login, redirect to login page instead
+        alert('Account created successfully! Please log in with your credentials.');
+        navigate('/login');
       } else {
         setError('Registration failed. Please try again.');
       }
