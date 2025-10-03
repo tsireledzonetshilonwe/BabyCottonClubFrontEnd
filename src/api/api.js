@@ -46,7 +46,8 @@ export const createCustomer = async (customerData) => {
 };
 
 export const loginCustomer = async (email, password) => {
-  const res = await api.post("/api/customer/login", { email, password });
+  // Backend controller uses @RequestParam String email, @RequestParam String password
+  const res = await api.post(`/api/customer/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
   return res.data;
 };
 
@@ -101,7 +102,8 @@ export const createOrderLine = async (orderLineData) => {
 
 // ----------------- ADMINS -----------------
 export const loginAdmin = async (email, password) => {
-  const res = await api.post("/api/admin/login", { email, password });
+  // Admin controller might also use @RequestParam now
+  const res = await api.post(`/api/admin/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
   return res.data;
 };
 

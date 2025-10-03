@@ -161,12 +161,10 @@ export default function CartPage() {
             }
             
             const orderData = {
+                customerId: customer.customerId,
                 orderDate: new Date().toISOString().slice(0,10),
                 totalAmount: Math.round(totalAmount * 100) / 100, // Round to 2 decimal places
-                status: "Pending",
-                customer: {
-                    customerId: customer.customerId
-                }
+                status: "Pending"
             };
             
             console.log("Order data being sent:", orderData);

@@ -59,8 +59,21 @@ const AdminOrders = () => {
     try {
       const order = orders.find(o => o.orderId === orderId || o.id === orderId);
       if (order) {
-        const updatedOrder = { ...order, status: newStatus };
-        await updateOrder(orderId, updatedOrder);
+        // Check if order has customer data
+        if (!order.customer || !order.customer.customerId) {
+          alert("Cannot update order: No customer associated with this order. Please assign a customer first.");
+          return;
+        }
+        
+        // Convert to CustomerOrderRequest DTO format that backend expects
+        const updateRequest = {
+          customerId: order.customer.customerId,
+          orderDate: order.orderDate,
+          totalAmount: order.totalAmount,
+          status: newStatus,
+          orderId: orderId
+        };
+        await updateOrder(orderId, updateRequest);
         
         // Update local state
         setOrders(prevOrders => 
