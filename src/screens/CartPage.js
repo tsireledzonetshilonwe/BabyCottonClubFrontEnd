@@ -200,8 +200,15 @@ export default function CartPage() {
             console.log("✅ Cart cleared");
             
             // 6. Save order ID and navigate to shipping
-            localStorage.setItem("orderId", order.orderId);
-            console.log("✅ Order ID saved:", order.orderId);
+            // Only persist a valid numeric orderId to localStorage
+            const oid = order && (order.orderId ?? order.id ?? order.orderId);
+            const oidNum = Number(oid);
+            if (Number.isFinite(oidNum) && oidNum > 0) {
+                localStorage.setItem("orderId", String(oidNum));
+                console.log("✅ Order ID saved:", oidNum);
+            } else {
+                console.warn("Order created but no valid orderId returned, skipping localStorage save", order);
+            }
             
             alert("Order created successfully!");
             navigate("/shipping");
@@ -211,6 +218,14 @@ export default function CartPage() {
             alert("Failed to create order. Please try again.");
         }
     }, [cartItems, getTotalPrice, clearCart, navigate]);
+
+    const formatCurrency = useCallback((amount) => {
+        if (amount === null || amount === undefined || isNaN(amount)) return 'R0.00';
+        return `R${Number(amount).toFixed(2)}`;
+    }, []);
+
+    // (No extra controls - keep the summary simple)
+
 
     if (cartItems.length === 0) {
         return (
@@ -248,46 +263,48 @@ export default function CartPage() {
 
                 {/* Order Summary */}
                 <div className="lg:col-span-1">
-                    <Card>
+                    <Card className="order-summary-card">
                         <CardHeader>
                             <CardTitle>Order Summary</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="flex justify-between">
                                 <span>Subtotal ({getTotalItems} items)</span>
-                                <span>R{getTotalPrice.toFixed(2)}</span>
+                                <span>{formatCurrency(getTotalPrice)}</span>
                             </div>
                             
                             <div className="flex justify-between">
                                 <span>Shipping</span>
-                                <span>{shipping === 0 ? 'FREE' : `R${shipping.toFixed(2)}`}</span>
+                                <span>{shipping === 0 ? 'FREE' : formatCurrency(shipping)}</span>
                             </div>
                             
                             <div className="flex justify-between">
                                 <span>VAT (15%)</span>
-                                <span>R{tax.toFixed(2)}</span>
+                                <span>{formatCurrency(tax)}</span>
                             </div>
                             
                             <Separator />
                             
                             <div className="flex justify-between font-semibold text-lg">
                                 <span>Total</span>
-                                <span>R{total.toFixed(2)}</span>
+                                <span>{formatCurrency(total)}</span>
                             </div>
                             
                             {shipping > 0 && (
                                 <p className="text-sm text-muted-foreground">
-                                    Add R{(500 - getTotalPrice).toFixed(2)} more for free shipping!
+                                    Add {formatCurrency(500 - getTotalPrice)} more for free shipping!
                                 </p>
                             )}
                             
-                            <Button onClick={handleCheckout} className="w-full" size="lg">
-                                Proceed to Checkout
-                            </Button>
-                            
-                            <Button variant="outline" asChild className="w-full">
-                                <Link to="/products">Continue Shopping</Link>
-                            </Button>
+                            <div className="space-y-2">
+                                <Button onClick={handleCheckout} className="w-full" size="lg">
+                                    Proceed to Checkout
+                                </Button>
+
+                                <Button variant="outline" asChild className="w-full">
+                                    <Link to="/products">Continue Shopping</Link>
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
@@ -299,14 +316,16 @@ export default function CartPage() {
 // Helper function for saving cart to backend
 const saveCartToBackend = async (cartItems) => {
     try {
-        const customer = JSON.parse(localStorage.getItem("customer"));
-        if (!customer || !customer.customerId) {
-            console.log("No customer found, skipping cart save");
+        const customerRaw = localStorage.getItem("customer");
+        let customer = null;
+        try { customer = customerRaw ? JSON.parse(customerRaw) : null; } catch (e) { customer = null; }
+        if (!customer || !Number.isFinite(Number(customer.customerId)) || Number(customer.customerId) <= 0) {
+            console.log("No valid customer found, skipping cart save");
             return;
         }
         
         // Fix large customerId issue
-        if (customer.customerId > 2147483647) {
+        if (Number(customer.customerId) > 2147483647) {
             console.warn("Large customerId detected in cart save, using ID: 1");
             customer.customerId = 1;
         }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../api/api";
+import api, { fetchProducts, fetchOrderDetails } from "../api/api";
 import "./Orders.css";
 
 const formatCurrency = (amount) =>
@@ -32,6 +32,7 @@ function Orders() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [expandedOrderId, setExpandedOrderId] = useState(null);
+  const [loadingOrderLines, setLoadingOrderLines] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
 
@@ -59,13 +60,51 @@ function Orders() {
       // Approach: Get all orders and filter by customer ID or email
       const res = await api.get("/api/order/getall");
       console.log("All orders fetched for filtering:", res.data);
-      
-      const customerOrders = res.data.filter(order => {
+
+      let customerOrders = res.data.filter(order => {
         const matchesId = customer.customerId && order.customer?.customerId === customer.customerId;
         const matchesEmail = customer.email && order.customer?.email === customer.email;
         return matchesId || matchesEmail;
       });
-      
+
+      // Try to enrich order lines with product metadata (name, image, sku)
+      try {
+        const products = await fetchProducts();
+        const productMap = new Map();
+        products.forEach(p => {
+          const id = p.productId ?? p.id ?? p.productId;
+          if (id !== undefined && id !== null) productMap.set(String(id), p);
+        });
+
+        customerOrders = customerOrders.map(order => {
+          if (Array.isArray(order.orderLines) && order.orderLines.length > 0) {
+            const enriched = order.orderLines.map(line => {
+              // attempt to find product id on the line
+              const pid = line.product?.productId ?? line.product?.id ?? line.productId ?? line.product_id ?? null;
+              const prod = pid ? productMap.get(String(pid)) : null;
+              // prefer backend product object if it already contains name; otherwise use product lookup
+              const name = line.product?.name ?? line.productName ?? prod?.productName ?? prod?.name ?? 'Product';
+              const image = line.product?.imageUrl ?? prod?.imageUrl ?? prod?.image ?? null;
+              const sku = line.product?.sku ?? prod?.sku ?? '';
+
+              return {
+                ...line,
+                product: {
+                  ...(line.product || {}),
+                  name,
+                  imageUrl: image,
+                  sku
+                }
+              };
+            });
+            return { ...order, orderLines: enriched };
+          }
+          return order;
+        });
+      } catch (e) {
+        console.warn('Failed to enrich orders with product info, continuing with raw orders', e);
+      }
+
       console.log("Filtered customer orders:", customerOrders);
       setOrders(customerOrders);
       setLoading(false);
@@ -81,6 +120,70 @@ function Orders() {
 
   const handleManualRefresh = () => {
     fetchCustomerOrders(true);
+  };
+
+  const handleToggleDetails = async (order) => {
+    // If already expanded, just collapse
+    if (expandedOrderId === order.orderId) {
+      setExpandedOrderId(null);
+      return;
+    }
+
+    // If order already has lines, just expand
+    if (Array.isArray(order.orderLines) && order.orderLines.length > 0) {
+      setExpandedOrderId(order.orderId);
+      return;
+    }
+
+    // Otherwise, fetch order lines from backend and enrich with product info
+    try {
+      setLoadingOrderLines(order.orderId);
+
+      // Use the dedicated order read endpoint which now returns DTOs with orderLines
+      const data = await fetchOrderDetails(order.orderId);
+      let lines = Array.isArray(data?.orderLines) ? data.orderLines : [];
+
+      // If product info is missing on lines, enrich using products catalog
+      const needEnrich = lines.some(line => !line.product || (!line.product.productName && !line.product.name));
+      if (needEnrich) {
+        try {
+          const products = await fetchProducts();
+          const productMap = new Map();
+          products.forEach(p => {
+            const id = p.productId ?? p.id;
+            if (id !== undefined && id !== null) productMap.set(String(id), p);
+          });
+
+          lines = lines.map(line => {
+            const pid = line.product?.productId ?? line.productId ?? line.product?.id ?? null;
+            const prod = pid ? productMap.get(String(pid)) : null;
+            const name = line.product?.productName ?? line.product?.name ?? prod?.productName ?? prod?.name ?? 'Product';
+            const image = line.product?.imageUrl ?? prod?.imageUrl ?? prod?.image ?? null;
+            const sku = line.product?.sku ?? prod?.sku ?? '';
+
+            return {
+              ...line,
+              product: {
+                ...(line.product || {}),
+                productName: name,
+                imageUrl: image,
+                sku,
+              }
+            };
+          });
+        } catch (e) {
+          console.warn('Failed to enrich order lines with product info', e);
+        }
+      }
+
+      // Update only the matching order in state with the fetched/enriched lines
+      setOrders(prev => prev.map(o => (o.orderId === order.orderId ? { ...o, orderLines: lines } : o)));
+      setExpandedOrderId(order.orderId);
+    } catch (err) {
+      console.error('Failed to fetch order lines for order', order.orderId, err);
+    } finally {
+      setLoadingOrderLines(null);
+    }
   };
 
   useEffect(() => {
@@ -218,9 +321,17 @@ function Orders() {
                 <div className="order-actions">
                   <button
                     className="btn-secondary"
-                    onClick={() => setExpandedOrderId(expandedOrderId === order.orderId ? null : order.orderId)}
+                    onClick={() => handleToggleDetails(order)}
+                    disabled={loadingOrderLines !== null && loadingOrderLines !== order.orderId}
+                    style={{ position: 'relative' }}
                   >
-                    {expandedOrderId === order.orderId ? "Hide Details" : "View Details"}
+                    {loadingOrderLines === order.orderId ? (
+                      <>
+                        <span style={{ marginRight: 8 }}>Loading...</span>
+                      </>
+                    ) : (
+                      expandedOrderId === order.orderId ? "Hide Details" : "View Details"
+                    )}
                   </button>
                   
                   {(order.status === "Shipped" || order.status === "Processing") && (
