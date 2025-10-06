@@ -60,6 +60,10 @@ export const fetchCustomerById = async (customerId) => {
   const res = await api.get(`/api/customer/read/${customerId}`);
   return res.data;
 };
+export const updateCustomer = async (customerData) => {
+  const res = await api.put("/api/customer/update", customerData);
+  return res.data;
+};
 
 // ----------------- ORDERS -----------------
 export const createOrder = async (orderData) => {
@@ -72,9 +76,9 @@ export const fetchAllOrders = async () => {
   return res.data;
 };
 
-export const fetchOrdersByCustomer = async (email) => {
-  const res = await api.get(`/api/orders/customer/${encodeURIComponent(email)}`);
-  return res.data;
+export const fetchOrdersByCustomerId = async (customerId) => {
+  const res = await api.get("/api/order/getall");
+  return res.data.filter(order => order.customer?.customerId === customerId);
 };
 
 export const fetchOrderDetails = async (orderId) => {
@@ -114,7 +118,7 @@ export const createAddress = async (addressData) => {
 };
 
 export const fetchAddressById = async (addressId) => {
-  const res = await api.get(`/address/${addressId}`);
+  const res = await api.get(`/address/read/${addressId}`);
   return res.data;
 };
 
