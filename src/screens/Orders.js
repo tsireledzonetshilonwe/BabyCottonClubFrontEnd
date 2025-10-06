@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api, { fetchProducts, fetchOrderDetails } from "../api/api";
+import api from "../api/api";
 import "./Orders.css";
 
 const formatCurrency = (amount) =>
@@ -24,7 +24,7 @@ const statusColors = {
   Shipped: { bg: "#d1ecf1", color: "#0c5460", border: "#17a2b8" },
   Delivered: { bg: "#d4edda", color: "#155724", border: "#28a745" },
   Completed: { bg: "#d4edda", color: "#155724", border: "#28a745" },
-  Cancelled: { bg: "#f8d7da", color: "#721c24", border: "#dc3545" }
+  Cancelled: { bg: "#f8d7da", color: "#721c24", border: "#dc3545" },
 };
 
 function Orders() {
@@ -32,86 +32,32 @@ function Orders() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [expandedOrderId, setExpandedOrderId] = useState(null);
-  const [loadingOrderLines, setLoadingOrderLines] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
 
-  // Extract fetchCustomerOrders function so it can be reused
   const fetchCustomerOrders = async (isManualRefresh = false) => {
-    if (isManualRefresh) {
-      setRefreshing(true);
-    }
-    
+    if (isManualRefresh) setRefreshing(true);
+
     try {
-      // Get the logged-in customer
+      // Get logged-in customer
       const customer = JSON.parse(localStorage.getItem("customer") || "{}");
-      
-      console.log("Customer from localStorage:", customer); // Debug log
-      
-      if (!customer.customerId && !customer.email) {
+      if (!customer.customerId) {
         setError("Please log in to view your orders.");
         setLoading(false);
         return;
       }
 
-      // Skip the API endpoints that don't work and go straight to fallback
-      console.log("Using fallback approach - getting all orders and filtering...");
-
-      // Approach: Get all orders and filter by customer ID or email
+      // Fetch all orders and filter by customerId
       const res = await api.get("/api/order/getall");
-      console.log("All orders fetched for filtering:", res.data);
+      const customerOrders = res.data.filter(
+        (order) => order.customer?.customerId === customer.customerId
+      );
 
-      let customerOrders = res.data.filter(order => {
-        const matchesId = customer.customerId && order.customer?.customerId === customer.customerId;
-        const matchesEmail = customer.email && order.customer?.email === customer.email;
-        return matchesId || matchesEmail;
-      });
-
-      // Try to enrich order lines with product metadata (name, image, sku)
-      try {
-        const products = await fetchProducts();
-        const productMap = new Map();
-        products.forEach(p => {
-          const id = p.productId ?? p.id ?? p.productId;
-          if (id !== undefined && id !== null) productMap.set(String(id), p);
-        });
-
-        customerOrders = customerOrders.map(order => {
-          if (Array.isArray(order.orderLines) && order.orderLines.length > 0) {
-            const enriched = order.orderLines.map(line => {
-              // attempt to find product id on the line
-              const pid = line.product?.productId ?? line.product?.id ?? line.productId ?? line.product_id ?? null;
-              const prod = pid ? productMap.get(String(pid)) : null;
-              // prefer backend product object if it already contains name; otherwise use product lookup
-              const name = line.product?.name ?? line.productName ?? prod?.productName ?? prod?.name ?? 'Product';
-              const image = line.product?.imageUrl ?? prod?.imageUrl ?? prod?.image ?? null;
-              const sku = line.product?.sku ?? prod?.sku ?? '';
-
-              return {
-                ...line,
-                product: {
-                  ...(line.product || {}),
-                  name,
-                  imageUrl: image,
-                  sku
-                }
-              };
-            });
-            return { ...order, orderLines: enriched };
-          }
-          return order;
-        });
-      } catch (e) {
-        console.warn('Failed to enrich orders with product info, continuing with raw orders', e);
-      }
-
-      console.log("Filtered customer orders:", customerOrders);
       setOrders(customerOrders);
       setLoading(false);
       if (isManualRefresh) setRefreshing(false);
-
-    } catch (fallbackErr) {
-      console.error("All order fetching approaches failed:", fallbackErr);
+    } catch (err) {
+      console.error("Failed to fetch orders:", err);
       setError("Failed to load your orders. Please try again later.");
       setLoading(false);
       if (isManualRefresh) setRefreshing(false);
@@ -122,92 +68,21 @@ function Orders() {
     fetchCustomerOrders(true);
   };
 
-  const handleToggleDetails = async (order) => {
-    // If already expanded, just collapse
-    if (expandedOrderId === order.orderId) {
-      setExpandedOrderId(null);
-      return;
-    }
-
-    // If order already has lines, just expand
-    if (Array.isArray(order.orderLines) && order.orderLines.length > 0) {
-      setExpandedOrderId(order.orderId);
-      return;
-    }
-
-    // Otherwise, fetch order lines from backend and enrich with product info
-    try {
-      setLoadingOrderLines(order.orderId);
-
-      // Use the dedicated order read endpoint which now returns DTOs with orderLines
-      const data = await fetchOrderDetails(order.orderId);
-      let lines = Array.isArray(data?.orderLines) ? data.orderLines : [];
-
-      // If product info is missing on lines, enrich using products catalog
-      const needEnrich = lines.some(line => !line.product || (!line.product.productName && !line.product.name));
-      if (needEnrich) {
-        try {
-          const products = await fetchProducts();
-          const productMap = new Map();
-          products.forEach(p => {
-            const id = p.productId ?? p.id;
-            if (id !== undefined && id !== null) productMap.set(String(id), p);
-          });
-
-          lines = lines.map(line => {
-            const pid = line.product?.productId ?? line.productId ?? line.product?.id ?? null;
-            const prod = pid ? productMap.get(String(pid)) : null;
-            const name = line.product?.productName ?? line.product?.name ?? prod?.productName ?? prod?.name ?? 'Product';
-            const image = line.product?.imageUrl ?? prod?.imageUrl ?? prod?.image ?? null;
-            const sku = line.product?.sku ?? prod?.sku ?? '';
-
-            return {
-              ...line,
-              product: {
-                ...(line.product || {}),
-                productName: name,
-                imageUrl: image,
-                sku,
-              }
-            };
-          });
-        } catch (e) {
-          console.warn('Failed to enrich order lines with product info', e);
-        }
-      }
-
-      // Update only the matching order in state with the fetched/enriched lines
-      setOrders(prev => prev.map(o => (o.orderId === order.orderId ? { ...o, orderLines: lines } : o)));
-      setExpandedOrderId(order.orderId);
-    } catch (err) {
-      console.error('Failed to fetch order lines for order', order.orderId, err);
-    } finally {
-      setLoadingOrderLines(null);
-    }
-  };
-
   useEffect(() => {
-    // Initial load
     fetchCustomerOrders();
 
-    // Set up polling to check for order updates every 30 seconds
     const pollInterval = setInterval(() => {
-      console.log("Polling for order updates...");
       fetchCustomerOrders();
-    }, 30000); // 30 seconds
+    }, 30000);
 
-    // Set up focus listener to refresh when user returns to tab
     const handleFocus = () => {
-      console.log("Tab focused, refreshing orders...");
       fetchCustomerOrders();
     };
-    
-    window.addEventListener('focus', handleFocus);
+    window.addEventListener("focus", handleFocus);
 
-    // Cleanup function
     return () => {
       clearInterval(pollInterval);
-      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener("focus", handleFocus);
     };
   }, []);
 
@@ -219,35 +94,37 @@ function Orders() {
             <h1 className="orders-title">My Orders</h1>
             <p className="orders-subtitle">Track and manage your orders</p>
           </div>
-          <button 
+          <button
             className="refresh-button"
             onClick={handleManualRefresh}
             disabled={refreshing || loading}
             style={{
-              padding: '10px 20px',
-              backgroundColor: '#ff6b9d',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: refreshing || loading ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
-              fontWeight: '500',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
+              padding: "10px 20px",
+              backgroundColor: "#ff6b9d",
+              color: "white",
+              border: "none",
+              borderRadius: "5px",
+              cursor: refreshing || loading ? "not-allowed" : "pointer",
+              fontSize: "14px",
+              fontWeight: "500",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
               opacity: refreshing || loading ? 0.7 : 1,
-              transition: 'all 0.2s ease'
+              transition: "all 0.2s ease",
             }}
           >
             {refreshing ? (
               <>
-                <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>🔄</span>
+                <span
+                  style={{ animation: "spin 1s linear infinite", display: "inline-block" }}
+                >
+                  🔄
+                </span>
                 Refreshing...
               </>
             ) : (
-              <>
-                🔄 Refresh
-              </>
+              <>🔄 Refresh</>
             )}
           </button>
         </div>
@@ -263,10 +140,7 @@ function Orders() {
             <h3>Oops! Something went wrong</h3>
             <p>{error}</p>
             {error.includes("log in") && (
-              <button 
-                className="btn-primary" 
-                onClick={() => navigate("/login")}
-              >
+              <button className="btn-primary" onClick={() => navigate("/login")}>
                 Go to Login
               </button>
             )}
@@ -282,7 +156,7 @@ function Orders() {
           </div>
         ) : (
           <div className="orders-list">
-            {orders.map(order => (
+            {orders.map((order) => (
               <div className="order-card" key={order.orderId}>
                 <div className="order-header">
                   <div className="order-info">
@@ -290,12 +164,12 @@ function Orders() {
                     <p className="order-date">Placed on {formatDate(order.orderDate)}</p>
                   </div>
                   <div className="order-status">
-                    <span 
+                    <span
                       className="status-badge"
                       style={{
                         backgroundColor: statusColors[order.status]?.bg || statusColors.Pending.bg,
                         color: statusColors[order.status]?.color || statusColors.Pending.color,
-                        borderColor: statusColors[order.status]?.border || statusColors.Pending.border
+                        borderColor: statusColors[order.status]?.border || statusColors.Pending.border,
                       }}
                     >
                       {order.status || "Pending"}
@@ -308,11 +182,11 @@ function Orders() {
                     <span className="total-label">Total:</span>
                     <span className="total-amount">{formatCurrency(order.totalAmount)}</span>
                   </div>
-                  
+
                   {order.orderLines && order.orderLines.length > 0 && (
                     <div className="order-items-preview">
                       <span className="items-count">
-                        {order.orderLines.length} item{order.orderLines.length !== 1 ? 's' : ''}
+                        {order.orderLines.length} item{order.orderLines.length !== 1 ? "s" : ""}
                       </span>
                     </div>
                   )}
@@ -321,93 +195,17 @@ function Orders() {
                 <div className="order-actions">
                   <button
                     className="btn-secondary"
-                    onClick={() => handleToggleDetails(order)}
-                    disabled={loadingOrderLines !== null && loadingOrderLines !== order.orderId}
-                    style={{ position: 'relative' }}
+                    onClick={() =>
+                      setExpandedOrderId(expandedOrderId === order.orderId ? null : order.orderId)
+                    }
                   >
-                    {loadingOrderLines === order.orderId ? (
-                      <>
-                        <span style={{ marginRight: 8 }}>Loading...</span>
-                      </>
-                    ) : (
-                      expandedOrderId === order.orderId ? "Hide Details" : "View Details"
-                    )}
+                    {expandedOrderId === order.orderId ? "Hide Details" : "View Details"}
                   </button>
-                  
+
                   {(order.status === "Shipped" || order.status === "Processing") && (
-                    <button className="btn-outline">
-                      Track Order
-                    </button>
+                    <button className="btn-outline">Track Order</button>
                   )}
                 </div>
-
-                {expandedOrderId === order.orderId && (
-                  <div className="order-details">
-                    <div className="details-grid">
-                      <div className="detail-item">
-                        <span className="detail-label">Order ID:</span>
-                        <span className="detail-value">{order.orderId}</span>
-                      </div>
-                      
-                      <div className="detail-item">
-                        <span className="detail-label">Date:</span>
-                        <span className="detail-value">{formatDate(order.orderDate)}</span>
-                      </div>
-                      
-                      <div className="detail-item">
-                        <span className="detail-label">Status:</span>
-                        <span 
-                          className="detail-value status-text"
-                          style={{ color: statusColors[order.status]?.color || statusColors.Pending.color }}
-                        >
-                          {order.status || "Pending"}
-                        </span>
-                      </div>
-                      
-                      <div className="detail-item">
-                        <span className="detail-label">Total:</span>
-                        <span className="detail-value total-text">{formatCurrency(order.totalAmount)}</span>
-                      </div>
-
-                      {order.shipment && (
-                        <>
-                          <div className="detail-item">
-                            <span className="detail-label">Shipping Method:</span>
-                            <span className="detail-value">{order.shipment.shipmentMethod || "Standard"}</span>
-                          </div>
-                          
-                          <div className="detail-item">
-                            <span className="detail-label">Tracking Number:</span>
-                            <span className="detail-value">{order.shipment.trackingNumber || "Not available"}</span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-
-                    {order.orderLines && order.orderLines.length > 0 && (
-                      <div className="order-items">
-                        <h4 className="items-title">Order Items</h4>
-                        <div className="items-list">
-                          {order.orderLines.map(line => (
-                            <div key={line.orderLineId} className="item-row">
-                              <div className="item-info">
-                                <h5 className="item-name">{line.product?.name || line.product?.productName || "Product"}</h5>
-                                {line.product?.sku && (
-                                  <p className="item-sku">SKU: {line.product.sku}</p>
-                                )}
-                              </div>
-                              <div className="item-details">
-                                <span className="item-quantity">Qty: {line.quantity}</span>
-                                <span className="item-price">{formatCurrency(line.unitPrice)}</span>
-                                <span className="item-subtotal">{formatCurrency(line.subTotal)}</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             ))}
           </div>
@@ -418,5 +216,3 @@ function Orders() {
 }
 
 export default Orders;
-
-
