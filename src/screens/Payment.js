@@ -3,35 +3,75 @@ import { createPayment } from "../api/api";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import "./Payment.css";
-import { getStoredCustomer } from "../utils/customer";
 
 export default function Payment() {
     const { cartItems, clearCart } = useCart();
     const navigate = useNavigate();
     const location = useLocation();
 
-    const [paymentMethod, setPaymentMethod] = useState("");
+    const [paymentMethod, setPaymentMethod] = useState("Cash on Delivery"); // Set default to Cash on Delivery
     const [shippingInfo, setShippingInfo] = useState(location.state?.address || null);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [totalAmount, setTotalAmount] = useState(0);
 
     useEffect(() => {
         console.log("Payment component mounted");
         console.log("Shipping info:", shippingInfo);
         console.log("Cart items:", cartItems);
-        
+
         const orderId = localStorage.getItem("orderId");
         console.log("Order ID in localStorage:", orderId);
-        
+
         if (!shippingInfo) {
             console.log("No shipping info, redirecting to shipping...");
             navigate("/shipping");
+            return;
         }
-    }, [shippingInfo, navigate]);
 
-    const totalAmount = cartItems.reduce((sum, item) => {
-        const price = parseFloat(item.price) || 0;
-        return sum + price * (item.quantity || 1);
-    }, 0);
+        // Calculate total amount properly
+        calculateTotalAmount();
+    }, [shippingInfo, navigate, cartItems]);
+
+    const calculateTotalAmount = () => {
+        // Try multiple sources for the total amount in order of priority
+        const storedOrderTotal = localStorage.getItem("orderTotal");
+        const shippingStateTotal = location.state?.totalAmount;
+
+        console.log("Available total sources:");
+        console.log(" - Stored order total:", storedOrderTotal);
+        console.log(" - Shipping state total:", shippingStateTotal);
+        console.log(" - Cart items count:", cartItems.length);
+
+        if (storedOrderTotal) {
+            console.log("Using stored order total:", storedOrderTotal);
+            setTotalAmount(parseFloat(storedOrderTotal));
+        } else if (shippingStateTotal) {
+            console.log("Using shipping state total:", shippingStateTotal);
+            setTotalAmount(parseFloat(shippingStateTotal));
+        } else if (cartItems.length > 0) {
+            // Calculate from cart items as fallback
+            const subtotal = cartItems.reduce((sum, item) => {
+                const price = parseFloat(item.price) || 0;
+                const quantity = item.quantity || 1;
+                return sum + (price * quantity);
+            }, 0);
+
+            // Calculate shipping and tax to match cart page logic
+            const shipping = subtotal > 500 ? 0 : 150;
+            const tax = subtotal * 0.15;
+            const calculatedTotal = subtotal + shipping + tax;
+
+            console.log("Calculated total from cart:", calculatedTotal);
+            setTotalAmount(calculatedTotal);
+
+            // Also store it for future reference
+            localStorage.setItem("orderTotal", calculatedTotal.toFixed(2));
+        } else {
+            // Default fallback
+            console.log("Using default amount calculation");
+            setTotalAmount(0);
+        }
+    };
 
     const handlePayment = async (e) => {
         e.preventDefault();
@@ -40,86 +80,78 @@ export default function Payment() {
             return;
         }
 
-        // Check for existing orderId first
-        let orderId = localStorage.getItem("orderId");
-        
-        // If no orderId exists but we have cart items, try to create an order on the fly
-        if (!orderId && cartItems.length > 0) {
-            console.log("No orderId found, creating order during payment...");
-            try {
-                const customer = getStoredCustomer();
-                if (!customer || !customer.customerId) {
-                    alert("Please log in to complete your order.");
-                    navigate("/login");
-                    return;
-                }
+        setIsProcessing(true);
 
-                // Create a simple order for payment
-                const orderData = {
-                    orderDate: new Date().toISOString().slice(0,10),
-                    totalAmount: totalAmount,
-                    customer: { customerId: customer.customerId }
-                };
+        try {
+            // Check for existing orderId
+            let orderId = localStorage.getItem("orderId");
 
-                const response = await fetch('http://localhost:8080/api/order/create', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(orderData)
-                });
-
-                if (response.ok) {
-                    const order = await response.json();
-                    orderId = order.orderId;
-                    localStorage.setItem("orderId", orderId);
-                    console.log("Order created during payment:", orderId);
-                } else {
-                    throw new Error("Failed to create order");
-                }
-            } catch (err) {
-                console.error("Failed to create order during payment:", err);
-                alert("Unable to process order. Please try starting from your cart.");
+            // Validate we have an order ID
+            if (!orderId) {
+                console.error("No order ID found for payment");
+                alert("No order found. Please complete the checkout process from your cart.");
                 navigate("/cart");
                 return;
             }
-        }
 
-        // If still no orderId and no cart items, redirect to cart
-        if (!orderId) {
-            console.log("No order ID and no cart items, redirecting to cart...");
-            alert("No order found. Please add items to your cart first.");
-            navigate("/cart");
-            return;
-        }
-
-        console.log("Processing payment for order:", orderId);
-
-        try {
-            // Simulate payment processing
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            console.log("Processing payment for order:", orderId);
+            console.log("Payment amount:", totalAmount);
+            console.log("Payment method:", paymentMethod);
 
             // Create payment record
             const today = new Date().toISOString().split("T")[0];
             const paymentData = {
                 paymentDate: today,
-                paymentMethod,
-                customerOrder: { orderId: Number(orderId) },
+                paymentMethod: paymentMethod,
+                amount: totalAmount, // Make sure to include the amount
+                status: "Completed", // Add status field
+                customerOrder: {
+                    orderId: parseInt(orderId)
+                },
             };
-            await createPayment(paymentData);
 
-            alert(`Payment successful with ${paymentMethod}!`);
+            console.log("Payment data being sent:", paymentData);
+
+            // Create payment - FIXED: Using correct endpoint from your API
+            const createdPayment = await createPayment(paymentData);
+            console.log("Payment created successfully:", createdPayment);
+
+            // Clear cart and local storage after successful payment
             clearCart();
             localStorage.removeItem("orderId");
-            navigate("/");
+            localStorage.removeItem("orderTotal");
+
+            alert(`Payment of R${totalAmount.toFixed(2)} successful with ${paymentMethod}!`);
+            navigate("/order-confirmation", {
+                state: {
+                    orderId: orderId,
+                    paymentMethod: paymentMethod,
+                    amount: totalAmount
+                }
+            });
+
         } catch (err) {
             console.error("Payment processing failed:", err);
-            alert("Payment failed. Please try again.");
+            console.error("Error details:", err.response?.data || err.message);
+
+            let errorMessage = "Payment failed. Please try again.";
+
+            if (err.response?.status === 404) {
+                errorMessage = "Order not found. Please restart checkout from your cart.";
+            } else if (err.response?.status === 400) {
+                errorMessage = "Invalid payment data. Please check your order details.";
+            }
+
+            alert(errorMessage);
+        } finally {
+            setIsProcessing(false);
         }
     };
 
     // Check if we have either cart items OR an existing order
     const hasCartItems = cartItems.length > 0;
     const hasExistingOrder = localStorage.getItem("orderId");
-    
+
     if (!hasCartItems && !hasExistingOrder) {
         return (
             <div style={{ textAlign: "center", marginTop: "2rem" }}>
@@ -134,24 +166,12 @@ export default function Payment() {
 
     return (
         <div className="payment-container">
-            {/* Progress Bar (use same structure as Shipping/Cart) */}
-            <div className="shipping-progress">
-                <div className="progress-step completed">
-                    <div className="step-icon">1</div>
-                    <span>Cart</span>
-                </div>
-                <div className="progress-step completed">
-                    <div className="step-icon">2</div>
-                    <span>Shipping</span>
-                </div>
-                <div className="progress-step active">
-                    <div className="step-icon">3</div>
-                    <span>Payment</span>
-                </div>
-                <div className="progress-step">
-                    <div className="step-icon">4</div>
-                    <span>Confirmation</span>
-                </div>
+            {/* Progress Bar */}
+            <div className="payment-progress">
+                <div className="step completed">Cart</div>
+                <div className="step completed">Shipping</div>
+                <div className="step active">Payment</div>
+                <div className="step">Confirmation</div>
             </div>
 
             <div className="payment-content">
@@ -178,18 +198,19 @@ export default function Payment() {
                                     <li key={item.id} className="payment-summary-item">
                                         <span className="payment-summary-name">{item.name}</span>
                                         <span className="payment-summary-qty">× {item.quantity}</span>
-                                        <span className="payment-summary-price">R {item.price}</span>
+                                        <span className="payment-summary-price">R {parseFloat(item.price).toFixed(2)}</span>
                                     </li>
                                 ))}
                             </ul>
                             <div className="payment-summary-total">
-                                <strong>Total:</strong> R {totalAmount.toFixed(2)}
+                                <strong>Total: R {totalAmount.toFixed(2)}</strong>
                             </div>
                         </>
                     ) : (
                         <div style={{ textAlign: "center", padding: "1rem" }}>
-                            <p>Order details will be processed based on your previous checkout.</p>
-                            <p><strong>Order ID:</strong> {localStorage.getItem("orderId") || "Processing..."}</p>
+                            <p>Processing your order...</p>
+                            <p><strong>Order ID:</strong> {localStorage.getItem("orderId")}</p>
+                            <p><strong>Amount to pay:</strong> R {totalAmount.toFixed(2)}</p>
                         </div>
                     )}
                 </section>
@@ -205,43 +226,26 @@ export default function Payment() {
                                 onChange={(e) => setPaymentMethod(e.target.value)}
                                 className="payment-method-select"
                                 required
+                                disabled={isProcessing}
                             >
-                                <option value="">Select a method</option>
-                                <option value="Credit Card">Credit Card</option>
-                                <option value="EFT">EFT</option>
                                 <option value="Cash on Delivery">Cash on Delivery</option>
                             </select>
                         </div>
 
-                        {/* Simulated Credit Card */}
-                        {paymentMethod === "Credit Card" && (
-                            <div className="payment-simulation">
-                                <p>
-                                    Click confirm to pay <strong>R {totalAmount.toFixed(2)}</strong> with Credit Card (simulated).
-                                </p>
-                                <p>In a real system, you would be redirected to a secure payment gateway like Stripe.</p>
-                            </div>
-                        )}
-
-                        {/* EFT Info */}
-                        {paymentMethod === "EFT" && (
-                            <div className="eft-info">
-                                <p>
-                                    Please transfer <strong>R {totalAmount.toFixed(2)}</strong> to{" "}
-                                    <strong>FNB Account: 1234567890</strong> using your Order ID as reference.
-                                </p>
-                            </div>
-                        )}
-
-                        {/* Cash on Delivery */}
+                        {/* Cash on Delivery Info */}
                         {paymentMethod === "Cash on Delivery" && (
                             <div className="cod-info">
-                                <p>You will pay <strong>R {totalAmount.toFixed(2)}</strong> to the driver upon delivery.</p>
+                                <p><strong>You will pay R {totalAmount.toFixed(2)} to the driver upon delivery.</strong></p>
+                                <p>Please have the exact amount ready for the delivery driver.</p>
                             </div>
                         )}
 
-                        <button className="payment-confirm-btn" type="submit" disabled={isProcessing}>
-                            {isProcessing ? "Processing..." : "Confirm Payment"}
+                        <button
+                            className="payment-confirm-btn"
+                            type="submit"
+                            disabled={isProcessing || !paymentMethod}
+                        >
+                            {isProcessing ? "Processing Payment..." : `Confirm Cash on Delivery Order`}
                         </button>
                     </form>
                 </section>
@@ -249,4 +253,3 @@ export default function Payment() {
         </div>
     );
 }
-
