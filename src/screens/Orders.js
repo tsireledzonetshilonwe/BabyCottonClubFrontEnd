@@ -49,9 +49,16 @@ function Orders() {
 
       // Fetch all orders and filter by customerId
       const res = await api.get("/api/order/getall");
-      const customerOrders = res.data.filter(
-        (order) => order.customer?.customerId === customer.customerId
-      );
+      console.log("RAW ORDERS FROM /api/order/getall ->", res.data);
+      const customerOrders = (res.data || []).filter((order) => {
+        const cid = customer.customerId;
+        if (!cid) return false;
+        // accept any of these common shapes returned by various backends
+        if (order?.customer?.customerId === cid) return true;
+        if (order?.customerId === cid) return true;
+        if (order?.customer?.id === cid) return true;
+        return false;
+      });
 
       setOrders(customerOrders);
       setLoading(false);
