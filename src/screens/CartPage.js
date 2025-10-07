@@ -64,7 +64,24 @@ export default function CartPage() {
 
             const totalAmount = Math.round((getTotalPrice + tax) * 100) / 100;
 
-            // Build full order payload including order lines
+            // Validate product IDs against backend product list before building payload
+            const productsRes = await api.get('/api/products/getall');
+            const products = Array.isArray(productsRes.data) ? productsRes.data : productsRes;
+            const validProductIds = new Set(products.map(p => Number(p.productId ?? p.id)).filter(n => Number.isFinite(n) && n >= 1));
+
+            const invalidItems = cartItems.filter(item => {
+                const pid = Number(item.id ?? item.productId);
+                return !Number.isFinite(pid) || pid < 1 || !validProductIds.has(pid);
+            });
+
+            if (invalidItems.length > 0) {
+                console.error('Checkout aborted: invalid product IDs detected for items:', invalidItems);
+                const ids = invalidItems.map(i => i.id ?? i.productId).join(', ');
+                alert(`Cannot create order: invalid productId(s) found: ${ids}. Please remove these items or contact support.`);
+                return;
+            }
+
+            // Build full order payload including order lines (all productIds validated)
             const orderPayload = {
                 customerId: customer.customerId,
                 orderDate: new Date().toISOString().slice(0,10),
@@ -74,7 +91,7 @@ export default function CartPage() {
                     quantity: item.quantity,
                     unitPrice: parseFloat(item.price),
                     subTotal: parseFloat(item.price) * item.quantity,
-                    product: { productId: item.id }
+                    product: { productId: Number(item.id ?? item.productId) }
                 }))
             };
 
