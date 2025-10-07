@@ -134,12 +134,24 @@ export default function Payment() {
 
     return (
         <div className="payment-container">
-            {/* Progress Bar */}
-            <div className="payment-progress">
-                <div className="step completed">Cart</div>
-                <div className="step completed">Shipping</div>
-                <div className="step active">Payment</div>
-                <div className="step">Confirmation</div>
+            {/* Progress Bar (use same structure as Shipping/Cart) */}
+            <div className="shipping-progress">
+                <div className="progress-step completed">
+                    <div className="step-icon">1</div>
+                    <span>Cart</span>
+                </div>
+                <div className="progress-step completed">
+                    <div className="step-icon">2</div>
+                    <span>Shipping</span>
+                </div>
+                <div className="progress-step active">
+                    <div className="step-icon">3</div>
+                    <span>Payment</span>
+                </div>
+                <div className="progress-step">
+                    <div className="step-icon">4</div>
+                    <span>Confirmation</span>
+                </div>
             </div>
 
             <div className="payment-content">

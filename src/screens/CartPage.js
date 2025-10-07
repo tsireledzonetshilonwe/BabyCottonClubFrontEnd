@@ -143,65 +143,99 @@ export default function CartPage() {
 
     if (cartItems.length === 0) {
         return (
-            <div className="container mx-auto px-4 py-16">
-                <div className="text-center">
-                    <ShoppingBag className="h-24 w-24 text-muted-foreground mx-auto mb-6" />
-                    <h1 className="text-3xl font-bold mb-4">Your cart is empty</h1>
-                    <p className="text-muted-foreground mb-8">Discover our beautiful collection of baby clothing</p>
-                    <Button asChild>
-                        <Link to="/products">Continue Shopping</Link>
-                    </Button>
+            <div className="cart-container">
+                <div className="shipping-content">
+                    <div className="shipping-header" style={{ textAlign: 'center', padding: 40 }}>
+                        <ShoppingBag className="h-24 w-24 text-muted-foreground mx-auto mb-6" />
+                        <h1 className="orders-title">Your cart is empty</h1>
+                        <p className="orders-subtitle">Discover our beautiful collection of baby clothing</p>
+                        <div style={{ marginTop: 20 }}>
+                            <Button asChild>
+                                <Link to="/products">Continue Shopping</Link>
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold mb-8">Shopping Cart</h1>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-4">
-                    {cartItems.map((item) => (
-                        <CartItem
-                            key={item.id}
-                            item={item}
-                            onQuantityChange={handleQuantityChange}
-                            onRemove={removeFromCart}
-                        />
-                    ))}
+        <div className="cart-container">
+            <div className="cart-content">
+                <div className="shipping-progress" style={{ marginBottom: 20 }}>
+                    <div className="progress-step completed">
+                        <div className="step-icon">1</div>
+                        <span>Cart</span>
+                    </div>
+                    <div className="progress-step">
+                        <div className="step-icon">2</div>
+                        <span>Shipping</span>
+                    </div>
+                    <div className="progress-step">
+                        <div className="step-icon">3</div>
+                        <span>Payment</span>
+                    </div>
+                    <div className="progress-step">
+                        <div className="step-icon">4</div>
+                        <span>Confirm</span>
+                    </div>
                 </div>
 
-                <div className="lg:col-span-1">
-                    <Card className="order-summary-card">
-                        <CardHeader>
-                            <CardTitle>Order Summary</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex justify-between">
-                                <span>Subtotal ({getTotalItems} items)</span>
-                                <span>{formatCurrency(getTotalPrice)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span>VAT (15%)</span>
-                                <span>{formatCurrency(tax)}</span>
-                            </div>
-                            <Separator />
-                            <div className="flex justify-between font-semibold text-lg">
-                                <span>Total</span>
-                                <span>{formatCurrency(total)}</span>
-                            </div>
+                <div className="shipping-header" style={{ marginBottom: 24 }}>
+                    <h1 className="orders-title">Shopping Cart</h1>
+                    <p className="orders-subtitle">Review items in your cart and proceed to checkout</p>
+                </div>
 
-                            <div className="space-y-2 mt-4">
-                                <Button onClick={handleCheckout} className="w-full" size="lg">
-                                    Proceed to Checkout
-                                </Button>
-                                <Button variant="outline" asChild className="w-full">
-                                    <Link to="/products">Continue Shopping</Link>
-                                </Button>
+                <div className="grid" style={{ gridTemplateColumns: '1fr 360px', gap: 24 }}>
+                    <div>
+                        <div className="address-form">
+                            <div className="cart-list">
+                                {cartItems.map((item) => (
+                                    <CartItem
+                                        key={item.id}
+                                        item={item}
+                                        onQuantityChange={handleQuantityChange}
+                                        onRemove={removeFromCart}
+                                    />
+                                ))}
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
+
+                    <div>
+                        <Card className="order-summary-card address-form">
+                            <CardHeader>
+                                <CardTitle>Order Summary</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>Subtotal ({getTotalItems} items)</span>
+                                    <span>{formatCurrency(getTotalPrice)}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>VAT (15%)</span>
+                                    <span>{formatCurrency(tax)}</span>
+                                </div>
+                                <Separator />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.1rem' }}>
+                                    <span>Total</span>
+                                    <span>{formatCurrency(total)}</span>
+                                </div>
+
+                                <div>
+                                    <button className="submit-btn" onClick={handleCheckout}>Proceed to Checkout</button>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                    <Button variant="outline" asChild className="w-full">
+                                        <Link to="/products">Continue Shopping</Link>
+                                    </Button>
+                                    <Button variant="ghost" onClick={() => { clearCart(); }}>Clear</Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
             </div>
         </div>

@@ -14,14 +14,15 @@
 
 /* Profile Hero Section */
 .profile-hero {
-  background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%);
-  color: white;
+  /* soft baby-pink hero to match site theme */
+  background: linear-gradient(135deg, #ffb6c1 0%, #fff0f6 100%);
+  color: #3a2b33;
   padding: 2rem;
   border-radius: 16px;
   display: flex;
   align-items: center;
   gap: 2rem;
-  box-shadow: 0 8px 32px rgba(49, 130, 206, 0.3);
+  box-shadow: 0 8px 32px rgba(255, 122, 162, 0.18);
 }
 
 .profile-avatar {
@@ -108,10 +109,10 @@
 }
 
 .tab-btn.active {
-  background: #3182ce;
+  background: linear-gradient(90deg,#ff7aa2,#ffb6c1);
   color: white;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(49, 130, 206, 0.3);
+  box-shadow: 0 6px 18px rgba(255,122,162,0.18);
 }
 
 .tab-btn:hover:not(.active) {
@@ -232,8 +233,8 @@
 }
 
 .input-icon:focus-within {
-  border-color: #3182ce;
-  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+  border-color: #ff7aa2;
+  box-shadow: 0 0 0 6px rgba(255, 122, 162, 0.08);
   transform: scale(1.02);
 }
 
@@ -265,25 +266,25 @@
 }
 
 .profile-edit-btn.edit {
-  background: linear-gradient(135deg, #3182ce, #2c5282);
+  background: linear-gradient(135deg, #ff7aa2, #ffb6c1);
   color: white;
 }
 
 .profile-edit-btn.edit:hover {
-  background: linear-gradient(135deg, #2c5282, #2a4365);
+  background: linear-gradient(135deg, #ff9bb3, #ffb6c1);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(49, 130, 206, 0.4);
+  box-shadow: 0 6px 18px rgba(255,122,162,0.22);
 }
 
 .profile-edit-btn.cancel {
-  background: linear-gradient(135deg, #e53e3e, #c53030);
-  color: white;
+  background: linear-gradient(135deg, #f6b0b0, #f28b8b);
+  color: #3a2b33;
 }
 
 .profile-edit-btn.cancel:hover {
-  background: linear-gradient(135deg, #c53030, #9c2626);
+  background: linear-gradient(135deg, #f28b8b, #e86b6b);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(229, 62, 62, 0.4);
+  box-shadow: 0 6px 16px rgba(232,107,107,0.18);
 }
 
 .profile-save-btn {
@@ -291,31 +292,30 @@
   align-items: center;
   justify-content: center;
   padding: 1rem 2rem;
-  background: linear-gradient(135deg, #38a169, #2f855a);
+  background: linear-gradient(90deg,#ff7aa2,#ffb6c1);
   color: white;
   border: none;
   border-radius: 12px;
   font-size: 1.1rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
   margin-top: 1rem;
-  box-shadow: 0 4px 12px rgba(56, 161, 105, 0.3);
+  box-shadow: 0 6px 18px rgba(255,122,162,0.18);
 }
 
 .profile-save-btn:hover {
-  background: linear-gradient(135deg, #2f855a, #276749);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(56, 161, 105, 0.4);
+  box-shadow: 0 8px 24px rgba(255,122,162,0.22);
 }
 
 /* Info Section */
 .profile-info {
   padding: 1.5rem;
-  background: linear-gradient(135deg, #f0f4f8, #e2e8f0);
+  background: linear-gradient(135deg, #fff8fb, #fff2f6);
   border-radius: 12px;
   margin-bottom: 2rem;
-  border-left: 4px solid #3182ce;
+  border-left: 4px solid #ffb6c1;
 }
 
 .profile-info p {
@@ -356,20 +356,19 @@
   display: inline-flex;
   align-items: center;
   padding: 1rem 2rem;
-  background: linear-gradient(135deg, #3182ce, #2c5282);
+  background: linear-gradient(90deg,#ff7aa2,#ffb6c1);
   color: white;
   text-decoration: none;
   border-radius: 12px;
   font-weight: 600;
   margin-top: 1rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(49, 130, 206, 0.3);
+  transition: all 0.25s ease;
+  box-shadow: 0 6px 18px rgba(255,122,162,0.18);
 }
 
 .shop-now-btn:hover {
-  background: linear-gradient(135deg, #2c5282, #2a4365);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(49, 130, 206, 0.4);
+  box-shadow: 0 8px 24px rgba(255,122,162,0.22);
   text-decoration: none;
   color: white;
 }
@@ -690,5 +689,5 @@
 }
 
 .password-toggle:hover {
-  color: #3182ce;
+  color: #ff7aa2;
 }
