@@ -82,6 +82,25 @@ function Orders() {
     }
   };
 
+  // Helpers to normalize different backend shapes
+  const getLineProductId = (line) => {
+    if (!line) return undefined;
+    if (typeof line.productId === "number") return line.productId;
+    if (line.product && typeof line.product === "object") {
+      return line.product.productId ?? line.product.id ?? line.productId;
+    }
+    if (typeof line.product === "number") return line.product;
+    return line.productId ?? undefined;
+  };
+
+  const getLineProductName = (line) => {
+    if (!line) return "";
+    if (line.product && typeof line.product === "object") {
+      return line.product.name || line.product.productName || line.product.title || "";
+    }
+    return line.productName || line.name || "";
+  };
+
   const handleManualRefresh = () => {
     fetchCustomerOrders(true);
   };
@@ -224,6 +243,59 @@ function Orders() {
                     <button className="btn-outline">Track Order</button>
                   )}
                 </div>
+                {expandedOrderId === order.orderId && (
+                  <div className="order-details" style={{ marginTop: 12 }}>
+                    <h4 style={{ marginBottom: 8 }}>Order details</h4>
+
+                    <div style={{ overflowX: "auto" }}>
+                      <table className="order-lines-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+                        <thead>
+                          <tr>
+                            <th style={{ textAlign: "left", padding: 8, borderBottom: "1px solid #eee" }}>Product</th>
+                            <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>Qty</th>
+                            <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>Unit</th>
+                            <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>Subtotal</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(order.orderLines || []).map((line, idx) => {
+                            const pid = getLineProductId(line);
+                            const pname = getLineProductName(line) || `Product #${pid ?? "?"}`;
+                            const qty = line.quantity ?? line.qty ?? 0;
+                            const unit = (line.unitPrice ?? line.price ?? 0).toFixed ? Number(line.unitPrice ?? line.price ?? 0).toFixed(2) : String(line.unitPrice ?? line.price ?? 0);
+                            const subtotal = (line.subTotal ?? line.subtotal ?? (qty * (line.unitPrice ?? line.price ?? 0)) ).toFixed ? Number(line.subTotal ?? line.subtotal ?? qty * (line.unitPrice ?? line.price ?? 0)).toFixed(2) : String(line.subTotal ?? line.subtotal ?? 0);
+                            return (
+                              <tr key={idx}>
+                                <td style={{ padding: 8, borderBottom: "1px solid #f4f4f4" }}>{pname} {pid ? <span style={{ color: '#666' }}>#{pid}</span> : null}</td>
+                                <td style={{ padding: 8, textAlign: 'right', borderBottom: "1px solid #f4f4f4" }}>{qty}</td>
+                                <td style={{ padding: 8, textAlign: 'right', borderBottom: "1px solid #f4f4f4" }}>R{unit}</td>
+                                <td style={{ padding: 8, textAlign: 'right', borderBottom: "1px solid #f4f4f4" }}>R{subtotal}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Shipping / address */}
+                    {(order.shippingAddress || order.address || order.customerAddress) && (
+                      <div style={{ marginTop: 12 }}>
+                        <h5 style={{ marginBottom: 6 }}>Shipping address</h5>
+                        <div style={{ color: '#444' }}>
+                          {order.shippingAddress?.line1 || order.address?.line1 || order.customerAddress || order.shippingAddress || order.address}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Payment / totals */}
+                    <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ color: '#666' }}>Subtotal</div>
+                        <div style={{ fontWeight: 600 }}>R{(order.subtotal ?? order.totalAmount ?? order.total ?? 0).toFixed ? Number(order.subtotal ?? order.totalAmount ?? order.total ?? 0).toFixed(2) : String(order.subtotal ?? order.totalAmount ?? order.total ?? 0)}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
