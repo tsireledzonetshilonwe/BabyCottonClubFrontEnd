@@ -35,10 +35,8 @@ function Orders() {
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [sortBy, setSortBy] = useState("dateDesc");
-  const [pageSize, setPageSize] = useState(6);
-  const [currentPage, setCurrentPage] = useState(1);
+  
+  
   
   const navigate = useNavigate();
 
@@ -134,15 +132,14 @@ function Orders() {
     };
   }, []);
 
-  // derive filtered/sorted/paged list
+  // derive filtered/paged list (no status or sort filtering; show all orders)
   const processedOrders = React.useMemo(() => {
     let arr = Array.isArray(orders) ? [...orders] : [];
-    // search across order id, product names, status, email
+    // optional search across order id, product names, email
     const q = String(search || "").trim().toLowerCase();
     if (q) {
       arr = arr.filter(o => {
         if (String(o.orderId || '').toLowerCase().includes(q)) return true;
-        if (String(o.status || '').toLowerCase().includes(q)) return true;
         if (String(o.totalAmount || o.total || '').toLowerCase().includes(q)) return true;
         const cust = o.customer || {};
         if (String(cust.email || cust.name || cust.firstName || '').toLowerCase().includes(q)) return true;
@@ -151,27 +148,10 @@ function Orders() {
         return false;
       });
     }
-    if (statusFilter && statusFilter !== 'All') {
-      arr = arr.filter(o => String(o.status || 'Pending') === statusFilter);
-    }
-    // sort
-    arr.sort((a,b) => {
-      if (sortBy === 'dateDesc') return new Date(b.orderDate) - new Date(a.orderDate);
-      if (sortBy === 'dateAsc') return new Date(a.orderDate) - new Date(b.orderDate);
-      if (sortBy === 'amountDesc') return (b.totalAmount ?? b.total ?? 0) - (a.totalAmount ?? a.total ?? 0);
-      if (sortBy === 'amountAsc') return (a.totalAmount ?? a.total ?? 0) - (b.totalAmount ?? b.total ?? 0);
-      return 0;
-    });
     return arr;
-  }, [orders, search, statusFilter, sortBy]);
+  }, [orders, search]);
 
-  const totalPages = Math.max(1, Math.ceil(processedOrders.length / pageSize));
-  React.useEffect(() => setCurrentPage(1), [search, statusFilter, sortBy, pageSize]);
-
-  const pagedOrders = React.useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return processedOrders.slice(start, start + pageSize);
-  }, [processedOrders, currentPage, pageSize]);
+  // show all orders (no pagination)
 
   return (
     <div className="orders-page-wrapper">
@@ -183,26 +163,6 @@ function Orders() {
           </div>
           <div className="orders-controls">
             <input className="search-input" placeholder="Search orders or products..." value={search} onChange={e => setSearch(e.target.value)} />
-            <select className="select-control" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-              <option value="All">All status</option>
-              <option value="Pending">Pending</option>
-              <option value="Processing">Processing</option>
-              <option value="Shipped">Shipped</option>
-              <option value="Delivered">Delivered</option>
-              <option value="Completed">Completed</option>
-              <option value="Cancelled">Cancelled</option>
-            </select>
-            <select className="select-control" value={sortBy} onChange={e => setSortBy(e.target.value)}>
-              <option value="dateDesc">Newest</option>
-              <option value="dateAsc">Oldest</option>
-              <option value="amountDesc">Amount ↓</option>
-              <option value="amountAsc">Amount ↑</option>
-            </select>
-            <select className="select-control" value={pageSize} onChange={e => setPageSize(Number(e.target.value))}>
-              <option value={4}>4 / page</option>
-              <option value={6}>6 / page</option>
-              <option value={10}>10 / page</option>
-            </select>
             <button className={`refresh-button ${refreshing || loading ? 'is-loading' : ''}`} onClick={handleManualRefresh} disabled={refreshing || loading} aria-busy={refreshing || loading} aria-label="Refresh orders">
               {refreshing ? (<><span className="refresh-spinner" aria-hidden="true"></span><span>Refreshing...</span></>) : (<><span className="refresh-emoji" aria-hidden="true">🔄</span><span>Refresh</span></>)}
             </button>
@@ -236,7 +196,7 @@ function Orders() {
           </div>
         ) : (
           <div className="orders-list">
-            {pagedOrders.map((order) => (
+            {processedOrders.map((order) => (
               <div className="order-card" key={order.orderId}>
                 <div className="order-header">
                   <div className="order-info">
