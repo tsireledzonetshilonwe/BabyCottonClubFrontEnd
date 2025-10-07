@@ -29,7 +29,8 @@ const AdminCustomers = () => {
       setIsLoading(true);
       setError(null);
       const customersData = await fetchAllCustomers();
-      setCustomers(customersData);
+      // Ensure we always store an array (backend might return an object or single record)
+      setCustomers(Array.isArray(customersData) ? customersData : (customersData ? [customersData] : []));
     } catch (error) {
       console.error('Error loading customers:', error);
       setError('Failed to load customers from backend');
@@ -43,12 +44,13 @@ const AdminCustomers = () => {
   }, []);
 
   // Filter customers
-  const filteredCustomers = customers.filter(customer =>
-    customer.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.phoneNumber?.includes(searchTerm)
+  const safeCustomers = Array.isArray(customers) ? customers : [];
+  const filteredCustomers = safeCustomers.filter(customer =>
+    (customer.firstName?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (customer.lastName?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (customer.name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (customer.email?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (customer.phoneNumber?.includes(searchTerm))
   );
 
   // Handle view customer details
@@ -63,9 +65,9 @@ Status: Active`);
   };
 
   // Calculate stats
-  const totalCustomers = customers.length;
-  const activeCustomers = customers.length; // Assuming all are active for now
-  const newThisMonth = customers.filter(customer => {
+  const totalCustomers = safeCustomers.length;
+  const activeCustomers = safeCustomers.length; // Assuming all are active for now
+  const newThisMonth = safeCustomers.filter(customer => {
     // Simple check - you can enhance this based on your date fields
     const customerDate = new Date(customer.createdAt || customer.joinDate || '2025-09-01');
     const currentMonth = new Date().getMonth();
