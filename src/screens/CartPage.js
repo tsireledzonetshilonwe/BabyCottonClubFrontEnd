@@ -91,11 +91,12 @@ export default function CartPage() {
                     quantity: item.quantity,
                     unitPrice: parseFloat(item.price),
                     subTotal: parseFloat(item.price) * item.quantity,
-                    product: { productId: Number(item.id ?? item.productId) }
+                    productId: Number(item.id ?? item.productId)
                 }))
             };
 
-            // Create order with nested lines in a single request
+            // Log payload (dev) and create order with nested lines in a single request
+            console.log("ORDER PAYLOAD ->", JSON.stringify(orderPayload, null, 2));
             const order = await createOrder(orderPayload);
             console.log("Order created with lines:", order);
 
