@@ -47,20 +47,31 @@ function Orders() {
         return;
       }
 
-      // Fetch all orders and filter by customerId
-      const res = await api.get("/api/order/getall");
-      console.log("RAW ORDERS FROM /api/order/getall ->", res.data);
-      const customerOrders = (res.data || []).filter((order) => {
-        const cid = customer.customerId;
-        if (!cid) return false;
-        // accept any of these common shapes returned by various backends
-        if (order?.customer?.customerId === cid) return true;
-        if (order?.customerId === cid) return true;
-        if (order?.customer?.id === cid) return true;
-        return false;
-      });
-
-      setOrders(customerOrders);
+      // Try a dedicated endpoint that returns orders for a customer (preferred)
+      try {
+        const res = await api.get(`/api/order/customer/${customer.customerId}`);
+        console.log("ORDERS FOR CUSTOMER from /api/order/customer ->", res.data);
+        // Ensure we always store an array
+        setOrders(Array.isArray(res.data) ? res.data : (res.data ? [res.data] : []));
+      } catch (err) {
+        // If dedicated endpoint not available (404) or fails, fallback to fetching all and filtering
+        if (err.response && err.response.status === 404) {
+          console.warn("/api/order/customer endpoint not found; falling back to /api/order/getall");
+          const res2 = await api.get("/api/order/getall");
+          console.log("RAW ORDERS FROM /api/order/getall ->", res2.data);
+          const customerOrders = (res2.data || []).filter((order) => {
+            const cid = customer.customerId;
+            if (!cid) return false;
+            if (order?.customer?.customerId === cid) return true;
+            if (order?.customerId === cid) return true;
+            if (order?.customer?.id === cid) return true;
+            return false;
+          });
+          setOrders(customerOrders);
+        } else {
+          throw err; // rethrow other errors to be caught by outer catch
+        }
+      }
       setLoading(false);
       if (isManualRefresh) setRefreshing(false);
     } catch (err) {
