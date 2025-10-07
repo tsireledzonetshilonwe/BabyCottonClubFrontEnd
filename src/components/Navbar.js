@@ -3,11 +3,12 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import "../App.css";
+import { getStoredCustomer } from "../utils/customer";
 
 function Navbar() {
     const navigate = useNavigate();
     const { cartItems } = useCart();
-    const isLoggedIn = !!localStorage.getItem("customer");
+    const isLoggedIn = !!getStoredCustomer()?.customerId;
     const isAdmin = !!localStorage.getItem("admin");
 
     const handleLogout = () => {

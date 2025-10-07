@@ -123,10 +123,10 @@ export default function Products() {
     return (
         <div className="products-page">
             <h1 className="products-title">All Products</h1>
-
-            <div className="products-layout">
-                {/* Filters Sidebar */}
-                <div className="products-sidebar">
+            
+            <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
+                {/* Filters Section */}
+                <div style={{ flexShrink: 0 }}>
                     <SimpleFilters
                         searchTerm={searchTerm}
                         setSearchTerm={setSearchTerm}
@@ -178,12 +178,12 @@ export default function Products() {
                     </div>
                 </div>
 
-                {/* Products Content */}
-                <div className="products-content">
+                {/* Products Grid */}
+                <div style={{ flex: 1 }}>
                     <div style={{ marginBottom: '1rem', color: '#666' }}>
                         Showing {sortedProducts.length} of {products.length} products
                     </div>
-
+                    
                     <div className="products-grid">
                         {sortedProducts.map((product) => (
                     <div key={product.productId} className="product-card">

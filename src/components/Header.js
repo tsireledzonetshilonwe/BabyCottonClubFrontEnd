@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { getStoredCustomer } from '../utils/customer';
 
 const Header = () => {
   const { cartItems } = useCart();
@@ -12,7 +13,7 @@ const Header = () => {
   // Simple auth check using localStorage (like the original Navbar)
   const isLoggedIn = !!localStorage.getItem("customer");
   const isAdmin = !!localStorage.getItem("admin");
-  const user = JSON.parse(localStorage.getItem("customer") || localStorage.getItem("admin") || "null");
+  const user = getStoredCustomer() || JSON.parse(localStorage.getItem("admin") || "null");
 
   // Close user menu when clicking outside
   useEffect(() => {

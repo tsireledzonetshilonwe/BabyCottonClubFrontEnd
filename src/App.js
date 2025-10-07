@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import { getStoredCustomer } from "./utils/customer";
 
 // Screens
 import Home from "./screens/Home";
@@ -50,8 +51,8 @@ function App() {
 
   // Protected route for customer profile
   const CustomerRoute = ({ children }) => {
-    const customer = JSON.parse(localStorage.getItem("customer") || "{}");
-    return customer.customerId ? children : <Navigate to="/login" replace />;
+    const customer = getStoredCustomer();
+    return customer && customer.customerId ? children : <Navigate to="/login" replace />;
   };
 
   return (

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { createPayment, fetchOrderDetails, fetchProducts } from "../api/api";
+import { createPayment } from "../api/api";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import "./Payment.css";
+import { getStoredCustomer } from "../utils/customer";
 
 export default function Payment() {
     const { cartItems, clearCart } = useCart();
@@ -12,9 +13,6 @@ export default function Payment() {
     const [paymentMethod, setPaymentMethod] = useState("");
     const [shippingInfo, setShippingInfo] = useState(location.state?.address || null);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [orderDetails, setOrderDetails] = useState(null);
-    const [loadingOrder, setLoadingOrder] = useState(false);
-    const [orderDisplayLines, setOrderDisplayLines] = useState([]);
 
     useEffect(() => {
         console.log("Payment component mounted");
@@ -24,118 +22,16 @@ export default function Payment() {
         const orderId = localStorage.getItem("orderId");
         console.log("Order ID in localStorage:", orderId);
         
-        // Clean up accidental 'undefined' string stored in localStorage
-        if (orderId === 'undefined' || orderId === null || orderId === 'null') {
-            console.warn("Found invalid orderId in localStorage, removing it.");
-            localStorage.removeItem('orderId');
-        }
-
         if (!shippingInfo) {
             console.log("No shipping info, redirecting to shipping...");
             navigate("/shipping");
         }
     }, [shippingInfo, navigate]);
 
-    // If the cart is empty but there's an orderId, fetch order details so we can show a summary
-    useEffect(() => {
-        const orderIdRaw = localStorage.getItem("orderId");
-        const orderId = orderIdRaw && orderIdRaw !== 'undefined' ? Number(orderIdRaw) : null;
-        if ((!cartItems || cartItems.length === 0) && orderId) {
-            setLoadingOrder(true);
-            fetchOrderDetails(orderId)
-                .then((data) => {
-                    setOrderDetails(data);
-                })
-                .catch((err) => {
-                    console.warn("Failed to fetch order details:", err);
-                    setOrderDetails(null);
-                })
-                .finally(() => setLoadingOrder(false));
-        }
-    }, [cartItems]);
-
-    // Build display-friendly lines (with product names/images) from orderDetails
-    useEffect(() => {
-        if (!orderDetails || !orderDetails.orderLines) {
-            setOrderDisplayLines([]);
-            return;
-        }
-
-        const lines = orderDetails.orderLines;
-
-        // If lines already contain product name, use them directly
-        const needLookup = lines.some(l => !(l.product && (l.product.name || l.product.productName)) && !l.productName && !l.productName);
-
-        const buildFromProducts = async () => {
-            try {
-                const products = await fetchProducts();
-                const byId = new Map();
-                products.forEach(p => {
-                    // backend products may have productId or id
-                    const id = p.productId ?? p.id ?? p.id;
-                    byId.set(String(id), p);
-                });
-
-                const mapped = lines.map(l => {
-                    // extract potential product id from order line
-                    const pid = l.product?.productId ?? l.product?.id ?? l.productId ?? l.product_id ?? null;
-                    const prod = pid ? byId.get(String(pid)) : null;
-                    const name = l.product?.name ?? l.productName ?? prod?.productName ?? prod?.name ?? 'Item';
-                    const image = l.product?.imageUrl ?? prod?.imageUrl ?? prod?.image ?? null;
-                    const sku = l.product?.sku ?? prod?.sku ?? '';
-                    const unitPrice = Number(l.unitPrice ?? l.price ?? l.unit_price ?? 0);
-                    const qty = Number(l.quantity ?? l.qty ?? 1);
-                    return {
-                        key: l.orderLineId ?? l.id ?? `${pid}-${Math.random()}`,
-                        name,
-                        sku,
-                        image,
-                        unitPrice,
-                        qty,
-                        subTotal: unitPrice * qty
-                    };
-                });
-
-                setOrderDisplayLines(mapped);
-            } catch (err) {
-                console.warn('Failed to enrich order lines with products:', err);
-                // Fallback: map minimally from lines
-                const mapped = lines.map(l => ({
-                    key: l.orderLineId ?? l.id ?? Math.random(),
-                    name: l.product?.name ?? l.productName ?? 'Item',
-                    sku: l.product?.sku ?? '',
-                    image: l.product?.imageUrl ?? null,
-                    unitPrice: Number(l.unitPrice ?? l.price ?? 0),
-                    qty: Number(l.quantity ?? 1),
-                    subTotal: Number(l.unitPrice ?? l.price ?? 0) * Number(l.quantity ?? 1)
-                }));
-                setOrderDisplayLines(mapped);
-            }
-        };
-
-        if (needLookup) {
-            buildFromProducts();
-        } else {
-            // Build directly
-            const mapped = lines.map(l => ({
-                key: l.orderLineId ?? l.id ?? Math.random(),
-                name: l.product?.name ?? l.productName ?? 'Item',
-                sku: l.product?.sku ?? '',
-                image: l.product?.imageUrl ?? null,
-                unitPrice: Number(l.unitPrice ?? l.price ?? 0),
-                qty: Number(l.quantity ?? 1),
-                subTotal: Number(l.unitPrice ?? l.price ?? 0) * Number(l.quantity ?? 1)
-            }));
-            setOrderDisplayLines(mapped);
-        }
-    }, [orderDetails]);
-
-    const totalAmount = cartItems && cartItems.length > 0
-        ? cartItems.reduce((sum, item) => {
-            const price = parseFloat(item.price) || 0;
-            return sum + price * (item.quantity || 1);
-        }, 0)
-        : orderDetails?.totalAmount || 0;
+    const totalAmount = cartItems.reduce((sum, item) => {
+        const price = parseFloat(item.price) || 0;
+        return sum + price * (item.quantity || 1);
+    }, 0);
 
     const handlePayment = async (e) => {
         e.preventDefault();
@@ -151,7 +47,7 @@ export default function Payment() {
         if (!orderId && cartItems.length > 0) {
             console.log("No orderId found, creating order during payment...");
             try {
-                const customer = JSON.parse(localStorage.getItem("customer"));
+                const customer = getStoredCustomer();
                 if (!customer || !customer.customerId) {
                     alert("Please log in to complete your order.");
                     navigate("/login");
@@ -171,20 +67,14 @@ export default function Payment() {
                     body: JSON.stringify(orderData)
                 });
 
-                    if (response.ok) {
-                        const order = await response.json();
-                        const oid = order.orderId ?? order.id ?? null;
-                        const oidNum = oid ? Number(oid) : null;
-                        if (Number.isFinite(oidNum) && oidNum > 0) {
-                            orderId = oidNum;
-                            localStorage.setItem("orderId", String(orderId));
-                            console.log("Order created during payment:", orderId);
-                        } else {
-                            console.warn("Order created but response missing a valid orderId:", order);
-                        }
-                    } else {
-                        throw new Error("Failed to create order");
-                    }
+                if (response.ok) {
+                    const order = await response.json();
+                    orderId = order.orderId;
+                    localStorage.setItem("orderId", orderId);
+                    console.log("Order created during payment:", orderId);
+                } else {
+                    throw new Error("Failed to create order");
+                }
             } catch (err) {
                 console.error("Failed to create order during payment:", err);
                 alert("Unable to process order. Please try starting from your cart.");
@@ -285,50 +175,9 @@ export default function Payment() {
                             </div>
                         </>
                     ) : (
-                        <div style={{ padding: "1rem" }}>
-                            {loadingOrder ? (
-                                <p style={{ textAlign: 'center' }}>Loading order summary...</p>
-                            ) : orderDisplayLines && orderDisplayLines.length > 0 ? (
-                                <>
-                                    <ul>
-                                        {orderDisplayLines.map(line => (
-                                            <li key={line.key} className="payment-summary-item" style={{display:'flex', gap:'0.75rem', alignItems:'center'}}>
-                                                {line.image ? (
-                                                    <img src={line.image} alt={line.name} style={{width:56,height:56,objectFit:'cover',borderRadius:8}} />
-                                                ) : (
-                                                    <div style={{width:56,height:56,background:'#f3f4f6',borderRadius:8}} />
-                                                )}
-                                                <div style={{flex:1}}>
-                                                    <div style={{fontWeight:700}}>{line.name}</div>
-                                                    {line.sku && <div style={{fontSize:'0.8rem', color:'#6b7280'}}>{line.sku}</div>}
-                                                </div>
-                                                <div style={{textAlign:'right'}}>
-                                                    <div>× {line.qty}</div>
-                                                    <div style={{fontWeight:700}}>R {Number(line.unitPrice).toFixed(2)}</div>
-                                                </div>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                    <div className="payment-summary-total">
-                                        <strong>Total:</strong> R {Number(orderDetails?.totalAmount || orderDisplayLines.reduce((s,l)=>s+l.subTotal,0)).toFixed(2)}
-                                    </div>
-                                    <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
-                                        <small>Order ID: {orderDetails?.orderId || localStorage.getItem('orderId')}</small>
-                                    </div>
-                                </>
-                            ) : orderDetails ? (
-                                <>
-                                    <div style={{ textAlign: "center" }}>
-                                        <p>Order details will be processed based on your previous checkout.</p>
-                                        <p><strong>Order ID:</strong> {localStorage.getItem("orderId") || "Processing..."}</p>
-                                    </div>
-                                </>
-                            ) : (
-                                <div style={{ textAlign: "center" }}>
-                                    <p>Order details will be processed based on your previous checkout.</p>
-                                    <p><strong>Order ID:</strong> {localStorage.getItem("orderId") || "Processing..."}</p>
-                                </div>
-                            )}
+                        <div style={{ textAlign: "center", padding: "1rem" }}>
+                            <p>Order details will be processed based on your previous checkout.</p>
+                            <p><strong>Order ID:</strong> {localStorage.getItem("orderId") || "Processing..."}</p>
                         </div>
                     )}
                 </section>
@@ -379,7 +228,7 @@ export default function Payment() {
                             </div>
                         )}
 
-                        <button className="payment-confirm-btn baby-pink-button" type="submit" disabled={isProcessing}>
+                        <button className="payment-confirm-btn" type="submit" disabled={isProcessing}>
                             {isProcessing ? "Processing..." : "Confirm Payment"}
                         </button>
                     </form>

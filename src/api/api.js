@@ -82,12 +82,7 @@ export const fetchOrdersByCustomerId = async (customerId) => {
 };
 
 export const fetchOrderDetails = async (orderId) => {
-  // Guard against invalid orderId values (undefined, 'undefined', null, non-numeric)
-  if (!orderId) return null;
-  const id = Number(orderId);
-  if (!Number.isFinite(id) || id <= 0) return null;
-
-  const res = await api.get(`/api/order/read/${id}`);
+  const res = await api.get(`/api/order/read/${orderId}`);
   return res.data;
 };
 

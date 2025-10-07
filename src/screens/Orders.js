@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/api";
+import { getStoredCustomer } from "../utils/customer";
 import "./Orders.css";
 
 const formatCurrency = (amount) =>
@@ -33,15 +34,21 @@ function Orders() {
   const [error, setError] = useState("");
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [sortBy, setSortBy] = useState("dateDesc");
+  const [pageSize, setPageSize] = useState(6);
+  const [currentPage, setCurrentPage] = useState(1);
+  
   const navigate = useNavigate();
 
   const fetchCustomerOrders = async (isManualRefresh = false) => {
     if (isManualRefresh) setRefreshing(true);
 
     try {
-      // Get logged-in customer
-      const customer = JSON.parse(localStorage.getItem("customer") || "{}");
-      if (!customer.customerId) {
+      // Get logged-in customer (normalized)
+      const customer = getStoredCustomer();
+      if (!customer || !customer.customerId) {
         setError("Please log in to view your orders.");
         setLoading(false);
         return;
@@ -105,6 +112,10 @@ function Orders() {
     fetchCustomerOrders(true);
   };
 
+  // copy order id feedback
+  
+  
+
   useEffect(() => {
     fetchCustomerOrders();
 
@@ -123,6 +134,45 @@ function Orders() {
     };
   }, []);
 
+  // derive filtered/sorted/paged list
+  const processedOrders = React.useMemo(() => {
+    let arr = Array.isArray(orders) ? [...orders] : [];
+    // search across order id, product names, status, email
+    const q = String(search || "").trim().toLowerCase();
+    if (q) {
+      arr = arr.filter(o => {
+        if (String(o.orderId || '').toLowerCase().includes(q)) return true;
+        if (String(o.status || '').toLowerCase().includes(q)) return true;
+        if (String(o.totalAmount || o.total || '').toLowerCase().includes(q)) return true;
+        const cust = o.customer || {};
+        if (String(cust.email || cust.name || cust.firstName || '').toLowerCase().includes(q)) return true;
+        const names = (o.orderLines || []).map(getLineProductName).join(' ').toLowerCase();
+        if (names.includes(q)) return true;
+        return false;
+      });
+    }
+    if (statusFilter && statusFilter !== 'All') {
+      arr = arr.filter(o => String(o.status || 'Pending') === statusFilter);
+    }
+    // sort
+    arr.sort((a,b) => {
+      if (sortBy === 'dateDesc') return new Date(b.orderDate) - new Date(a.orderDate);
+      if (sortBy === 'dateAsc') return new Date(a.orderDate) - new Date(b.orderDate);
+      if (sortBy === 'amountDesc') return (b.totalAmount ?? b.total ?? 0) - (a.totalAmount ?? a.total ?? 0);
+      if (sortBy === 'amountAsc') return (a.totalAmount ?? a.total ?? 0) - (b.totalAmount ?? b.total ?? 0);
+      return 0;
+    });
+    return arr;
+  }, [orders, search, statusFilter, sortBy]);
+
+  const totalPages = Math.max(1, Math.ceil(processedOrders.length / pageSize));
+  React.useEffect(() => setCurrentPage(1), [search, statusFilter, sortBy, pageSize]);
+
+  const pagedOrders = React.useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return processedOrders.slice(start, start + pageSize);
+  }, [processedOrders, currentPage, pageSize]);
+
   return (
     <div className="orders-page-wrapper">
       <div className="orders-container">
@@ -131,39 +181,32 @@ function Orders() {
             <h1 className="orders-title">My Orders</h1>
             <p className="orders-subtitle">Track and manage your orders</p>
           </div>
-          <button
-            className="refresh-button"
-            onClick={handleManualRefresh}
-            disabled={refreshing || loading}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#ff6b9d",
-              color: "white",
-              border: "none",
-              borderRadius: "5px",
-              cursor: refreshing || loading ? "not-allowed" : "pointer",
-              fontSize: "14px",
-              fontWeight: "500",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              opacity: refreshing || loading ? 0.7 : 1,
-              transition: "all 0.2s ease",
-            }}
-          >
-            {refreshing ? (
-              <>
-                <span
-                  style={{ animation: "spin 1s linear infinite", display: "inline-block" }}
-                >
-                  🔄
-                </span>
-                Refreshing...
-              </>
-            ) : (
-              <>🔄 Refresh</>
-            )}
-          </button>
+          <div className="orders-controls">
+            <input className="search-input" placeholder="Search orders or products..." value={search} onChange={e => setSearch(e.target.value)} />
+            <select className="select-control" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+              <option value="All">All status</option>
+              <option value="Pending">Pending</option>
+              <option value="Processing">Processing</option>
+              <option value="Shipped">Shipped</option>
+              <option value="Delivered">Delivered</option>
+              <option value="Completed">Completed</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+            <select className="select-control" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+              <option value="dateDesc">Newest</option>
+              <option value="dateAsc">Oldest</option>
+              <option value="amountDesc">Amount ↓</option>
+              <option value="amountAsc">Amount ↑</option>
+            </select>
+            <select className="select-control" value={pageSize} onChange={e => setPageSize(Number(e.target.value))}>
+              <option value={4}>4 / page</option>
+              <option value={6}>6 / page</option>
+              <option value={10}>10 / page</option>
+            </select>
+            <button className={`refresh-button ${refreshing || loading ? 'is-loading' : ''}`} onClick={handleManualRefresh} disabled={refreshing || loading} aria-busy={refreshing || loading} aria-label="Refresh orders">
+              {refreshing ? (<><span className="refresh-spinner" aria-hidden="true"></span><span>Refreshing...</span></>) : (<><span className="refresh-emoji" aria-hidden="true">🔄</span><span>Refresh</span></>)}
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -193,24 +236,21 @@ function Orders() {
           </div>
         ) : (
           <div className="orders-list">
-            {orders.map((order) => (
+            {pagedOrders.map((order) => (
               <div className="order-card" key={order.orderId}>
                 <div className="order-header">
                   <div className="order-info">
                     <h3 className="order-number">Order #{order.orderId}</h3>
                     <p className="order-date">Placed on {formatDate(order.orderDate)}</p>
                   </div>
-                  <div className="order-status">
-                    <span
-                      className="status-badge"
-                      style={{
-                        backgroundColor: statusColors[order.status]?.bg || statusColors.Pending.bg,
-                        color: statusColors[order.status]?.color || statusColors.Pending.color,
-                        borderColor: statusColors[order.status]?.border || statusColors.Pending.border,
-                      }}
-                    >
-                      {order.status || "Pending"}
-                    </span>
+                  <div className="order-right">
+                    <div className="order-status">
+                      <span className={`status-badge status-${String(order.status||'Pending').toLowerCase()}`.replace(/\s/g,'-')}>{order.status || 'Pending'}</span>
+                    </div>
+                    <div className="order-actions">
+                      <button className="btn-secondary" onClick={() => setExpandedOrderId(expandedOrderId === order.orderId ? null : order.orderId)}>{expandedOrderId === order.orderId ? 'Hide Details' : 'View Details'}</button>
+                      {(order.status === 'Shipped' || order.status === 'Processing') && (<button className="btn-outline">Track Order</button>)}
+                    </div>
                   </div>
                 </div>
 
@@ -222,25 +262,8 @@ function Orders() {
 
                   {order.orderLines && order.orderLines.length > 0 && (
                     <div className="order-items-preview">
-                      <span className="items-count">
-                        {order.orderLines.length} item{order.orderLines.length !== 1 ? "s" : ""}
-                      </span>
+                      <span className="items-count">{order.orderLines.length} item{order.orderLines.length !== 1 ? "s" : ""}</span>
                     </div>
-                  )}
-                </div>
-
-                <div className="order-actions">
-                  <button
-                    className="btn-secondary"
-                    onClick={() =>
-                      setExpandedOrderId(expandedOrderId === order.orderId ? null : order.orderId)
-                    }
-                  >
-                    {expandedOrderId === order.orderId ? "Hide Details" : "View Details"}
-                  </button>
-
-                  {(order.status === "Shipped" || order.status === "Processing") && (
-                    <button className="btn-outline">Track Order</button>
                   )}
                 </div>
                 {expandedOrderId === order.orderId && (

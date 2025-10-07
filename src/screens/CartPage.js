@@ -7,6 +7,7 @@ import { ShoppingBag } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { createOrder } from "../api/api";
 import api from "../api/api";
+import { getStoredCustomer as getStoredCustomerFromUtil } from "../utils/customer";
 import CartItem from "../components/CartItem";
 import "./CartPage.css";
 
@@ -42,9 +43,12 @@ export default function CartPage() {
         testBackendConnection();
     }, []);
 
+    // Use shared helper to normalize stored customer
+    const getStoredCustomer = getStoredCustomerFromUtil;
+
     const handleCheckout = useCallback(async () => {
         try {
-            const customer = JSON.parse(localStorage.getItem("customer") || "{}");
+            const customer = getStoredCustomer();
 
             if (!customer.customerId || customer.customerId > 2147483647) {
                 console.warn("Invalid customerId, using default ID 1");
@@ -207,8 +211,7 @@ export default function CartPage() {
 // Helper: Save cart to backend (optional)
 const saveCartToBackend = async (cartItems) => {
     try {
-        const customerRaw = localStorage.getItem("customer");
-        const customer = customerRaw ? JSON.parse(customerRaw) : null;
+        const customer = getStoredCustomerFromUtil();
         if (!customer || !Number.isFinite(Number(customer.customerId)) || Number(customer.customerId) <= 0) return;
 
         const updatePayload = {
