@@ -12,7 +12,7 @@ import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
 import { Table } from '../components/ui/table';
-import { fetchAllOrders, updateOrder, fetchAllCustomers } from '../api/api';
+import { fetchAllOrders, updateOrder, fetchAllCustomers, fetchOrderDetails } from '../api/api';
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -49,6 +49,30 @@ const AdminOrders = () => {
     } finally {
       setIsLoading(false);
     }
+      
+        // For orders that don't include customer info, fetch order details to try to extract customerId
+        const missingCustomerOrders = (ordersData || []).filter(o => !(o.customerId || (o.customer && o.customer.customerId)) && o.orderId);
+        if (missingCustomerOrders.length > 0) {
+          try {
+            const detailsResults = await Promise.allSettled(missingCustomerOrders.map(o => fetchOrderDetails(o.orderId)));
+            const detailsById = {};
+            detailsResults.forEach((r, idx) => {
+              if (r.status === 'fulfilled' && r.value) {
+                const data = r.value;
+                const id = missingCustomerOrders[idx].orderId;
+                // extract possible customerId shapes
+                const cid = data?.customer?.customerId ?? data?.customerId ?? data?.customer?.id ?? null;
+                if (cid) detailsById[id] = cid;
+              }
+            });
+
+            if (Object.keys(detailsById).length > 0) {
+              setOrders(prev => prev.map(o => ({ ...o, customerId: o.customerId || detailsById[o.orderId] })));
+            }
+          } catch (detailErr) {
+            console.warn('Failed to fetch some order details for missing customer mapping', detailErr);
+          }
+        }
   };
 
   useEffect(() => {
