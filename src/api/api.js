@@ -1,8 +1,10 @@
-
 import axios from "axios";
 
 const api = axios.create({
   baseURL: "http://localhost:8080",
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 // ----------------- PRODUCTS -----------------
@@ -31,6 +33,38 @@ export const deleteProduct = async (productId) => {
   return res.data;
 };
 
+// ----------------- PAYMENTS -----------------
+export const createPayment = async (paymentData) => {
+  const res = await api.post("/api/payment/create", paymentData);
+  return res.data;
+};
+
+// ----------------- CUSTOMERS -----------------
+export const createCustomer = async (customerData) => {
+  const res = await api.post("/api/customer/create", customerData);
+  return res.data;
+};
+
+export const loginCustomer = async (email, password) => {
+  // Backend controller uses @RequestParam String email, @RequestParam String password
+  const res = await api.post(`/api/customer/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
+  return res.data;
+};
+
+export const fetchAllCustomers = async () => {
+  const res = await api.get("/api/customer/findAll");
+  return res.data;
+};
+
+export const fetchCustomerById = async (customerId) => {
+  const res = await api.get(`/api/customer/read/${customerId}`);
+  return res.data;
+};
+export const updateCustomer = async (customerData) => {
+  const res = await api.put("/api/customer/update", customerData);
+  return res.data;
+};
+
 // ----------------- ORDERS -----------------
 export const createOrder = async (orderData) => {
   const res = await api.post("/api/order/create", orderData);
@@ -42,9 +76,9 @@ export const fetchAllOrders = async () => {
   return res.data;
 };
 
-export const fetchOrdersByCustomer = async (email) => {
-  const res = await api.get(`/api/orders/customer/${encodeURIComponent(email)}`);
-  return res.data;
+export const fetchOrdersByCustomerId = async (customerId) => {
+  const res = await api.get("/api/order/getall");
+  return res.data.filter(order => order.customer?.customerId === customerId);
 };
 
 export const fetchOrderDetails = async (orderId) => {
@@ -53,7 +87,9 @@ export const fetchOrderDetails = async (orderId) => {
 };
 
 export const updateOrder = async (orderId, orderData) => {
-  const res = await api.put(`/api/order/update/${orderId}`, orderData);
+  // Include the orderId in the data payload since backend expects it in the body
+  const dataWithId = { ...orderData, orderId };
+  const res = await api.put(`/api/order/update`, dataWithId);
   return res.data;
 };
 
@@ -67,6 +103,14 @@ export const createOrderLine = async (orderLineData) => {
   const res = await api.post("/api/orderline/create", orderLineData);
   return res.data;
 };
+
+// ----------------- ADMINS -----------------
+export const loginAdmin = async (email, password) => {
+  // Admin controller might also use @RequestParam now
+  const res = await api.post(`/api/admin/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
+  return res.data;
+};
+
 // ----------------- ADDRESSES -----------------
 export const createAddress = async (addressData) => {
   const res = await api.post("/address/create", addressData);
@@ -74,34 +118,7 @@ export const createAddress = async (addressData) => {
 };
 
 export const fetchAddressById = async (addressId) => {
-  const res = await api.get(`/address/${addressId}`);
-  return res.data;
-};
-
-// ----------------- PAYMENTS -----------------
-export const createPayment = async (paymentData) => {
-  const res = await api.post("/payment/create", paymentData); // no /api if backend doesn’t have it
-  return res.data;
-};
-
-// ----------------- CUSTOMERS -----------------
-export const createCustomer = async (customerData) => {
-  const res = await api.post("/api/customer/create", customerData);
-  return res.data;
-};
-
-export const loginCustomer = async (email, password) => {
-  const res = await api.post("/api/customer/login", { email, password });
-  return res.data;
-};
-
-export const fetchAllCustomers = async () => {
-  const res = await api.get("/api/customer/findAll");
-  return res.data;
-};
-
-export const fetchCustomerById = async (customerId) => {
-  const res = await api.get(`/api/customer/read/${customerId}`);
+  const res = await api.get(`/address/read/${addressId}`);
   return res.data;
 };
 
@@ -113,16 +130,6 @@ export const fetchAllReviews = async () => {
 
 export const createReview = async (reviewData) => {
   const res = await api.post("/review/create", reviewData);
-  return res.data;
-};
-// ----------------- ADMINS -----------------
-export const createAdmin = async (adminData) => {
-  const res = await api.post("/api/admin/create", adminData);
-  return res.data;
-};
-
-export const loginAdmin = async (email, password) => {
-  const res = await api.post("/api/admin/login", { email, password });
   return res.data;
 };
 

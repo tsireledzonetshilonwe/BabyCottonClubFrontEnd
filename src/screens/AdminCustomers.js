@@ -19,6 +19,7 @@ import { fetchAllCustomers } from '../api/api';
 
 const AdminCustomers = () => {
   const [customers, setCustomers] = useState([]);
+  const [lastUpdated, setLastUpdated] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState(null);
@@ -29,7 +30,23 @@ const AdminCustomers = () => {
       setIsLoading(true);
       setError(null);
       const customersData = await fetchAllCustomers();
-      setCustomers(customersData);
+      console.debug('Raw customers response:', customersData);
+      // Ensure we always work with an array
+      const rawArray = Array.isArray(customersData) ? customersData : (customersData ? [customersData] : []);
+      // Normalize/flatten each customer to avoid rendering huge nested graphs (orders -> customer -> orders ...)
+      const normalized = rawArray.map(c => ({
+        customerId: c.customerId ?? c.id,
+        id: c.customerId ?? c.id,
+        firstName: c.firstName ?? (c.name ? String(c.name).split(' ')[0] : ''),
+        lastName: c.lastName ?? (c.name ? String(c.name).split(' ').slice(1).join(' ') : ''),
+        name: c.name ?? `${c.firstName ?? ''} ${c.lastName ?? ''}`.trim(),
+        email: c.email ?? '',
+        phoneNumber: c.phoneNumber ?? c.phone ?? '',
+        createdAt: c.createdAt ?? c.joinDate ?? null,
+      }));
+      console.debug('Normalized customers:', normalized);
+      setCustomers(normalized);
+      setLastUpdated(new Date().toISOString());
     } catch (error) {
       console.error('Error loading customers:', error);
       setError('Failed to load customers from backend');
@@ -43,12 +60,13 @@ const AdminCustomers = () => {
   }, []);
 
   // Filter customers
-  const filteredCustomers = customers.filter(customer =>
-    customer.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.phoneNumber?.includes(searchTerm)
+  const safeCustomers = Array.isArray(customers) ? customers : [];
+  const filteredCustomers = safeCustomers.filter(customer =>
+    (customer.firstName?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (customer.lastName?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (customer.name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (customer.email?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (customer.phoneNumber?.includes(searchTerm))
   );
 
   // Handle view customer details
@@ -63,9 +81,9 @@ Status: Active`);
   };
 
   // Calculate stats
-  const totalCustomers = customers.length;
-  const activeCustomers = customers.length; // Assuming all are active for now
-  const newThisMonth = customers.filter(customer => {
+  const totalCustomers = safeCustomers.length;
+  const activeCustomers = safeCustomers.length; // Assuming all are active for now
+  const newThisMonth = safeCustomers.filter(customer => {
     // Simple check - you can enhance this based on your date fields
     const customerDate = new Date(customer.createdAt || customer.joinDate || '2025-09-01');
     const currentMonth = new Date().getMonth();
@@ -126,6 +144,14 @@ Status: Active`);
             }}>
               Manage Customers
             </h1>
+                <div style={{ marginLeft: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Button size="sm" onClick={loadCustomers}>Refresh</Button>
+                  {lastUpdated && (
+                    <div style={{ fontSize: 12, color: '#6b7280' }}>
+                      Last: {new Date(lastUpdated).toLocaleString()}
+                    </div>
+                  )}
+                </div>
           </div>
         </div>
       </div>
@@ -269,12 +295,13 @@ Status: Active`);
                 </tr>
               </thead>
               <tbody>
-                {filteredCustomers.map((customer) => {
+                {filteredCustomers.map((customer, idx) => {
                   const customerId = customer.id || customer.customerId;
                   const fullName = customer.name || `${customer.firstName || ''} ${customer.lastName || ''}`.trim();
+                  const rowKey = customerId ?? customer.email ?? fullName ?? `customer-${idx}`;
                   
                   return (
-                    <tr key={customerId} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <tr key={rowKey} style={{ borderBottom: '1px solid #f3f4f6' }}>
                       <td style={{ 
                         padding: '12px 16px', 
                         fontWeight: '500',

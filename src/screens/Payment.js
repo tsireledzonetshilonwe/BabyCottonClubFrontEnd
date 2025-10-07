@@ -3,6 +3,7 @@ import { createPayment } from "../api/api";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import "./Payment.css";
+import { getStoredCustomer } from "../utils/customer";
 
 export default function Payment() {
     const { cartItems, clearCart } = useCart();
@@ -46,7 +47,7 @@ export default function Payment() {
         if (!orderId && cartItems.length > 0) {
             console.log("No orderId found, creating order during payment...");
             try {
-                const customer = JSON.parse(localStorage.getItem("customer"));
+                const customer = getStoredCustomer();
                 if (!customer || !customer.customerId) {
                     alert("Please log in to complete your order.");
                     navigate("/login");

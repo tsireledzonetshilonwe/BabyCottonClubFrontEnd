@@ -1614,3 +1614,81 @@ footer {
         transform: rotate(360deg);
     }
 }
+/* Updated Contact Page Styles */
+.contact-page {
+    background: linear-gradient(135deg, #fdf6f9 0%, #fff9fb 100%);
+}
+
+.contact-info {
+    transition: all 0.3s ease;
+}
+
+.contact-info:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+}
+
+.contact-item {
+    transition: all 0.3s ease;
+    padding: 0.8rem;
+    border-radius: 10px;
+}
+
+.contact-item:hover {
+    background: rgba(247, 182, 213, 0.05);
+    transform: translateX(3px);
+}
+
+.faq-section .grid > div {
+    transition: all 0.3s ease;
+}
+
+.faq-section .grid > div:hover {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12) !important;
+}
+
+/* Responsive Design for Contact Page */
+@media (max-width: 768px) {
+    .contact-header h1 {
+        font-size: 2.5rem !important;
+    }
+
+    .contact-header p {
+        font-size: 1.1rem !important;
+        padding: 0 1rem;
+    }
+
+    .contact-info {
+        padding: 1.5rem !important;
+        margin: 0 1rem;
+    }
+
+    .contact-item {
+        gap: 0.8rem !important;
+        flex-direction: column !important;
+        text-align: center !important;
+    }
+
+    .faq-section h2 {
+        font-size: 2rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .contact-header h1 {
+        font-size: 2rem !important;
+    }
+
+    .contact-info {
+        padding: 1.2rem !important;
+    }
+
+    .contact-item div:first-child {
+        width: 45px !important;
+        height: 45px !important;
+    }
+
+    .contact-item i {
+        font-size: 1rem !important;
+    }
+}

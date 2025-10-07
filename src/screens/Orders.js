@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/api";
+import { getStoredCustomer } from "../utils/customer";
 import "./Orders.css";
 
 const formatCurrency = (amount) =>
@@ -24,7 +25,7 @@ const statusColors = {
   Shipped: { bg: "#d1ecf1", color: "#0c5460", border: "#17a2b8" },
   Delivered: { bg: "#d4edda", color: "#155724", border: "#28a745" },
   Completed: { bg: "#d4edda", color: "#155724", border: "#28a745" },
-  Cancelled: { bg: "#f8d7da", color: "#721c24", border: "#dc3545" }
+  Cancelled: { bg: "#f8d7da", color: "#721c24", border: "#dc3545" },
 };
 
 function Orders() {
@@ -32,84 +33,180 @@ function Orders() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [expandedOrderId, setExpandedOrderId] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [sortBy, setSortBy] = useState("dateDesc");
+  const [pageSize, setPageSize] = useState(6);
+  const [currentPage, setCurrentPage] = useState(1);
+  
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Get the logged-in customer
-    const customer = JSON.parse(localStorage.getItem("customer") || "{}");
-    
-    console.log("Customer from localStorage:", customer); // Debug log
-    
-    if (!customer.customerId && !customer.email) {
-      setError("Please log in to view your orders.");
-      setLoading(false);
-      return;
-    }
+  const fetchCustomerOrders = async (isManualRefresh = false) => {
+    if (isManualRefresh) setRefreshing(true);
 
-    // Fetch customer orders by getting the customer data (which includes orders)
-    const fetchCustomerOrders = async () => {
-      try {
-        // Primary approach: Get customer data with orders
-        if (customer.customerId) {
-          try {
-            const res = await api.get(`/api/customer/read/${customer.customerId}`);
-            console.log("Customer data with orders:", res.data);
-            
-            // Get orders from customer data
-            const customerOrders = res.data.orders || res.data.customerOrders || [];
-            console.log("Customer orders found:", customerOrders);
-            
-            setOrders(customerOrders);
-            setLoading(false);
-            return;
-          } catch (customerErr) {
-            console.log("Customer-based fetch failed, trying email approach...", customerErr);
-          }
-        }
-
-        // Fallback 1: Try fetching by email if available
-        if (customer.email) {
-          try {
-            const res = await api.get(`/api/orders/customer/${encodeURIComponent(customer.email)}`);
-            console.log("Orders by email:", res.data);
-            setOrders(res.data);
-            setLoading(false);
-            return;
-          } catch (emailErr) {
-            console.log("Email-based fetch failed, using fallback...", emailErr);
-          }
-        }
-
-        // Fallback 2: Get all orders and filter by customer ID or email
-        const res = await api.get("/api/order/getall");
-        console.log("All orders fetched for filtering:", res.data);
-        
-        const customerOrders = res.data.filter(order => {
-          const matchesId = customer.customerId && order.customer?.customerId === customer.customerId;
-          const matchesEmail = customer.email && order.customer?.email === customer.email;
-          return matchesId || matchesEmail;
-        });
-        
-        console.log("Filtered customer orders:", customerOrders);
-        setOrders(customerOrders);
+    try {
+      // Get logged-in customer (normalized)
+      const customer = getStoredCustomer();
+      if (!customer || !customer.customerId) {
+        setError("Please log in to view your orders.");
         setLoading(false);
-
-      } catch (fallbackErr) {
-        console.error("All order fetching approaches failed:", fallbackErr);
-        setError("Failed to load your orders. Please try again later.");
-        setLoading(false);
+        return;
       }
-    };
 
+      // Try a dedicated endpoint that returns orders for a customer (preferred)
+      try {
+        const res = await api.get(`/api/order/customer/${customer.customerId}`);
+        console.log("ORDERS FOR CUSTOMER from /api/order/customer ->", res.data);
+        // Ensure we always store an array
+        setOrders(Array.isArray(res.data) ? res.data : (res.data ? [res.data] : []));
+      } catch (err) {
+        // If dedicated endpoint not available (404) or fails, fallback to fetching all and filtering
+        if (err.response && err.response.status === 404) {
+          console.warn("/api/order/customer endpoint not found; falling back to /api/order/getall");
+          const res2 = await api.get("/api/order/getall");
+          console.log("RAW ORDERS FROM /api/order/getall ->", res2.data);
+          const customerOrders = (res2.data || []).filter((order) => {
+            const cid = customer.customerId;
+            if (!cid) return false;
+            if (order?.customer?.customerId === cid) return true;
+            if (order?.customerId === cid) return true;
+            if (order?.customer?.id === cid) return true;
+            return false;
+          });
+          setOrders(customerOrders);
+        } else {
+          throw err; // rethrow other errors to be caught by outer catch
+        }
+      }
+      setLoading(false);
+      if (isManualRefresh) setRefreshing(false);
+    } catch (err) {
+      console.error("Failed to fetch orders:", err);
+      setError("Failed to load your orders. Please try again later.");
+      setLoading(false);
+      if (isManualRefresh) setRefreshing(false);
+    }
+  };
+
+  // Helpers to normalize different backend shapes
+  const getLineProductId = (line) => {
+    if (!line) return undefined;
+    if (typeof line.productId === "number") return line.productId;
+    if (line.product && typeof line.product === "object") {
+      return line.product.productId ?? line.product.id ?? line.productId;
+    }
+    if (typeof line.product === "number") return line.product;
+    return line.productId ?? undefined;
+  };
+
+  const getLineProductName = (line) => {
+    if (!line) return "";
+    if (line.product && typeof line.product === "object") {
+      return line.product.name || line.product.productName || line.product.title || "";
+    }
+    return line.productName || line.name || "";
+  };
+
+  const handleManualRefresh = () => {
+    fetchCustomerOrders(true);
+  };
+
+  // copy order id feedback
+  
+  
+
+  useEffect(() => {
     fetchCustomerOrders();
+
+    const pollInterval = setInterval(() => {
+      fetchCustomerOrders();
+    }, 30000);
+
+    const handleFocus = () => {
+      fetchCustomerOrders();
+    };
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      clearInterval(pollInterval);
+      window.removeEventListener("focus", handleFocus);
+    };
   }, []);
+
+  // derive filtered/sorted/paged list
+  const processedOrders = React.useMemo(() => {
+    let arr = Array.isArray(orders) ? [...orders] : [];
+    // search across order id, product names, status, email
+    const q = String(search || "").trim().toLowerCase();
+    if (q) {
+      arr = arr.filter(o => {
+        if (String(o.orderId || '').toLowerCase().includes(q)) return true;
+        if (String(o.status || '').toLowerCase().includes(q)) return true;
+        if (String(o.totalAmount || o.total || '').toLowerCase().includes(q)) return true;
+        const cust = o.customer || {};
+        if (String(cust.email || cust.name || cust.firstName || '').toLowerCase().includes(q)) return true;
+        const names = (o.orderLines || []).map(getLineProductName).join(' ').toLowerCase();
+        if (names.includes(q)) return true;
+        return false;
+      });
+    }
+    if (statusFilter && statusFilter !== 'All') {
+      arr = arr.filter(o => String(o.status || 'Pending') === statusFilter);
+    }
+    // sort
+    arr.sort((a,b) => {
+      if (sortBy === 'dateDesc') return new Date(b.orderDate) - new Date(a.orderDate);
+      if (sortBy === 'dateAsc') return new Date(a.orderDate) - new Date(b.orderDate);
+      if (sortBy === 'amountDesc') return (b.totalAmount ?? b.total ?? 0) - (a.totalAmount ?? a.total ?? 0);
+      if (sortBy === 'amountAsc') return (a.totalAmount ?? a.total ?? 0) - (b.totalAmount ?? b.total ?? 0);
+      return 0;
+    });
+    return arr;
+  }, [orders, search, statusFilter, sortBy]);
+
+  const totalPages = Math.max(1, Math.ceil(processedOrders.length / pageSize));
+  React.useEffect(() => setCurrentPage(1), [search, statusFilter, sortBy, pageSize]);
+
+  const pagedOrders = React.useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return processedOrders.slice(start, start + pageSize);
+  }, [processedOrders, currentPage, pageSize]);
 
   return (
     <div className="orders-page-wrapper">
       <div className="orders-container">
         <div className="orders-header">
-          <h1 className="orders-title">My Orders</h1>
-          <p className="orders-subtitle">Track and manage your orders</p>
+          <div>
+            <h1 className="orders-title">My Orders</h1>
+            <p className="orders-subtitle">Track and manage your orders</p>
+          </div>
+          <div className="orders-controls">
+            <input className="search-input" placeholder="Search orders or products..." value={search} onChange={e => setSearch(e.target.value)} />
+            <select className="select-control" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+              <option value="All">All status</option>
+              <option value="Pending">Pending</option>
+              <option value="Processing">Processing</option>
+              <option value="Shipped">Shipped</option>
+              <option value="Delivered">Delivered</option>
+              <option value="Completed">Completed</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+            <select className="select-control" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+              <option value="dateDesc">Newest</option>
+              <option value="dateAsc">Oldest</option>
+              <option value="amountDesc">Amount ↓</option>
+              <option value="amountAsc">Amount ↑</option>
+            </select>
+            <select className="select-control" value={pageSize} onChange={e => setPageSize(Number(e.target.value))}>
+              <option value={4}>4 / page</option>
+              <option value={6}>6 / page</option>
+              <option value={10}>10 / page</option>
+            </select>
+            <button className={`refresh-button ${refreshing || loading ? 'is-loading' : ''}`} onClick={handleManualRefresh} disabled={refreshing || loading} aria-busy={refreshing || loading} aria-label="Refresh orders">
+              {refreshing ? (<><span className="refresh-spinner" aria-hidden="true"></span><span>Refreshing...</span></>) : (<><span className="refresh-emoji" aria-hidden="true">🔄</span><span>Refresh</span></>)}
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -119,21 +216,18 @@ function Orders() {
           </div>
         ) : error ? (
           <div className="orders-error">
-            <div className="error-icon">!</div>
+            <div className="error-icon">⚠️</div>
             <h3>Oops! Something went wrong</h3>
             <p>{error}</p>
             {error.includes("log in") && (
-              <button 
-                className="btn-primary" 
-                onClick={() => navigate("/login")}
-              >
+              <button className="btn-primary" onClick={() => navigate("/login")}>
                 Go to Login
               </button>
             )}
           </div>
         ) : orders.length === 0 ? (
           <div className="orders-empty">
-            <div className="empty-icon">[ ]</div>
+            <div className="empty-icon">📦</div>
             <h3>No orders yet</h3>
             <p>You haven't placed any orders yet. Start shopping to see your orders here!</p>
             <Link to="/products" className="btn-primary">
@@ -142,24 +236,21 @@ function Orders() {
           </div>
         ) : (
           <div className="orders-list">
-            {orders.map(order => (
+            {pagedOrders.map((order) => (
               <div className="order-card" key={order.orderId}>
                 <div className="order-header">
                   <div className="order-info">
                     <h3 className="order-number">Order #{order.orderId}</h3>
                     <p className="order-date">Placed on {formatDate(order.orderDate)}</p>
                   </div>
-                  <div className="order-status">
-                    <span 
-                      className="status-badge"
-                      style={{
-                        backgroundColor: statusColors[order.status]?.bg || statusColors.Pending.bg,
-                        color: statusColors[order.status]?.color || statusColors.Pending.color,
-                        borderColor: statusColors[order.status]?.border || statusColors.Pending.border
-                      }}
-                    >
-                      {order.status || "Pending"}
-                    </span>
+                  <div className="order-right">
+                    <div className="order-status">
+                      <span className={`status-badge status-${String(order.status||'Pending').toLowerCase()}`.replace(/\s/g,'-')}>{order.status || 'Pending'}</span>
+                    </div>
+                    <div className="order-actions">
+                      <button className="btn-secondary" onClick={() => setExpandedOrderId(expandedOrderId === order.orderId ? null : order.orderId)}>{expandedOrderId === order.orderId ? 'Hide Details' : 'View Details'}</button>
+                      {(order.status === 'Shipped' || order.status === 'Processing') && (<button className="btn-outline">Track Order</button>)}
+                    </div>
                   </div>
                 </div>
 
@@ -168,96 +259,64 @@ function Orders() {
                     <span className="total-label">Total:</span>
                     <span className="total-amount">{formatCurrency(order.totalAmount)}</span>
                   </div>
-                  
+
                   {order.orderLines && order.orderLines.length > 0 && (
                     <div className="order-items-preview">
-                      <span className="items-count">
-                        {order.orderLines.length} item{order.orderLines.length !== 1 ? 's' : ''}
-                      </span>
+                      <span className="items-count">{order.orderLines.length} item{order.orderLines.length !== 1 ? "s" : ""}</span>
                     </div>
                   )}
                 </div>
-
-                <div className="order-actions">
-                  <button
-                    className="btn-secondary"
-                    onClick={() => setExpandedOrderId(expandedOrderId === order.orderId ? null : order.orderId)}
-                  >
-                    {expandedOrderId === order.orderId ? "Hide Details" : "View Details"}
-                  </button>
-                  
-                  {(order.status === "Shipped" || order.status === "Processing") && (
-                    <button className="btn-outline">
-                      Track Order
-                    </button>
-                  )}
-                </div>
-
                 {expandedOrderId === order.orderId && (
-                  <div className="order-details">
-                    <div className="details-grid">
-                      <div className="detail-item">
-                        <span className="detail-label">Order ID:</span>
-                        <span className="detail-value">{order.orderId}</span>
-                      </div>
-                      
-                      <div className="detail-item">
-                        <span className="detail-label">Date:</span>
-                        <span className="detail-value">{formatDate(order.orderDate)}</span>
-                      </div>
-                      
-                      <div className="detail-item">
-                        <span className="detail-label">Status:</span>
-                        <span 
-                          className="detail-value status-text"
-                          style={{ color: statusColors[order.status]?.color || statusColors.Pending.color }}
-                        >
-                          {order.status || "Pending"}
-                        </span>
-                      </div>
-                      
-                      <div className="detail-item">
-                        <span className="detail-label">Total:</span>
-                        <span className="detail-value total-text">{formatCurrency(order.totalAmount)}</span>
-                      </div>
+                  <div className="order-details" style={{ marginTop: 12 }}>
+                    <h4 style={{ marginBottom: 8 }}>Order details</h4>
 
-                      {order.shipment && (
-                        <>
-                          <div className="detail-item">
-                            <span className="detail-label">Shipping Method:</span>
-                            <span className="detail-value">{order.shipment.shipmentMethod || "Standard"}</span>
-                          </div>
-                          
-                          <div className="detail-item">
-                            <span className="detail-label">Tracking Number:</span>
-                            <span className="detail-value">{order.shipment.trackingNumber || "Not available"}</span>
-                          </div>
-                        </>
-                      )}
+                    <div style={{ overflowX: "auto" }}>
+                      <table className="order-lines-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+                        <thead>
+                          <tr>
+                            <th style={{ textAlign: "left", padding: 8, borderBottom: "1px solid #eee" }}>Product</th>
+                            <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>Qty</th>
+                            <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>Unit</th>
+                            <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>Subtotal</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(order.orderLines || []).map((line, idx) => {
+                            const pid = getLineProductId(line);
+                            const pname = getLineProductName(line) || `Product #${pid ?? "?"}`;
+                            const qty = line.quantity ?? line.qty ?? 0;
+                            const unit = (line.unitPrice ?? line.price ?? 0).toFixed ? Number(line.unitPrice ?? line.price ?? 0).toFixed(2) : String(line.unitPrice ?? line.price ?? 0);
+                            const subtotal = (line.subTotal ?? line.subtotal ?? (qty * (line.unitPrice ?? line.price ?? 0)) ).toFixed ? Number(line.subTotal ?? line.subtotal ?? qty * (line.unitPrice ?? line.price ?? 0)).toFixed(2) : String(line.subTotal ?? line.subtotal ?? 0);
+                            return (
+                              <tr key={idx}>
+                                <td style={{ padding: 8, borderBottom: "1px solid #f4f4f4" }}>{pname} {pid ? <span style={{ color: '#666' }}>#{pid}</span> : null}</td>
+                                <td style={{ padding: 8, textAlign: 'right', borderBottom: "1px solid #f4f4f4" }}>{qty}</td>
+                                <td style={{ padding: 8, textAlign: 'right', borderBottom: "1px solid #f4f4f4" }}>R{unit}</td>
+                                <td style={{ padding: 8, textAlign: 'right', borderBottom: "1px solid #f4f4f4" }}>R{subtotal}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
 
-                    {order.orderLines && order.orderLines.length > 0 && (
-                      <div className="order-items">
-                        <h4 className="items-title">Order Items</h4>
-                        <div className="items-list">
-                          {order.orderLines.map(line => (
-                            <div key={line.orderLineId} className="item-row">
-                              <div className="item-info">
-                                <h5 className="item-name">{line.product?.name || line.product?.productName || "Product"}</h5>
-                                {line.product?.sku && (
-                                  <p className="item-sku">SKU: {line.product.sku}</p>
-                                )}
-                              </div>
-                              <div className="item-details">
-                                <span className="item-quantity">Qty: {line.quantity}</span>
-                                <span className="item-price">{formatCurrency(line.unitPrice)}</span>
-                                <span className="item-subtotal">{formatCurrency(line.subTotal)}</span>
-                              </div>
-                            </div>
-                          ))}
+                    {/* Shipping / address */}
+                    {(order.shippingAddress || order.address || order.customerAddress) && (
+                      <div style={{ marginTop: 12 }}>
+                        <h5 style={{ marginBottom: 6 }}>Shipping address</h5>
+                        <div style={{ color: '#444' }}>
+                          {order.shippingAddress?.line1 || order.address?.line1 || order.customerAddress || order.shippingAddress || order.address}
                         </div>
                       </div>
                     )}
+
+                    {/* Payment / totals */}
+                    <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ color: '#666' }}>Subtotal</div>
+                        <div style={{ fontWeight: 600 }}>R{(order.subtotal ?? order.totalAmount ?? order.total ?? 0).toFixed ? Number(order.subtotal ?? order.totalAmount ?? order.total ?? 0).toFixed(2) : String(order.subtotal ?? order.totalAmount ?? order.total ?? 0)}</div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -270,5 +329,3 @@ function Orders() {
 }
 
 export default Orders;
-
-

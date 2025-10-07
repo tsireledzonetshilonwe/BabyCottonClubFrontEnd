@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-
+import { getStoredCustomer } from "../utils/customer";
 import "./Customers.css";
 
 function Customers() {
@@ -7,15 +7,10 @@ function Customers() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // Get logged-in customer from localStorage
-    const stored = localStorage.getItem("customer");
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setCustomer(parsed);
-      } catch {
-        setError("Could not load your account details.");
-      }
+    // Use normalized stored customer
+    const parsed = getStoredCustomer();
+    if (parsed && parsed.customerId) {
+      setCustomer(parsed);
     } else {
       setError("You are not logged in.");
     }

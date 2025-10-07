@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createAddress } from "../api/api";
+import { getStoredCustomer } from "../utils/customer";
 import "./Shipping.css";
 
 export default function Shipping() {
@@ -37,16 +38,22 @@ export default function Shipping() {
         }
         try {
             // Get logged-in customer
-            const customer = JSON.parse(localStorage.getItem("customer"));
+            const customer = getStoredCustomer();
             if (!customer || !customer.customerId) {
                 setError("You must be logged in to add an address.");
                 return;
             }
-            // Attach customerId to address
+            // Attach customerId to address (simplified format)
             const addressData = {
-                ...shippingInfo,
-                customer: { customerId: customer.customerId }
+                streetNumber: parseInt(shippingInfo.streetNumber) || 0,
+                streetName: shippingInfo.streetName,
+                suburb: shippingInfo.suburb,
+                city: shippingInfo.city,
+                postalCode: parseInt(shippingInfo.postalCode) || 0,
+                province: shippingInfo.province
             };
+            
+            console.log("Address data being sent:", addressData);
             const savedAddress = await createAddress(addressData);
             // Pass address to payment page via navigation state
             navigate("/payment", { state: { address: savedAddress } });

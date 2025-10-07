@@ -1,0 +1,22 @@
+{
+  "files": {
+    "main.css": "/static/css/main.22145ca7.css",
+    "main.js": "/static/js/main.d728b3db.js",
+    "static/media/img_2.png": "/static/media/img_2.397bd65ffc6b017df109.png",
+    "static/media/img.png": "/static/media/img.4e1f40e493cdd35014f9.png",
+    "static/media/img_4.png": "/static/media/img_4.14e504744b1d2941adaa.png",
+    "static/media/img_3.png": "/static/media/img_3.c5445fde4b3e659295de.png",
+    "static/media/onesie.webp": "/static/media/onesie.a9ed5477936653cb5599.webp",
+    "static/media/img_1.png": "/static/media/img_1.7334b7e6e85ebc5e5fd1.png",
+    "static/media/banner2.jpg": "/static/media/banner2.13a9ffcee839e565c48f.jpg",
+    "static/media/banner3.webp": "/static/media/banner3.7d9126836570e9a9afc6.webp",
+    "static/media/banner1.webp": "/static/media/banner1.d55613716b68d78c7a7b.webp",
+    "index.html": "/index.html",
+    "main.22145ca7.css.map": "/static/css/main.22145ca7.css.map",
+    "main.d728b3db.js.map": "/static/js/main.d728b3db.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.22145ca7.css",
+    "static/js/main.d728b3db.js"
+  ]
+}

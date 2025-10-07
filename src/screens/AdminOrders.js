@@ -12,7 +12,7 @@ import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
 import { Table } from '../components/ui/table';
-import { fetchAllOrders, updateOrder, fetchAllCustomers } from '../api/api';
+import { fetchAllOrders, updateOrder, fetchAllCustomers, fetchOrderDetails } from '../api/api';
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -20,6 +20,7 @@ const AdminOrders = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState(null);
+  const [expandedOrderId, setExpandedOrderId] = useState(null);
 
   // Create mapping from order ID to customer ID
   const getCustomerIdForOrder = (orderId) => {
@@ -42,6 +43,30 @@ const AdminOrders = () => {
       ]);
       setOrders(ordersData);
       setCustomers(customersData);
+
+      // For orders that don't include customer info, fetch order details to try to extract customerId
+      const missingCustomerOrders = (ordersData || []).filter(o => !(o.customerId || (o.customer && o.customer.customerId)) && o.orderId);
+      if (missingCustomerOrders.length > 0) {
+        try {
+          const detailsResults = await Promise.allSettled(missingCustomerOrders.map(o => fetchOrderDetails(o.orderId)));
+          const detailsById = {};
+          detailsResults.forEach((r, idx) => {
+            if (r.status === 'fulfilled' && r.value) {
+              const data = r.value;
+              const id = missingCustomerOrders[idx].orderId;
+              // extract possible customerId shapes
+              const cid = data?.customer?.customerId ?? data?.customerId ?? data?.customer?.id ?? null;
+              if (cid) detailsById[id] = cid;
+            }
+          });
+
+          if (Object.keys(detailsById).length > 0) {
+            setOrders(prev => prev.map(o => ({ ...o, customerId: o.customerId || detailsById[o.orderId] })));
+          }
+        } catch (detailErr) {
+          console.warn('Failed to fetch some order details for missing customer mapping', detailErr);
+        }
+      }
     } catch (error) {
       console.error('Error loading orders:', error);
       setError('Failed to load orders from backend');
@@ -59,8 +84,21 @@ const AdminOrders = () => {
     try {
       const order = orders.find(o => o.orderId === orderId || o.id === orderId);
       if (order) {
-        const updatedOrder = { ...order, status: newStatus };
-        await updateOrder(orderId, updatedOrder);
+        // Check if order has customer data
+        if (!order.customer || !order.customer.customerId) {
+          alert("Cannot update order: No customer associated with this order. Please assign a customer first.");
+          return;
+        }
+        
+        // Convert to CustomerOrderRequest DTO format that backend expects
+        const updateRequest = {
+          customerId: order.customer.customerId,
+          orderDate: order.orderDate,
+          totalAmount: order.totalAmount,
+          status: newStatus,
+          orderId: orderId
+        };
+        await updateOrder(orderId, updateRequest);
         
         // Update local state
         setOrders(prevOrders => 
@@ -99,15 +137,23 @@ const AdminOrders = () => {
       default: return 'outline';
     }
   };
+  // Helpers to render order line shapes
+  const getLineProductId = (line) => {
+    if (!line) return undefined;
+    if (typeof line.productId === 'number') return line.productId;
+    if (line.product && typeof line.product === 'object') return line.product.productId ?? line.product.id ?? undefined;
+    if (typeof line.product === 'number') return line.product;
+    return undefined;
+  };
 
-  const showOrderDetails = (order) => {
-    const customerId = getCustomerIdForOrder(order.orderId);
-    alert(`Order Details:
-Order ID: ${order.orderId}
-Customer ID: ${customerId || 'N/A'}
-Amount: R${order.totalAmount}
-Status: ${order.status || 'Pending'}
-Date: ${order.orderDate}`);
+  const getLineProductName = (line) => {
+    if (!line) return '';
+    if (line.product && typeof line.product === 'object') return line.product.name || line.product.productName || line.product.title || '';
+    return line.productName || line.name || '';
+  };
+
+  const toggleOrderDetails = (orderId) => {
+    setExpandedOrderId(prev => (prev === orderId ? null : orderId));
   };
 
   return (
@@ -298,74 +344,114 @@ Date: ${order.orderDate}`);
               </thead>
               <tbody>
                 {filteredOrders.map((order) => (
-                  <tr key={order.orderId} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                    <td style={{ 
-                      padding: '12px 16px', 
-                      fontWeight: '500',
-                      color: '#1f2937'
-                    }}>
-                      #{order.orderId}
-                    </td>
-                    <td style={{ padding: '12px 16px', color: '#374151' }}>
-                      {getCustomerIdForOrder(order.orderId) || 'N/A'}
-                    </td>
-                    <td style={{ padding: '12px 16px', color: '#374151' }}>
-                      {order.orderDate}
-                    </td>
-                    <td style={{ 
-                      padding: '12px 16px', 
-                      fontWeight: '600',
-                      color: '#059669'
-                    }}>
-                      R{order.totalAmount}
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <Badge 
-                        variant={getStatusColor(order.status || 'pending')}
-                        style={{ 
-                          padding: '4px 8px',
-                          borderRadius: '16px',
-                          fontSize: '12px',
-                          fontWeight: '500'
-                        }}
-                      >
-                        {order.status || 'Pending'}
-                      </Badge>
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => showOrderDetails(order)}
+                  <React.Fragment key={order.orderId}>
+                    <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
+                      <td style={{ 
+                        padding: '12px 16px', 
+                        fontWeight: '500',
+                        color: '#1f2937'
+                      }}>
+                        #{order.orderId}
+                      </td>
+                      <td style={{ padding: '12px 16px', color: '#374151' }}>
+                        {getCustomerIdForOrder(order.orderId) || order.customerId || (order.customer && order.customer.customerId) || 'N/A'}
+                      </td>
+                      <td style={{ padding: '12px 16px', color: '#374151' }}>
+                        {order.orderDate}
+                      </td>
+                      <td style={{ 
+                        padding: '12px 16px', 
+                        fontWeight: '600',
+                        color: '#059669'
+                      }}>
+                        R{order.totalAmount}
+                      </td>
+                      <td style={{ padding: '12px 16px' }}>
+                        <Badge 
+                          variant={getStatusColor(order.status || 'pending')}
                           style={{ 
                             padding: '4px 8px',
-                            minWidth: 'auto'
-                          }}
-                        >
-                          <Eye style={{ width: '16px', height: '16px' }} />
-                        </Button>
-                        <select
-                          value={order.status || 'pending'}
-                          onChange={(e) => handleStatusUpdate(order.orderId, e.target.value)}
-                          style={{
+                            borderRadius: '16px',
                             fontSize: '12px',
-                            padding: '4px 8px',
-                            border: '1px solid #d1d5db',
-                            borderRadius: '6px',
-                            backgroundColor: 'white',
-                            cursor: 'pointer'
+                            fontWeight: '500'
                           }}
                         >
-                          <option value="pending">Pending</option>
-                          <option value="processing">Processing</option>
-                          <option value="shipped">Shipped</option>
-                          <option value="delivered">Delivered</option>
-                          <option value="cancelled">Cancelled</option>
-                        </select>
-                      </div>
-                    </td>
-                  </tr>
+                          {order.status || 'Pending'}
+                        </Badge>
+                      </td>
+                      <td style={{ padding: '12px 16px' }}>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => toggleOrderDetails(order.orderId)}
+                            style={{ 
+                              padding: '4px 8px',
+                              minWidth: 'auto'
+                            }}
+                          >
+                            <Eye style={{ width: '16px', height: '16px' }} />
+                          </Button>
+                          <select
+                            value={order.status || 'pending'}
+                            onChange={(e) => handleStatusUpdate(order.orderId, e.target.value)}
+                            style={{
+                              fontSize: '12px',
+                              padding: '4px 8px',
+                              border: '1px solid #d1d5db',
+                              borderRadius: '6px',
+                              backgroundColor: 'white',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="processing">Processing</option>
+                            <option value="shipped">Shipped</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="cancelled">Cancelled</option>
+                          </select>
+                        </div>
+                      </td>
+                    </tr>
+                    {expandedOrderId === order.orderId && (
+                      <tr>
+                        <td colSpan={6} style={{ padding: '12px 16px', background: '#fafafa' }}>
+                          <div style={{ marginTop: 8 }}>
+                            <h4 style={{ margin: 0, marginBottom: 8 }}>Order lines</h4>
+                            <div style={{ overflowX: 'auto' }}>
+                              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                  <tr>
+                                    <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Product</th>
+                                    <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Qty</th>
+                                    <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Unit</th>
+                                    <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Subtotal</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(order.orderLines || []).map((line, idx) => {
+                                    const pid = getLineProductId(line);
+                                    const pname = getLineProductName(line) || `Product #${pid ?? '?'} `;
+                                    const qty = line.quantity ?? line.qty ?? 0;
+                                    const unit = Number(line.unitPrice ?? line.price ?? 0).toFixed(2);
+                                    const subtotal = Number(line.subTotal ?? line.subtotal ?? qty * (line.unitPrice ?? line.price ?? 0)).toFixed(2);
+                                    return (
+                                      <tr key={idx}>
+                                        <td style={{ padding: 8, borderBottom: '1px solid #f4f4f4' }}>{pname} {pid ? <span style={{ color: '#666' }}>#{pid}</span> : null}</td>
+                                        <td style={{ padding: 8, textAlign: 'right', borderBottom: '1px solid #f4f4f4' }}>{qty}</td>
+                                        <td style={{ padding: 8, textAlign: 'right', borderBottom: '1px solid #f4f4f4' }}>R{unit}</td>
+                                        <td style={{ padding: 8, textAlign: 'right', borderBottom: '1px solid #f4f4f4' }}>R{subtotal}</td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </Table>

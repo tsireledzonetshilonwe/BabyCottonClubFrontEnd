@@ -5,199 +5,141 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Separator } from "../components/ui/separator";
 import { ShoppingBag } from "lucide-react";
 import { useCart } from "../context/CartContext";
-import { useAuth } from "../contexts/AuthContext";
-import { createOrder, createOrderLine } from "../api/api";
+import { createOrder } from "../api/api";
 import api from "../api/api";
+import { getStoredCustomer as getStoredCustomerFromUtil } from "../utils/customer";
 import CartItem from "../components/CartItem";
 import "./CartPage.css";
 
 export default function CartPage() {
-    const {
-        cartItems,
-        removeFromCart,
-        clearCart,
-        increaseQuantity,
-        decreaseQuantity,
-    } = useCart();
+    const { cartItems, removeFromCart, clearCart, increaseQuantity, decreaseQuantity } = useCart();
     const navigate = useNavigate();
 
-    // Memoized calculations for better performance
-    const getTotalPrice = useMemo(() => {
-        return cartItems.reduce(
-            (sum, item) => sum + parseFloat(item.price) * item.quantity,
-            0
-        );
-    }, [cartItems]);
+    // Memoized calculations
+    const getTotalPrice = useMemo(() => cartItems.reduce((sum, item) => sum + parseFloat(item.price) * item.quantity, 0), [cartItems]);
+    const getTotalItems = useMemo(() => cartItems.reduce((sum, item) => sum + item.quantity, 0), [cartItems]);
+    const tax = useMemo(() => getTotalPrice * 0.15, [getTotalPrice]);
+    const total = useMemo(() => getTotalPrice + tax, [getTotalPrice, tax]);
 
-    const getTotalItems = useMemo(() => {
-        return cartItems.reduce(
-            (sum, item) => sum + item.quantity,
-            0
-        );
-    }, [cartItems]);
-
-    const shipping = useMemo(() => {
-        return getTotalPrice > 500 ? 0 : 150; // Free shipping over R500, otherwise R150
-    }, [getTotalPrice]);
-    
-    const tax = useMemo(() => {
-        return getTotalPrice * 0.15; // 15% VAT (South African tax rate)
-    }, [getTotalPrice]);
-    
-    const total = useMemo(() => {
-        return getTotalPrice + shipping + tax;
-    }, [getTotalPrice, shipping, tax]);
-
-    // Optimized quantity change handler
     const handleQuantityChange = useCallback((id, newQuantity) => {
-        if (newQuantity < 1 || newQuantity > 999) return; // Reasonable limits
-        
-        // Update the quantity using existing cart functions
+        if (newQuantity < 1 || newQuantity > 999) return;
         const currentItem = cartItems.find(item => item.id === id);
         if (currentItem) {
-            const difference = newQuantity - currentItem.quantity;
-            if (difference > 0) {
-                // Increase quantity
-                for (let i = 0; i < difference; i++) {
-                    increaseQuantity(id);
-                }
-            } else if (difference < 0) {
-                // Decrease quantity
-                for (let i = 0; i < Math.abs(difference); i++) {
-                    decreaseQuantity(id);
-                }
-            }
+            const diff = newQuantity - currentItem.quantity;
+            if (diff > 0) for (let i = 0; i < diff; i++) increaseQuantity(id);
+            if (diff < 0) for (let i = 0; i < Math.abs(diff); i++) decreaseQuantity(id);
         }
     }, [cartItems, increaseQuantity, decreaseQuantity]);
 
-    // Test backend connectivity on component mount
     useEffect(() => {
         const testBackendConnection = async () => {
             try {
-                // Test if backend is running by trying to fetch products
                 const response = await api.get("/api/products/getall");
                 console.log("Backend connection successful:", response.status);
             } catch (error) {
                 console.error("Backend connection failed:", error);
-                if (error.code === 'ECONNREFUSED' || error.message.includes('Network Error')) {
-                    console.error("Backend server is not running on http://localhost:8080");
-                }
             }
         };
         testBackendConnection();
     }, []);
 
+    // Use shared helper to normalize stored customer
+    const getStoredCustomer = getStoredCustomerFromUtil;
 
-
-    // Optimized checkout handler
     const handleCheckout = useCallback(async () => {
-        // Check if user is logged in
-        const customer = JSON.parse(localStorage.getItem("customer") || "{}");
-        if (!customer.customerId) {
-            alert("Please log in to proceed with checkout");
-            navigate("/login");
-            return;
-        }
-
-        // Use existing checkout logic
         try {
-            console.log("Starting checkout process...");
-            
-            // Validate cart is not empty
+            const customer = getStoredCustomer();
+
+            if (!customer.customerId || customer.customerId > 2147483647) {
+                console.warn("Invalid customerId, using default ID 1");
+                customer.customerId = 1;
+            }
+
+            if (!customer.customerId) {
+                alert("Please log in to proceed with checkout");
+                navigate("/login");
+                return;
+            }
+
             if (cartItems.length === 0) {
                 alert("Your cart is empty. Please add items before checkout.");
                 return;
             }
-            console.log("Cart items:", cartItems.length);
 
-            // 0. Try to save cart to backend before processing checkout (optional)
-            try {
-                console.log("Saving cart to backend...");
-                await saveCartToBackend(cartItems);
-                console.log("Cart saved successfully");
-            } catch (error) {
-                console.log("Cart save failed, but continuing with checkout:", error);
-                // Don't block checkout if cart save fails
-            }
-            
-            // 0.5. Mark cart as checked out (to avoid duplicate constraint issues)
-            try {
-                console.log("Marking cart as checked out...");
-                const checkoutPayload = {
-                    customer: { customerId: customer.customerId },
-                    isCheckedOut: true // Mark as checked out to avoid duplicates
-                };
-                await api.put("/api/cart/update", checkoutPayload);
-                console.log("Cart marked as checked out");
-            } catch (checkoutError) {
-                console.log("Cart checkout marking failed:", checkoutError.response?.status);
-                // Continue even if this fails
+            const totalAmount = Math.round((getTotalPrice + tax) * 100) / 100;
+
+            // Validate product IDs against backend product list before building payload
+            const productsRes = await api.get('/api/products/getall');
+            const products = Array.isArray(productsRes.data) ? productsRes.data : productsRes;
+            const validProductIds = new Set(products.map(p => Number(p.productId ?? p.id)).filter(n => Number.isFinite(n) && n >= 1));
+
+            const invalidItems = cartItems.filter(item => {
+                const pid = Number(item.id ?? item.productId);
+                return !Number.isFinite(pid) || pid < 1 || !validProductIds.has(pid);
+            });
+
+            if (invalidItems.length > 0) {
+                console.error('Checkout aborted: invalid product IDs detected for items:', invalidItems);
+                const ids = invalidItems.map(i => i.id ?? i.productId).join(', ');
+                alert(`Cannot create order: invalid productId(s) found: ${ids}. Please remove these items or contact support.`);
+                return;
             }
 
-            // 1. Create the shipment first
-            console.log("Creating shipment...");
-            const shipmentData = {
-                shipmentMethod: "Standard",
-                status: "Pending",
-                trackingNumber: "N/A"
-            };
-            
-            const shipmentRes = await api.post("/shipment/create", shipmentData);
-            const shipment = shipmentRes.data;
-            console.log("Shipment created:", shipment);
-
-            // 2. Prepare order data with persisted shipment
-            console.log("Creating order...");
-            const orderData = {
+            // Build full order payload including order lines (all productIds validated)
+            const orderPayload = {
+                customerId: customer.customerId,
                 orderDate: new Date().toISOString().slice(0,10),
-                totalAmount: getTotalPrice,
-                orderLines: null,
-                customer: { customerId: customer.customerId },
-                shipment: shipment
-            };
-            
-            // 3. Create the order
-            const order = await createOrder(orderData);
-            console.log("Order created:", order);
-            
-            // 4. Create order lines for each cart item
-            console.log("Creating order lines...");
-            const orderLinePromises = cartItems.map(async (item, index) => {
-                const orderLineData = {
+                totalAmount,
+                status: "Pending",
+                orderLines: cartItems.map(item => ({
                     quantity: item.quantity,
                     unitPrice: parseFloat(item.price),
                     subTotal: parseFloat(item.price) * item.quantity,
-                    order: { orderId: order.orderId },
-                    product: { productId: item.id }
-                };
-                
-                try {
-                    return await createOrderLine(orderLineData);
-                } catch (orderLineError) {
-                    console.error(`Failed to create order line ${index + 1}:`, orderLineError);
-                    throw orderLineError;
-                }
-            });
+                    productId: Number(item.id ?? item.productId)
+                }))
+            };
 
-            const orderLines = await Promise.all(orderLinePromises);
-            console.log("All order lines created:", orderLines.length);
-            
-            // 5. Clear cart after successful order creation
+            // Log payload (dev) and create order with nested lines in a single request
+            console.log("ORDER PAYLOAD ->", JSON.stringify(orderPayload, null, 2));
+            const order = await createOrder(orderPayload);
+            console.log("Order created with lines:", order);
+
+            // 3. Clear cart and save order ID
             clearCart();
-            console.log("Cart cleared");
-            
-            // 6. Save order ID and navigate to shipping
-            localStorage.setItem("orderId", order.orderId);
-            console.log("Order ID saved:", order.orderId);
-            
+            localStorage.setItem("orderId", String(order.orderId));
+
             alert("Order created successfully!");
             navigate("/shipping");
-            
+
         } catch (err) {
-            console.error("Checkout error:", err);
-            alert("Failed to create order. Please try again.");
+                // Improved Axios error logging for debugging 500s
+                console.error("❌ Checkout error:", err);
+                try {
+                    // Axios provides response with status and data when available
+                    if (err && err.response) {
+                        console.error("Axios response status:", err.response.status);
+                        console.error("Axios response data:", err.response.data);
+                        const backendMessage = err.response.data?.message || err.response.data || JSON.stringify(err.response.data);
+                        alert(`Failed to create order: ${backendMessage}`);
+                    } else if (err && err.request) {
+                        // Request was made but no response received
+                        console.error("No response received:", err.request);
+                        alert("Failed to create order: no response from server. Check backend logs or CORS settings.");
+                    } else {
+                        // Something happened in setting up the request
+                        alert(`Failed to create order: ${err.message}`);
+                    }
+                } catch (loggingErr) {
+                    console.error("Error while handling checkout error:", loggingErr);
+                    alert("Failed to create order. See console for details.");
+                }
         }
-    }, [cartItems, getTotalPrice, clearCart, navigate]);
+    }, [cartItems, getTotalPrice, tax, clearCart, navigate]);
+
+    const formatCurrency = useCallback((amount) => {
+        if (amount === null || amount === undefined || isNaN(amount)) return 'R0.00';
+        return `R${Number(amount).toFixed(2)}`;
+    }, []);
 
     if (cartItems.length === 0) {
         return (
@@ -205,9 +147,7 @@ export default function CartPage() {
                 <div className="text-center">
                     <ShoppingBag className="h-24 w-24 text-muted-foreground mx-auto mb-6" />
                     <h1 className="text-3xl font-bold mb-4">Your cart is empty</h1>
-                    <p className="text-muted-foreground mb-8">
-                        Discover our beautiful collection of baby clothing
-                    </p>
+                    <p className="text-muted-foreground mb-8">Discover our beautiful collection of baby clothing</p>
                     <Button asChild>
                         <Link to="/products">Continue Shopping</Link>
                     </Button>
@@ -219,9 +159,8 @@ export default function CartPage() {
     return (
         <div className="container mx-auto px-4 py-8">
             <h1 className="text-3xl font-bold mb-8">Shopping Cart</h1>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Cart Items */}
                 <div className="lg:col-span-2 space-y-4">
                     {cartItems.map((item) => (
                         <CartItem
@@ -233,111 +172,76 @@ export default function CartPage() {
                     ))}
                 </div>
 
-                {/* Order Summary */}
                 <div className="lg:col-span-1">
-                    <Card>
+                    <Card className="order-summary-card">
                         <CardHeader>
                             <CardTitle>Order Summary</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="flex justify-between">
                                 <span>Subtotal ({getTotalItems} items)</span>
-                                <span>R{getTotalPrice.toFixed(2)}</span>
+                                <span>{formatCurrency(getTotalPrice)}</span>
                             </div>
-                            
-                            <div className="flex justify-between">
-                                <span>Shipping</span>
-                                <span>{shipping === 0 ? 'FREE' : `R${shipping.toFixed(2)}`}</span>
-                            </div>
-                            
                             <div className="flex justify-between">
                                 <span>VAT (15%)</span>
-                                <span>R{tax.toFixed(2)}</span>
+                                <span>{formatCurrency(tax)}</span>
                             </div>
-                            
                             <Separator />
-                            
                             <div className="flex justify-between font-semibold text-lg">
                                 <span>Total</span>
-                                <span>R{total.toFixed(2)}</span>
+                                <span>{formatCurrency(total)}</span>
                             </div>
-                            
-                            {shipping > 0 && (
-                                <p className="text-sm text-muted-foreground">
-                                    Add R{(500 - getTotalPrice).toFixed(2)} more for free shipping!
-                                </p>
-                            )}
-                            
-                            <Button onClick={handleCheckout} className="w-full" size="lg">
-                                Proceed to Checkout
-                            </Button>
-                            
-                            <Button variant="outline" asChild className="w-full">
-                                <Link to="/products">Continue Shopping</Link>
-                            </Button>
+
+                            <div className="space-y-2 mt-4">
+                                <Button onClick={handleCheckout} className="w-full" size="lg">
+                                    Proceed to Checkout
+                                </Button>
+                                <Button variant="outline" asChild className="w-full">
+                                    <Link to="/products">Continue Shopping</Link>
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
             </div>
         </div>
     );
-}
+};
 
-// Helper function for saving cart to backend
+// Helper: Save cart to backend (optional)
 const saveCartToBackend = async (cartItems) => {
     try {
-        const customer = JSON.parse(localStorage.getItem("customer"));
-        if (!customer || !customer.customerId) {
-            console.log("No customer found, skipping cart save");
-            return;
-        }
-        
-        if (cartItems.length === 0) {
-            console.log("Cart is empty, skipping save");
-            return;
-        }
-        
-        // Try to update existing cart first, then create if needed
+        const customer = getStoredCustomerFromUtil();
+        if (!customer || !Number.isFinite(Number(customer.customerId)) || Number(customer.customerId) <= 0) return;
+
         const updatePayload = {
-            customer: { 
+            customer: {
                 customerId: customer.customerId,
                 firstName: customer.firstName || "Customer",
-                lastName: customer.lastName || "User", 
+                lastName: customer.lastName || "User",
                 email: customer.email || "customer@example.com"
             },
             items: cartItems.map(item => ({
-                product: { 
-                    productId: item.id,
-                    productName: item.name,
-                    price: parseFloat(item.price)
-                },
+                productId: item.id,
                 quantity: item.quantity,
                 unitPrice: parseFloat(item.price),
                 subTotal: parseFloat(item.price) * item.quantity
             })),
             isCheckedOut: false
         };
-        
+
         try {
-            const response = await api.put("/api/cart/update", updatePayload);
-            console.log("Cart updated successfully:", response.data);
+            await api.put("/api/cart/update", updatePayload);
         } catch (updateError) {
             if (updateError.response?.status === 404) {
-                // Cart doesn't exist, create new one
-                const response = await api.post("/api/cart/create", updatePayload);
-                console.log("New cart created successfully:", response.data);
+                await api.post("/api/cart/create", updatePayload);
             } else {
                 throw updateError;
             }
         }
-        
+
     } catch (error) {
-        if (error.response?.data?.message?.includes("Duplicate entry")) {
-            console.log("Customer already has a cart, skipping cart save");
-            return;
-        }
-        
-        console.error("Failed to save cart to backend:", error);
+        console.error("Failed to save cart:", error);
         throw error;
     }
 };

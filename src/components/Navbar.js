@@ -3,11 +3,12 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import "../App.css";
+import { getStoredCustomer } from "../utils/customer";
 
 function Navbar() {
     const navigate = useNavigate();
     const { cartItems } = useCart();
-    const isLoggedIn = !!localStorage.getItem("customer");
+    const isLoggedIn = !!getStoredCustomer()?.customerId;
     const isAdmin = !!localStorage.getItem("admin");
 
     const handleLogout = () => {
@@ -56,6 +57,9 @@ function Navbar() {
                     </li>
                     {!isLoggedIn && <li><Link to="/login">Login</Link></li>}
                     {!isLoggedIn && <li><Link to="/signup">Register</Link></li>}
+                    {!isLoggedIn && !isAdmin && <li><Link to="/login/admin">Admin Login</Link></li>}
+                    {isLoggedIn && <li><Link to="/profile">My Profile</Link></li>}
+                    {isLoggedIn && <li><Link to="/orders">My Orders</Link></li>}
                     {isLoggedIn && <li><button className="navbar-logout-btn" onClick={handleLogout}>Logout</button></li>}
                     {isAdmin && <>
                         <li><Link to="/admin/dashboard">Admin Dashboard</Link></li>
