@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Separator } from "../components/ui/separator";
 import { ShoppingBag } from "lucide-react";
 import { useCart } from "../context/CartContext";
-import { createOrder, createOrderLine } from "../api/api";
+import { createOrder } from "../api/api";
 import api from "../api/api";
 import CartItem from "../components/CartItem";
 import "./CartPage.css";
@@ -64,31 +64,23 @@ export default function CartPage() {
 
             const totalAmount = Math.round((getTotalPrice + tax) * 100) / 100;
 
-            // 1. Create order
-            const orderData = {
+            // Build full order payload including order lines
+            const orderPayload = {
                 customerId: customer.customerId,
                 orderDate: new Date().toISOString().slice(0,10),
                 totalAmount,
-                status: "Pending"
-            };
-
-            const order = await createOrder(orderData);
-            console.log("Order created:", order);
-
-            // 2. Create order lines
-            const orderLinePromises = cartItems.map((item) => {
-                const orderLineData = {
+                status: "Pending",
+                orderLines: cartItems.map(item => ({
                     quantity: item.quantity,
                     unitPrice: parseFloat(item.price),
                     subTotal: parseFloat(item.price) * item.quantity,
-                    customerOrder: { orderId: order.orderId },
                     product: { productId: item.id }
-                };
-                return createOrderLine(orderLineData);
-            });
+                }))
+            };
 
-            const orderLines = await Promise.all(orderLinePromises);
-            console.log("All order lines created:", orderLines.length);
+            // Create order with nested lines in a single request
+            const order = await createOrder(orderPayload);
+            console.log("Order created with lines:", order);
 
             // 3. Clear cart and save order ID
             clearCart();
