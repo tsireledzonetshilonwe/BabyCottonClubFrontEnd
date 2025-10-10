@@ -68,61 +68,7 @@ const HomePage = () => {
                 </div>
             </section>
 
-            {/* Categories Section */}
-            <section className="categories" style={{
-                padding: '4rem 0',
-                background: '#fff',
-                textAlign: 'center'
-            }}>
-                <div className="container">
-                    <h2 style={{
-                        color: '#f7b6d5',
-                        fontWeight: 'bold',
-                        fontSize: '2.5rem',
-                        marginBottom: '3rem'
-                    }}>
-                        Shop by Category
-                    </h2>
-                    <div className="categories-grid" style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                        gap: '2rem',
-                        maxWidth: '1000px',
-                        margin: '0 auto'
-                    }}>
-                        <div className="category-card" style={{
-                            background: '#fdf6f9',
-                            padding: '2rem',
-                            borderRadius: '15px',
-                            boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
-                            transition: 'transform 0.3s ease'
-                        }}>
-                            <h3 style={{ color: '#f7b6d5', marginBottom: '1rem' }}>Newborn</h3>
-                            <p style={{ color: '#5D5D5D' }}>Soft clothing for 0-3 months</p>
-                        </div>
-                        <div className="category-card" style={{
-                            background: '#fdf6f9',
-                            padding: '2rem',
-                            borderRadius: '15px',
-                            boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
-                            transition: 'transform 0.3s ease'
-                        }}>
-                            <h3 style={{ color: '#f7b6d5', marginBottom: '1rem' }}>Baby Boys</h3>
-                            <p style={{ color: '#5D5D5D' }}>Adorable outfits for little gentlemen</p>
-                        </div>
-                        <div className="category-card" style={{
-                            background: '#fdf6f9',
-                            padding: '2rem',
-                            borderRadius: '15px',
-                            boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
-                            transition: 'transform 0.3s ease'
-                        }}>
-                            <h3 style={{ color: '#f7b6d5', marginBottom: '1rem' }}>Baby Girls</h3>
-                            <p style={{ color: '#5D5D5D' }}>Pretty clothes for little princesses</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            {/* Categories section removed per request */}
 
             {/* Featured Products Section */}
             <section className="featured-products" style={{
