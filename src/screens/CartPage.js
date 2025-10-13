@@ -25,7 +25,10 @@ export default function CartPage() {
     // Memoized calculations for better performance
     const getTotalPrice = useMemo(() => {
         return cartItems.reduce(
-            (sum, item) => sum + parseFloat(item.price) * item.quantity,
+            (sum, item) => {
+                const price = parseFloat(item.unitPrice ?? item.price) || 0;
+                return sum + price * item.quantity;
+            },
             0
         );
     }, [cartItems]);
@@ -126,84 +129,40 @@ export default function CartPage() {
                 throw new Error(`Invalid total amount: ${totalAmount}`);
             }
 
-            // SIMPLIFIED ORDER CREATION - Try direct API call first
-            console.log("Creating order...");
-
+            // Build order payload with nested orderLines (send IDs only for product)
             const orderData = {
                 customerId: customer.customerId,
                 orderDate: new Date().toISOString().slice(0,10),
                 totalAmount: Math.round(totalAmount * 100) / 100, // Round to 2 decimal places
-                status: "Pending"
+                status: "Pending",
+                orderLines: cartItems.map(item => {
+                    const unit = parseFloat(item.unitPrice ?? item.price) || 0;
+                    return {
+                        quantity: item.quantity,
+                        unitPrice: unit,
+                        subTotal: Math.round((unit * item.quantity) * 100) / 100,
+                        productId: item.id
+                    };
+                })
             };
 
-            console.log("Order data being sent:", orderData);
+            console.log("Order data being sent (with nested lines):", orderData);
 
-            // Method 1: Try using the createOrder function
             let order;
             try {
+                // Prefer the central API helper
                 order = await createOrder(orderData);
-                console.log("Order created via createOrder function:", order);
-            } catch (orderError) {
-                console.log("createOrder function failed, trying direct API call:", orderError);
-
-                // Method 2: Try direct API call
+                console.log("Order created with nested lines:", order);
+            } catch (orderErr) {
+                console.error("Failed to create order with nested lines:", orderErr);
+                // Try direct POST as fallback
                 try {
-                    const response = await api.post("/api/order/create", orderData);
-                    order = response.data;
-                    console.log("Order created via direct API call:", order);
-                } catch (directError) {
-                    console.log("Direct API call failed, trying alternative endpoint:", directError);
-
-                    // Method 3: Try alternative endpoint
-                    try {
-                        const response = await api.post("/order/create", orderData);
-                        order = response.data;
-                        console.log("Order created via alternative endpoint:", order);
-                    } catch (altError) {
-                        console.error("All order creation methods failed:", altError);
-                        throw new Error("Failed to create order after multiple attempts");
-                    }
-                }
-            }
-
-            // If we still don't have an order, create a mock order for testing
-            if (!order) {
-                console.warn(" No order created, using mock order for testing");
-                order = {
-                    orderId: Date.now(), // Temporary ID
-                    customerId: customer.customerId,
-                    totalAmount: totalAmount,
-                    status: "Pending"
-                };
-            }
-
-            // Try to create order lines if we have a valid order ID
-            if (order.orderId) {
-                console.log("Creating order lines...");
-                try {
-                    const orderLinePromises = cartItems.map(async (item, index) => {
-                        const orderLineData = {
-                            quantity: item.quantity,
-                            unitPrice: parseFloat(item.price),
-                            subTotal: parseFloat(item.price) * item.quantity,
-                            order: { orderId: order.orderId },
-                            product: { productId: item.id }
-                        };
-
-                        try {
-                            return await createOrderLine(orderLineData);
-                        } catch (orderLineError) {
-                            console.error(`Failed to create order line ${index + 1}:`, orderLineError);
-                            // Don't throw here, continue with other order lines
-                            return null;
-                        }
-                    });
-
-                    const orderLines = await Promise.all(orderLinePromises);
-                    console.log("Order lines created:", orderLines.filter(line => line !== null).length);
-                } catch (orderLinesError) {
-                    console.error("Order lines creation failed, but continuing:", orderLinesError);
-                    // Continue even if order lines fail
+                    const resp = await api.post('/api/order/create', orderData);
+                    order = resp.data;
+                    console.log('Order created (fallback):', order);
+                } catch (fallbackErr) {
+                    console.error('All methods to create order failed:', fallbackErr);
+                    throw new Error('Failed to create order');
                 }
             }
 
@@ -336,7 +295,7 @@ const saveCartToBackend = async (cartItems) => {
         }
 
         // Try to update existing cart first, then create if needed
-        const updatePayload = {
+                const updatePayload = {
             customer: {
                 customerId: customer.customerId,
                 firstName: customer.firstName || "Customer",
@@ -344,10 +303,10 @@ const saveCartToBackend = async (cartItems) => {
                 email: customer.email || "customer@example.com"
             },
             items: cartItems.map(item => ({
-                productId: item.id,  // Only send product ID, not full object
-                quantity: item.quantity,
-                unitPrice: parseFloat(item.price),
-                subTotal: parseFloat(item.price) * item.quantity
+                        productId: item.id,  // Only send product ID, not full object
+                        quantity: item.quantity,
+                        unitPrice: parseFloat(item.unitPrice ?? item.price),
+                        subTotal: (parseFloat(item.unitPrice ?? item.price) || 0) * item.quantity
             })),
             isCheckedOut: false
         };

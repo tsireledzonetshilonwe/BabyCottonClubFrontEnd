@@ -106,7 +106,13 @@ export const fetchOrderLineDetails = async (orderLineId) => {
 
 // ----------------- ORDER LINES -----------------
 export const createOrderLine = async (orderLineData) => {
-  const res = await api.post("/api/orderline/create", orderLineData);
+  // Backend expects unitPrice; accept either `price` or `unitPrice` from callers
+  const payload = { ...orderLineData };
+  if (payload.unitPrice == null && payload.price != null) {
+    payload.unitPrice = payload.price;
+    delete payload.price; // avoid sending ambiguous field
+  }
+  const res = await api.post("/api/orderline/create", payload);
   return res.data;
 };
 
