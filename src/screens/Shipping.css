@@ -1,6 +1,7 @@
 .shipping-container {
     min-height: 100vh;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    /* soft pastel pink background to match site palette */
+    background: linear-gradient(135deg, #fff9fb 0%, #fff0f6 100%);
     padding: 2rem;
 }
 
@@ -39,11 +40,11 @@
 }
 
 .progress-step.completed::after {
-    background: #3182ce;
+    background: #ff7aa2;
 }
 
 .progress-step.active::after {
-    background: linear-gradient(to right, #3182ce 50%, #e9ecef 50%);
+    background: linear-gradient(to right, #ff7aa2 50%, #e9ecef 50%);
 }
 
 .step-icon {
@@ -60,16 +61,16 @@
 }
 
 .progress-step.completed .step-icon {
-    background: #3182ce;
+    background: #ff7aa2;
     color: white;
-    border-color: #3182ce;
+    border-color: #ff7aa2;
 }
 
 .progress-step.active .step-icon {
-    background: #3182ce;
+    background: #ff7aa2;
     color: white;
-    border-color: #3182ce;
-    transform: scale(1.1);
+    border-color: #ff7aa2;
+    transform: scale(1.05);
 }
 
 .progress-step span {
@@ -174,8 +175,8 @@
 .input-with-icon input:focus,
 .input-with-icon select:focus {
     outline: none;
-    border-color: #3182ce;
-    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+    border-color: #ff7aa2;
+    box-shadow: 0 0 0 6px rgba(255, 122, 162, 0.08);
 }
 
 .field-error {
@@ -189,14 +190,15 @@
 
 .submit-btn {
     width: 100%;
-    background: #3182ce;
+    /* baby-pink primary button */
+    background: linear-gradient(90deg, #ff7aa2, #ffb6c1);
     color: white;
     border: none;
     padding: 1rem 2rem;
-    border-radius: 8px;
-    font-weight: 600;
+    border-radius: 10px;
+    font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.25s ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -205,9 +207,8 @@
 }
 
 .submit-btn:hover:not(:disabled) {
-    background: #2c5aa0;
     transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(49, 130, 206, 0.3);
+    box-shadow: 0 12px 36px rgba(255, 122, 162, 0.18);
 }
 
 .submit-btn:disabled {

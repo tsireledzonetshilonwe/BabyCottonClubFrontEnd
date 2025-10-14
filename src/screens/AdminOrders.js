@@ -12,7 +12,7 @@ import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
 import { Table } from '../components/ui/table';
-import { fetchAllOrders, updateOrder, fetchAllCustomers, fetchOrderDetails } from '../api/api';
+import { fetchAllOrders, updateOrder, fetchAllCustomers, fetchOrderDetails, updateOrderStatus } from '../api/api';
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -21,6 +21,7 @@ const AdminOrders = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState(null);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
+  const [updatingOrderIds, setUpdatingOrderIds] = useState([]);
 
   // Create mapping from order ID to customer ID
   const getCustomerIdForOrder = (orderId) => {
@@ -81,36 +82,23 @@ const AdminOrders = () => {
 
   // Handle status update
   const handleStatusUpdate = async (orderId, newStatus) => {
+    // Use the new dedicated PATCH endpoint that updates only status
     try {
       const order = orders.find(o => o.orderId === orderId || o.id === orderId);
-      if (order) {
-        // Check if order has customer data
-        if (!order.customer || !order.customer.customerId) {
-          alert("Cannot update order: No customer associated with this order. Please assign a customer first.");
-          return;
-        }
-        
-        // Convert to CustomerOrderRequest DTO format that backend expects
-        const updateRequest = {
-          customerId: order.customer.customerId,
-          orderDate: order.orderDate,
-          totalAmount: order.totalAmount,
-          status: newStatus,
-          orderId: orderId
-        };
-        await updateOrder(orderId, updateRequest);
-        
-        // Update local state
-        setOrders(prevOrders => 
-          prevOrders.map(o => 
-            (o.orderId === orderId || o.id === orderId) ? { ...o, status: newStatus } : o
-          )
-        );
-        
-        alert('Order status updated successfully');
-      }
+      if (!order) return;
+
+      // optimistic UI: mark this order as updating
+      setUpdatingOrderIds(prev => [...prev, orderId]);
+
+      const updated = await updateOrderStatus(orderId, newStatus);
+
+      // Replace local order with returned data when possible
+      setOrders(prevOrders => prevOrders.map(o => (o.orderId === orderId || o.id === orderId) ? ({ ...o, ...(updated || {}), status: newStatus }) : o));
+
+      setUpdatingOrderIds(prev => prev.filter(id => id !== orderId));
     } catch (error) {
-      console.error('Error updating order:', error);
+      console.error('Error updating order status:', error);
+      setUpdatingOrderIds(prev => prev.filter(id => id !== orderId));
       alert('Failed to update order status');
     }
   };
@@ -392,24 +380,30 @@ const AdminOrders = () => {
                           >
                             <Eye style={{ width: '16px', height: '16px' }} />
                           </Button>
-                          <select
-                            value={order.status || 'pending'}
-                            onChange={(e) => handleStatusUpdate(order.orderId, e.target.value)}
-                            style={{
-                              fontSize: '12px',
-                              padding: '4px 8px',
-                              border: '1px solid #d1d5db',
-                              borderRadius: '6px',
-                              backgroundColor: 'white',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            <option value="pending">Pending</option>
-                            <option value="processing">Processing</option>
-                            <option value="shipped">Shipped</option>
-                            <option value="delivered">Delivered</option>
-                            <option value="cancelled">Cancelled</option>
-                          </select>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <select
+                              value={order.status || 'pending'}
+                              onChange={(e) => handleStatusUpdate(order.orderId, e.target.value)}
+                              disabled={updatingOrderIds.includes(order.orderId)}
+                              style={{
+                                fontSize: '12px',
+                                padding: '4px 8px',
+                                border: '1px solid #d1d5db',
+                                borderRadius: '6px',
+                                backgroundColor: 'white',
+                                cursor: updatingOrderIds.includes(order.orderId) ? 'not-allowed' : 'pointer'
+                              }}
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="processing">Processing</option>
+                              <option value="shipped">Shipped</option>
+                              <option value="delivered">Delivered</option>
+                              <option value="cancelled">Cancelled</option>
+                            </select>
+                            {updatingOrderIds.includes(order.orderId) && (
+                              <Loader2 style={{ width: 16, height: 16, color: '#9ca3af' }} />
+                            )}
+                          </div>
                         </div>
                       </td>
                     </tr>

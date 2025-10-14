@@ -93,6 +93,12 @@ export const updateOrder = async (orderId, orderData) => {
   return res.data;
 };
 
+// Update only the status of an order (admin endpoint)
+export const updateOrderStatus = async (orderId, status) => {
+  const res = await api.patch(`/api/order/status/${orderId}`, { status });
+  return res.data;
+};
+
 export const fetchOrderLineDetails = async (orderLineId) => {
   const res = await api.get(`/api/orderline/read/${orderLineId}`);
   return res.data;
@@ -100,7 +106,13 @@ export const fetchOrderLineDetails = async (orderLineId) => {
 
 // ----------------- ORDER LINES -----------------
 export const createOrderLine = async (orderLineData) => {
-  const res = await api.post("/api/orderline/create", orderLineData);
+  // Backend expects unitPrice; accept either `price` or `unitPrice` from callers
+  const payload = { ...orderLineData };
+  if (payload.unitPrice == null && payload.price != null) {
+    payload.unitPrice = payload.price;
+    delete payload.price; // avoid sending ambiguous field
+  }
+  const res = await api.post("/api/orderline/create", payload);
   return res.data;
 };
 
