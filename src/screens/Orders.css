@@ -249,3 +249,37 @@
     transform: rotate(360deg);
   }
 }
+
+/* Review form styles */
+.review-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.review-select {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(15,23,42,0.06);
+  background: #fff;
+  min-width: 90px;
+  font-weight: 600;
+}
+.review-input {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(15,23,42,0.06);
+  background: #fff;
+}
+.review-submit {
+  min-width: 110px;
+}
+
+@media (max-width: 640px) {
+  .review-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .review-select { width: 100%; }
+  .review-submit { width: 100%; }
+}

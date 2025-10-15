@@ -27,6 +27,7 @@ import Payment from "./screens/Payment";
 import SupplierSearch from "./screens/SupplierSearch";
 import CartPage from "./screens/CartPage";
 import Products from "./screens/Product";
+import ProductDetails from "./screens/ProductDetails";
 import Shipping from "./screens/Shipping";
 import Profile from "./screens/Profile";
 
@@ -78,6 +79,7 @@ function App() {
 
                   {/* Customer & Product Routes */}
                   <Route path="/products" element={<Products />} />
+                  <Route path="/products/:id" element={<ProductDetails />} />
                   <Route path="/productspage" element={<ProductsPage />} />
                   <Route path="/customers" element={<Customers />} />
                   <Route path="/cart" element={<CartPage />} />

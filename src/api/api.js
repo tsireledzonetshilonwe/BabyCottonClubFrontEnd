@@ -136,13 +136,28 @@ export const fetchAddressById = async (addressId) => {
 
 // ----------------- REVIEWS -----------------
 export const fetchAllReviews = async () => {
-  const res = await api.get("/review/getall"); 
+  const res = await api.get("/api/review/getall"); 
   return res.data;
 };
 
 export const createReview = async (reviewData) => {
-  const res = await api.post("/review/create", reviewData);
-  return res.data;
+  try {
+    const res = await api.post("/api/review/create", reviewData);
+    return res.data;
+  } catch (err) {
+    // Log helpful details for debugging (avoid leaking full payloads in production)
+    const status = err?.response?.status;
+    const data = err?.response?.data;
+    const payloadSummary = Object.fromEntries(Object.entries(reviewData || {}).map(([k, v]) => [k, (v && (typeof v === 'object')) ? '[object]' : v]));
+    console.error('createReview failed', { status, message: err?.message, payloadSummary });
+    if (status === 500) {
+      // include server response body for 500 errors to speed debugging (safe in dev)
+      console.error('createReview server response (500):', data);
+    } else {
+      console.error('createReview response data:', data);
+    }
+    throw err;
+  }
 };
 
 // ----------------- CART PERSISTENCE -----------------

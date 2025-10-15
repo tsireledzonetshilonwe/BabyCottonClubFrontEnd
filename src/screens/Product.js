@@ -85,9 +85,19 @@ const Products = () => {
     }
   }, [convertBackendProduct, toast]);
 
-  // Load products on component mount
+  // Load products on component mount and refresh when a review is created
   useEffect(() => {
     loadProducts();
+
+    const onReviewCreated = (e) => {
+      console.debug('Review created event, reloading products', e?.detail);
+      loadProducts();
+    };
+    window.addEventListener('reviewCreated', onReviewCreated);
+
+    return () => {
+      window.removeEventListener('reviewCreated', onReviewCreated);
+    };
   }, [loadProducts]);
 
   // Handle search parameter from URL
@@ -205,7 +215,7 @@ const Products = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredProducts.map((product) => (
               <ProductCard
                 key={product.id}
