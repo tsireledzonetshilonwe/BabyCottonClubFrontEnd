@@ -81,14 +81,14 @@ export default function Products() {
         let priceMatch = true;
         const price = parseFloat(p.price);
         switch (priceRange) {
-            case "under25":
-                priceMatch = price < 25;
+            case "under150":
+                priceMatch = price < 150;
                 break;
-            case "25to40":
-                priceMatch = price >= 25 && price <= 40;
+            case "250to400":
+                priceMatch = price >= 250 && price <= 404;
                 break;
-            case "over40":
-                priceMatch = price > 40;
+            case "over400":
+                priceMatch = price > 400;
                 break;
             default:
                 priceMatch = true;

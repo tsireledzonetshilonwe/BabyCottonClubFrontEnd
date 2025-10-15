@@ -6,17 +6,19 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 
 // Memoized cart item component to prevent unnecessary re-renders
 const CartItem = memo(({ item, onQuantityChange, onRemove }) => {
+  const PLACEHOLDER_IMG =
+    'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><rect width="100%" height="100%" fill="%23f3f4f6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%239ca3af" font-family="sans-serif" font-size="14">No Image</text></svg>';
   return (
     <Card>
       <CardContent className="p-6">
         <div className="flex items-center space-x-4">
           <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden">
             <img
-              src={item.image || require('../assets/img.png')}
+              src={item.image || PLACEHOLDER_IMG}
               alt={item.name}
               className="w-full h-full object-cover"
               onError={(e) => {
-                e.target.src = require('../assets/img.png');
+                e.target.src = PLACEHOLDER_IMG;
               }}
             />
           </div>

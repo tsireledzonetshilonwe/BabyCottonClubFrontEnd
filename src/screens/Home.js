@@ -2,18 +2,17 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
-import banner1 from "../assets/banner1.webp";
-import banner2 from "../assets/banner2.jpg";
-import banner3 from "../assets/banner3.webp";
-import onesie from "../assets/onesie.webp";
-import img1 from "../assets/img_1.png";
-import img2 from "../assets/img_2.png";
-import img3 from "../assets/img_3.png";
-import img4 from "../assets/img_4.png";
 import "./Home.css";
 import { fetchProducts } from "../api/api";
+import { resolveProductImage, IMAGE_PLACEHOLDER, normalizeLocalImage } from "../utils/images";
+import ProductCard from "../components/ProductCard";
 
-const bannerImages = [banner1, banner2, banner3];
+// Use public images to avoid bundling missing src/assets
+const bannerImages = [
+        "/images/banner1.webp",
+        "/images/banner2.jpg",
+        "/images/banner3.webp",
+];
 
 export default function Home() {
         const [products, setProducts] = useState([]);
@@ -57,21 +56,58 @@ export default function Home() {
 
         // Featured categories
         const categories = [
-                { name: "Onesies", image: onesie },
-                { name: "Blankets", image: img1 },
-                { name: "Shoes", image: img2 },
-                { name: "Accessories", image: img3 },
-                { name: "Gift Sets", image: img4 }
+                { name: "Onesies", image: "/images/onesie.jpg" },
+                { name: "Blankets", image: "/images/bedding.jpg" },
+                { name: "Shoes", image: "/images/sneakers.jpg" },
+                { name: "Accessories", image: "/images/top.jpg" },
+                { name: "Gift Sets", image: "/images/dress.jpg" }
         ];
 
-        // Featured products (first 4)
-        const featuredProducts = products.slice(0, 4);
+        // Normalize for ProductCard and limit to 4 featured
+        const convertBackendProduct = (p) => {
+                const reviewsArray = Array.isArray(p.reviews) ? p.reviews : [];
+                const reviewCount = reviewsArray.length;
+                const avgRating = reviewCount > 0
+                        ? reviewsArray.reduce((s, r) => s + (Number(r.rating) || 0), 0) / reviewCount
+                        : null;
+                return {
+                        id: String(p.productId ?? p.id ?? ""),
+                        name: p.productName || p.name || "Unnamed Product",
+                        price: p.price || 0,
+                        image: resolveProductImage(p),
+                        rating: avgRating != null ? Number(avgRating.toFixed(1)) : (p.rating || 4.0),
+                        reviewCount,
+                        category: p.category?.categoryName || "Baby Items",
+                        sizes: ["One Size"],
+                        colors: [p.color || "Default"],
+                        description: p.description || `High-quality ${(p.productName || p.name || 'baby item').toLowerCase()} for your little one.`,
+                        inStock: p.inStock === 'available' || p.inStock === 'In Stock',
+                        backendData: p,
+                };
+        };
+        const normalizedProducts = Array.isArray(products) ? products.map(convertBackendProduct) : [];
+        const featuredProducts = normalizedProducts.slice(0, 4);
+
+        const handleAddToCart = async (product) => {
+                try {
+                        const p = product.backendData || {};
+                        await addToCart({
+                                id: p.productId || product.id,
+                                name: p.productName || product.name,
+                                price: p.price ?? product.price,
+                                image: normalizeLocalImage(p.imageUrl || product.image) || product.image,
+                                quantity: 1,
+                        });
+                } catch (e) {
+                        console.error('Add to cart failed', e);
+                }
+        };
 
         return (
                 <div className="home-page">
                         {/* Hero Section */}
                         <section className="hero-section">
-                                <img src={banner1} alt="Main Banner" className="hero-banner" />
+                                <img src={bannerImages[currentBanner]} alt="Main Banner" className="hero-banner" />
                                 <div className="hero-content">
                                         <h1>Welcome to Baby Cotton Club</h1>
                                         <p>Discover the softest, cutest clothes for your little ones. Shop our new arrivals and best sellers!</p>
@@ -82,35 +118,19 @@ export default function Home() {
                         {/* Featured Products */}
                         <section className="featured-products">
                                 <h2>Featured Products</h2>
-                                <div className="products-grid">
-                                        {loading ? (
-                                                <p>Loading products...</p>
-                                        ) : error ? (
-                                                <p>{error}</p>
-                                        ) : featuredProducts.length === 0 ? (
-                                                <p>No products available.</p>
-                                        ) : (
-                                                featuredProducts.map((product) => (
-                                                        <div key={product.productId || product.id} className="product-card">
-                                                                <img src={product.imageUrl || product.image || onesie} alt={product.productName || product.name} className="product-image" />
-                                                                <div className="product-info">
-                                                                        <h2 className="product-name">{product.productName || product.name}</h2>
-                                                                        <p className="product-category">{product.category?.categoryName}</p>
-                                                                        <p className="product-price">R {product.price}</p>
-                                                                </div>
-                                                                <button className="product-buy-btn" onClick={() => addToCart({
-                                                                        id: product.productId || product.id,
-                                                                        name: product.productName || product.name,
-                                                                        price: product.price,
-                                                                        image: product.imageUrl || product.image,
-                                                                        quantity: 1
-                                                                })}>
-                                                                        Add to Cart
-                                                                </button>
-                                                        </div>
-                                                ))
-                                        )}
-                                </div>
+                                {loading ? (
+                                        <p>Loading products...</p>
+                                ) : error ? (
+                                        <p>{error}</p>
+                                ) : featuredProducts.length === 0 ? (
+                                        <p>No products available.</p>
+                                ) : (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                                {featuredProducts.map((product) => (
+                                                        <ProductCard key={product.id} product={product} onAddToCart={handleAddToCart} />
+                                                ))}
+                                        </div>
+                                )}
                         </section>
                 </div>
         );

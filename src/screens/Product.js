@@ -8,6 +8,7 @@ import { useToast } from '../hooks/use-toast';
 import { useDebounce } from '../hooks/useDebounce';
 import { fetchProducts } from '../services/simpleApi';
 import ProductCard from '../components/ProductCard';
+import { resolveProductImage, normalizeLocalImage } from '../utils/images';
 import SimpleFilters from '../components/SimpleFilters';
 
 const Products = () => {
@@ -36,11 +37,11 @@ const Products = () => {
       ? reviewsArray.reduce((s, r) => s + (Number(r.rating) || 0), 0) / reviewCount
       : null;
 
-    const converted = {
+  const converted = {
       id: backendProduct.productId?.toString() || '',
       name: backendProduct.productName || backendProduct.name || 'Unnamed Product',
       price: backendProduct.price || 0,
-      image: backendProduct.imageUrl || require('../assets/img.png'),
+    image: resolveProductImage(backendProduct),
       rating: avgRating != null ? Number(avgRating.toFixed(1)) : (backendProduct.rating || 4.0),
       reviewCount: reviewCount,
       category: backendProduct.category?.categoryName || 'Baby Items',
@@ -122,10 +123,11 @@ const Products = () => {
   const selCat = String(selectedCategory || '').toLowerCase();
   const prodCat = String(product.category || '').toLowerCase();
   const matchesCategory = selCat === 'all' || selCat === '' || prodCat === selCat;
+        const priceValue = typeof product.price === 'string' ? parseFloat(product.price) : Number(product.price);
         const matchesPrice = priceRange === 'all' || 
-          (priceRange === 'under25' && product.price < 25) ||
-          (priceRange === '25to40' && product.price >= 25 && product.price <= 40) ||
-          (priceRange === 'over40' && product.price > 40);
+          (priceRange === 'under150' && priceValue < 150) ||
+          (priceRange === '150to400' && priceValue >= 150 && priceValue <= 400) ||
+          (priceRange === 'over400' && priceValue > 400);
         
         return matchesSearch && matchesCategory && matchesPrice;
       })
@@ -159,7 +161,7 @@ const Products = () => {
         id: product.backendData.productId,
         name: product.backendData.productName || product.backendData.name,
         price: product.backendData.price,
-        image: product.backendData.imageUrl
+        image: normalizeLocalImage(product.backendData.imageUrl) || resolveProductImage(product.backendData)
       });
       toast({
         title: 'Added to cart',
@@ -202,9 +204,19 @@ const Products = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Filters Sidebar */}
-        <SimpleFilters 
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-3xl font-bold">Products</h1>
+        <div className="flex items-center space-x-2 text-muted-foreground">
+          <Filter className="h-4 w-4" />
+          <span>{filteredProducts.length} products</span>
+        </div>
+      </div>
+
+      {/* Top Filter Bar */}
+      <div className="mb-6">
+        <SimpleFilters
+          variant="bar"
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
           priceRange={priceRange}
@@ -215,45 +227,41 @@ const Products = () => {
           selectedCategory={selectedCategory}
           setSelectedCategory={setSelectedCategory}
         />
-
-        {/* Products Grid */}
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold">Products</h1>
-            <div className="flex items-center space-x-2 text-muted-foreground">
-              <Filter className="h-4 w-4" />
-              <span>{filteredProducts.length} products</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onAddToCart={handleAddToCart}
-              />
-            ))}
-          </div>
-
-          {filteredProducts.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground text-lg">No products found matching your criteria.</p>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearchTerm('');
-                  setSelectedCategory('all');
-                  setPriceRange('all');
-                }}
-                className="mt-4"
-              >
-                Clear Filters
-              </Button>
-            </div>
-          )}
-        </div>
       </div>
+
+      {/* Products Grid */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, minmax(300px, 1fr))',
+          gap: '1.5rem'
+        }}
+      >
+        {filteredProducts.map((product) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            onAddToCart={handleAddToCart}
+          />
+        ))}
+      </div>
+
+      {filteredProducts.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground text-lg">No products found matching your criteria.</p>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSearchTerm('');
+              setSelectedCategory('all');
+              setPriceRange('all');
+            }}
+            className="mt-4"
+          >
+            Clear Filters
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

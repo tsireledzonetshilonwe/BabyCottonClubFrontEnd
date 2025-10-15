@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api, { fetchAllReviews, fetchProducts, fetchCustomerById } from '../api/api';
 import { Button } from '../components/ui/button';
+import { resolveProductImage, IMAGE_PLACEHOLDER } from '../utils/images';
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -72,7 +73,7 @@ const ProductDetails = () => {
     <div className="container mx-auto p-6">
       <div className="flex flex-col md:flex-row gap-6">
         <div className="w-full md:w-1/3 bg-muted p-4 rounded">
-          <img src={product.imageUrl || product.image || require('../assets/img.png')} alt={product.productName || product.name} className="w-full object-contain h-64 mx-auto" />
+          <img src={resolveProductImage(product)} onError={(e)=>{e.currentTarget.src=IMAGE_PLACEHOLDER}} alt={product.productName || product.name} className="w-full object-contain h-64 mx-auto" />
         </div>
         <div className="flex-1">
           <h1 className="text-2xl font-bold mb-2">{product.productName || product.name}</h1>

@@ -1,8 +1,71 @@
 // HomePage.js
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useCart } from '../context/CartContext';
+import { fetchProducts } from '../api/api';
+import ProductCard from '../components/ProductCard';
+import { resolveProductImage, normalizeLocalImage } from '../utils/images';
 
 const HomePage = () => {
+    const { addToCart } = useCart();
+    const [products, setProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const data = await fetchProducts();
+                setProducts(Array.isArray(data) ? data : []);
+            } catch (e) {
+                setError('Failed to load products');
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, []);
+
+    const convertBackendProduct = (p) => {
+        const reviewsArray = Array.isArray(p.reviews) ? p.reviews : [];
+        const reviewCount = reviewsArray.length;
+        const avgRating = reviewCount > 0
+            ? reviewsArray.reduce((s, r) => s + (Number(r.rating) || 0), 0) / reviewCount
+            : null;
+        return {
+            id: String(p.productId ?? p.id ?? ''),
+            name: p.productName || p.name || 'Unnamed Product',
+            price: p.price || 0,
+            image: resolveProductImage(p),
+            rating: avgRating != null ? Number(avgRating.toFixed(1)) : (p.rating || 4.0),
+            reviewCount,
+            category: p.category?.categoryName || 'Baby Items',
+            sizes: ['One Size'],
+            colors: [p.color || 'Default'],
+            description: p.description || `High-quality ${(p.productName || p.name || 'baby item').toLowerCase()} for your little one.`,
+            inStock: p.inStock === 'available' || p.inStock === 'In Stock',
+            backendData: p,
+        };
+    };
+
+    const normalized = products.map(convertBackendProduct);
+    const featured = normalized.slice(0, 4);
+
+    const handleAddToCart = async (product) => {
+        const p = product.backendData || {};
+        try {
+            await addToCart({
+                id: p.productId || product.id,
+                name: p.productName || product.name,
+                price: p.price ?? product.price,
+                image: normalizeLocalImage(p.imageUrl || product.image) || product.image,
+                quantity: 1,
+            });
+        } catch (e) {
+            console.error('Add to cart failed', e);
+        }
+    };
+
     return (
         <div className="homepage-main">
             {/* Hero Section */}
@@ -85,60 +148,25 @@ const HomePage = () => {
                     }}>
                         Featured Products
                     </h2>
-                    <div className="products-grid" style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                        gap: '2rem',
-                        maxWidth: '1200px',
-                        margin: '0 auto'
-                    }}>
-                        {[
-                            { name: 'Organic Cotton Bodysuit', price: 'R149.99', icon: 'fa-tshirt' },
-                            { name: 'Soft Sole Booties', price: 'R89.99', icon: 'fa-socks' },
-                            { name: 'Animal Print Romper', price: 'R199.99', icon: 'fa-mitten' },
-                            { name: 'Sun Protection Hat', price: 'R119.99', icon: 'fa-hat-cowboy' }
-                        ].map((product, index) => (
-                            <div key={index} className="product-item" style={{
-                                background: '#fff',
-                                borderRadius: '15px',
-                                padding: '2rem',
-                                boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
-                                transition: 'transform 0.3s ease',
-                                border: '1px solid #f0f0f0'
-                            }}>
-                                <i className={`fas ${product.icon}`} style={{
-                                    fontSize: '3.5rem',
-                                    color: '#f7b6d5',
-                                    marginBottom: '1rem'
-                                }}></i>
-                                <h3 style={{
-                                    fontWeight: 'bold',
-                                    marginBottom: '0.5rem',
-                                    color: '#5D5D5D'
-                                }}>{product.name}</h3>
-                                <p style={{
-                                    color: '#aee1f9',
-                                    fontWeight: 'bold',
-                                    marginBottom: '1.5rem',
-                                    fontSize: '1.2rem'
-                                }}>{product.price}</p>
-                                <Link to="/products" className="btn-cart" style={{
-                                    background: '#f7b6d5',
-                                    color: '#fff',
-                                    border: 'none',
-                                    borderRadius: '25px',
-                                    padding: '0.8rem 1.5rem',
-                                    fontSize: '1rem',
-                                    cursor: 'pointer',
-                                    transition: 'background 0.3s ease',
-                                    textDecoration: 'none',
-                                    display: 'inline-block'
-                                }}>
-                                    <i className="fas fa-cart-plus"></i> View Product
-                                </Link>
-                            </div>
-                        ))}
-                    </div>
+                    {loading ? (
+                        <p>Loading products...</p>
+                    ) : error ? (
+                        <p>{error}</p>
+                    ) : featured.length === 0 ? (
+                        <p>No products available.</p>
+                    ) : (
+                        <div className="products-grid" style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(4, minmax(220px, 1fr))',
+                            gap: '2rem',
+                            maxWidth: '1200px',
+                            margin: '0 auto'
+                        }}>
+                            {featured.map((product) => (
+                                <ProductCard key={product.id} product={product} onAddToCart={handleAddToCart} showViewButton={false} />
+                            ))}
+                        </div>
+                    )}
                 </div>
             </section>
 
