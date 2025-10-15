@@ -6,7 +6,10 @@ const SimpleFilters = ({
   priceRange, 
   setPriceRange, 
   sortBy, 
-  setSortBy 
+  setSortBy,
+  categories = ['All'],
+  selectedCategory = 'All',
+  setSelectedCategory = () => {}
 }) => {
   return (
     <div style={{ 
@@ -145,6 +148,40 @@ const SimpleFilters = ({
           <option value="price-low">Price: Low to High</option>
           <option value="price-high">Price: High to Low</option>
           <option value="rating">Rating</option>
+        </select>
+      </div>
+
+      {/* Category Select */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <label style={{ 
+          display: 'block', 
+          fontWeight: 'bold', 
+          marginBottom: '0.5rem',
+          color: '#374151'
+        }}>
+          Category
+        </label>
+        <select
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
+          style={{
+            width: '100%',
+            padding: '0.75rem',
+            border: '2px solid #FFB6C1',
+            borderRadius: '12px',
+            fontSize: '0.875rem',
+            backgroundColor: 'white',
+            outline: 'none',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            boxShadow: '0 2px 8px rgba(255, 182, 193, 0.1)'
+          }}
+        >
+          {(categories || ['All']).map((cat, idx) => (
+            <option key={idx} value={cat}>
+              {cat}
+            </option>
+          ))}
         </select>
       </div>
     </div>

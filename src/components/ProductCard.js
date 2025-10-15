@@ -35,22 +35,20 @@ const ProductCard = memo(({ product, onAddToCart }) => {
           <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
             {product.description}
           </p>
-          <div className="flex items-center mb-2">
+          <div className="flex items-center mb-2" aria-label={`Average rating ${Number(product.rating || 0).toFixed(1)} out of 5, based on ${product.reviewCount || 0} reviews`}>
             <div className="flex items-center">
               {[...Array(5)].map((_, i) => (
                 <Star
                   key={i}
                   className={`h-4 w-4 ${
-                    i < Math.floor(product.rating)
+                    i < Math.round(Number(product.rating || 0))
                       ? 'text-yellow-400 fill-current'
                       : 'text-gray-300'
                   }`}
                 />
               ))}
             </div>
-            <span className="text-xs text-muted-foreground ml-2">
-              ({product.rating})
-            </span>
+            <span className="text-xs text-muted-foreground ml-2">({Number(product.rating || 0).toFixed(1)} · {product.reviewCount || 0})</span>
           </div>
 
           {/* No review previews here; users should click through to see full product details */}
