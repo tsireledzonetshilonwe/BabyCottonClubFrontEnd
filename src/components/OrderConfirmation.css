@@ -308,3 +308,84 @@
         padding: 0 5px;
     }
 }
+/* Print Styles - Hide website header, footer, and navigation */
+@media print {
+    /* Hide common header/footer elements */
+    header,
+    footer,
+    nav,
+    .header,
+    .footer,
+    .navbar,
+    .main-header,
+    .main-footer,
+    .site-header,
+    .site-footer,
+    .navigation,
+    .main-nav {
+        display: none !important;
+    }
+
+    /* Hide any elements with common header/footer classes */
+    [class*="header"],
+    [class*="footer"],
+    [class*="nav"] {
+        display: none !important;
+    }
+
+    /* Specifically target Baby Cotton Club elements */
+    #header,
+    #footer,
+    #nav,
+    .baby-cotton-club,
+    [class*="baby"],
+    [class*="cotton"],
+    [class*="club"] {
+        display: none !important;
+    }
+
+    /* Hide quick links and social media sections */
+    .quick-links,
+    .social-media,
+    .contact-info,
+    .follow-us {
+        display: none !important;
+    }
+
+    /* Ensure only confirmation content prints */
+    .confirmation-container {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+
+    .confirmation-content {
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    /* Reset body for printing */
+    body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+    }
+
+    body * {
+        visibility: hidden;
+    }
+
+    .confirmation-container,
+    .confirmation-container * {
+        visibility: visible;
+    }
+
+    .confirmation-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+}
