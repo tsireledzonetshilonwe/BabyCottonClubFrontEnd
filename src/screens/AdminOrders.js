@@ -95,34 +95,6 @@ const AdminOrders = () => {
       // Replace local order with returned data when possible
       setOrders(prevOrders => prevOrders.map(o => (o.orderId === orderId || o.id === orderId) ? ({ ...o, ...(updated || {}), status: newStatus }) : o));
 
-      // If status changed to Delivered but order lacks a customer link, let admin attach a customer so customer-side sees the update
-      try {
-        const statusLower = (newStatus || '').toString().toLowerCase();
-        if (statusLower === 'delivered') {
-          const orderObj = orders.find(o => o.orderId === orderId || o.id === orderId) || {};
-          const hasCustomer = !!(orderObj.customerId || (orderObj.customer && orderObj.customer.customerId));
-          if (!hasCustomer) {
-            // Prompt admin to attach by email
-            const email = window.prompt('This order has no customer reference. Enter the customer email to attach (leave blank to skip):');
-            if (email) {
-              const found = customers.find(c => c.email && c.email.toLowerCase() === email.toLowerCase());
-              if (found) {
-                // Attach customer by calling full updateOrder
-                try {
-                  await updateOrder(orderId, { customer: { customerId: found.customerId } });
-                } catch (attachErr) {
-                  console.warn('Failed to attach customer to order', attachErr);
-                }
-              } else {
-                alert('No customer found with that email. Please ensure the customer exists.');
-              }
-            }
-          }
-        }
-      } catch (e) {
-        console.warn('Post-status attach flow failed', e);
-      }
-
       setUpdatingOrderIds(prev => prev.filter(id => id !== orderId));
     } catch (error) {
       console.error('Error updating order status:', error);
