@@ -395,7 +395,7 @@ function Orders() {
                                     <div>
                                       <div><strong>Your review:</strong></div>
                                       <div>Rating: {myReview.rating} / 5</div>
-                                      <div>{myReview.comment}</div>
+                                      <div>{myReview.reviewComment ?? myReview.comment ?? myReview.text ?? ''}</div>
                                     </div>
                                   ) : (
                                     <form onSubmit={(e) => { e.preventDefault(); handleReviewSubmit(line, product); }} className="review-form">

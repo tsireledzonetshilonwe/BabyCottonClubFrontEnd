@@ -84,8 +84,8 @@ const ProductDetails = () => {
             <div className="space-y-4">
               {reviews.map((r) => {
                 const idKey = String(r.reviewId || r.id || Math.random());
-                // pick comment from several possible field names
-                const comment = (r.comment || r.text || r.content || r.body || '').trim();
+                // pick comment from several possible field names (backend uses reviewComment)
+                const comment = String(r.reviewComment ?? r.comment ?? r.text ?? r.content ?? r.body ?? '').trim();
                 // resolve customer: prefer nested, else look in cache by customerId
                 let customer = r.customer || null;
                 const cid = r.customerId || (r.customer && (r.customer.customerId || r.customer.id));
