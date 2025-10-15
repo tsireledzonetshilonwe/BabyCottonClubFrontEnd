@@ -23,7 +23,7 @@ const Footer = () => {
                     <div className="footer-section">
                         <h3>Contact Us</h3>
                         <p>Email: info@babycottonclub.com</p>
-                        <p>Phone: +27 21 123 4567</p>
+                        <p>Phone: (021) 436-6678</p>
                         <p>Cape Town, South Africa</p>
                     </div>
 

@@ -36,6 +36,8 @@ import HomePage from './components/HomePage';
 import AboutPage from './components/AboutPage';
 import ProductsPage from './components/ProductsPage';
 import ContactPage from './components/ContactPage';
+import OrderConfirmation from './components/OrderConfirmation';
+
 
 import "./App.css";
 
@@ -109,6 +111,8 @@ function App() {
                   {/* Static Pages */}
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/contact" element={<ContactPage />} />
+
+                    <Route path="/order-confirmation" element={<OrderConfirmation />} />
                 </Routes>
               </ErrorBoundary>
             </main>
