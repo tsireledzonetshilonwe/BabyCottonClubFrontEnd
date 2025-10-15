@@ -81,14 +81,14 @@ export default function Products() {
         let priceMatch = true;
         const price = parseFloat(p.price);
         switch (priceRange) {
-            case "under25":
-                priceMatch = price < 25;
+            case "under150":
+                priceMatch = price < 150;
                 break;
-            case "25to40":
-                priceMatch = price >= 25 && price <= 40;
+            case "250to400":
+                priceMatch = price >= 250 && price <= 404;
                 break;
-            case "over40":
-                priceMatch = price > 40;
+            case "over400":
+                priceMatch = price > 400;
                 break;
             default:
                 priceMatch = true;
@@ -125,58 +125,20 @@ export default function Products() {
             <h1 className="products-title">All Products</h1>
             
             <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
-                {/* Filters Section */}
-                <div style={{ flexShrink: 0 }}>
-                    <SimpleFilters
-                        searchTerm={searchTerm}
-                        setSearchTerm={setSearchTerm}
-                        priceRange={priceRange}
-                        setPriceRange={setPriceRange}
-                        sortBy={sortBy}
-                        setSortBy={setSortBy}
-                    />
-                    
-                    {/* Category Filter */}
-                    <div style={{ 
-                        width: '300px', 
-                        padding: '1rem', 
-                        backgroundColor: 'white', 
-                        border: '1px solid #e5e7eb', 
-                        borderRadius: '8px',
-                        marginTop: '1rem'
-                    }}>
-                        <label style={{ 
-                            display: 'block', 
-                            fontWeight: 'bold', 
-                            marginBottom: '0.5rem',
-                            color: '#374151'
-                        }}>
-                            Category
-                        </label>
-                        <select
-                            value={selectedCategory}
-                            onChange={(e) => setSelectedCategory(e.target.value)}
-                            style={{
-                                width: '100%',
-                                padding: '0.75rem',
-                                border: '2px solid #FFB6C1',
-                                borderRadius: '12px',
-                                fontSize: '0.875rem',
-                                backgroundColor: 'white',
-                                outline: 'none',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                                boxShadow: '0 2px 8px rgba(255, 182, 193, 0.1)'
-                            }}
-                        >
-                            {categories.map((cat, idx) => (
-                                <option key={idx} value={cat}>
-                                    {cat}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
+                        {/* Filters Section */}
+                        <div style={{ flexShrink: 0 }}>
+                            <SimpleFilters
+                                searchTerm={searchTerm}
+                                setSearchTerm={setSearchTerm}
+                                priceRange={priceRange}
+                                setPriceRange={setPriceRange}
+                                sortBy={sortBy}
+                                setSortBy={setSortBy}
+                                categories={categories}
+                                selectedCategory={selectedCategory}
+                                setSelectedCategory={setSelectedCategory}
+                            />
+                        </div>
 
                 {/* Products Grid */}
                 <div style={{ flex: 1 }}>

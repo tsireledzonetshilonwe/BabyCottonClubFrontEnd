@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api, { fetchAllReviews, fetchProducts, fetchCustomerById } from '../api/api';
 import { Button } from '../components/ui/button';
+import { resolveProductImage, IMAGE_PLACEHOLDER } from '../utils/images';
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -64,15 +65,29 @@ const ProductDetails = () => {
   if (error) return <div className="container mx-auto p-4 text-destructive">{error}</div>;
   if (!product) return <div className="container mx-auto p-4">Product not found</div>;
 
+  // compute average rating and count from reviews array
+  const reviewCount = (reviews || []).length;
+  const avgRating = reviewCount > 0 ? (reviews.reduce((s, r) => s + (Number(r.rating) || 0), 0) / reviewCount) : null;
+
   return (
     <div className="container mx-auto p-6">
       <div className="flex flex-col md:flex-row gap-6">
         <div className="w-full md:w-1/3 bg-muted p-4 rounded">
-          <img src={product.imageUrl || product.image || require('../assets/img.png')} alt={product.productName || product.name} className="w-full object-contain h-64 mx-auto" />
+          <img src={resolveProductImage(product)} onError={(e)=>{e.currentTarget.src=IMAGE_PLACEHOLDER}} alt={product.productName || product.name} className="w-full object-contain h-64 mx-auto" />
         </div>
         <div className="flex-1">
           <h1 className="text-2xl font-bold mb-2">{product.productName || product.name}</h1>
           <p className="text-muted-foreground mb-4">{product.description}</p>
+          <div className="flex items-center mb-4">
+            <div className="flex items-center mr-3" aria-hidden>
+              {[...Array(5)].map((_, i) => (
+                <span key={i} className={`mr-1 ${i < Math.round(Number(avgRating || product.rating || 0)) ? 'text-yellow-400' : 'text-gray-300'}`}>
+                  ★
+                </span>
+              ))}
+            </div>
+            <div className="text-sm text-muted-foreground">{avgRating ? Number(avgRating).toFixed(1) : (product.rating || '4.0')} · {reviewCount} review{reviewCount === 1 ? '' : 's'}</div>
+          </div>
           <div className="mb-4">
             <span className="text-xl font-semibold">R{product.price}</span>
             <span className="ml-4 text-sm text-muted-foreground">Category: {product.category?.categoryName || product.category || 'Baby Items'}</span>
