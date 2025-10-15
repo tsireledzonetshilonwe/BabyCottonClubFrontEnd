@@ -366,7 +366,7 @@
         border: none !important;
     }
 
-    /* Reset body for printing */
+    /* Reset for printing */
     body {
         margin: 0 !important;
         padding: 0 !important;
