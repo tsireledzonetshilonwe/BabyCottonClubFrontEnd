@@ -29,14 +29,20 @@ const Products = () => {
 
   // Convert backend product to frontend product (memoized)
   const convertBackendProduct = useCallback((backendProduct) => {
+    // compute average rating and review count if backend provides reviews array
+    const reviewsArray = Array.isArray(backendProduct.reviews) ? backendProduct.reviews : [];
+    const reviewCount = reviewsArray.length;
+    const avgRating = reviewCount > 0
+      ? reviewsArray.reduce((s, r) => s + (Number(r.rating) || 0), 0) / reviewCount
+      : null;
+
     const converted = {
       id: backendProduct.productId?.toString() || '',
       name: backendProduct.productName || backendProduct.name || 'Unnamed Product',
       price: backendProduct.price || 0,
       image: backendProduct.imageUrl || require('../assets/img.png'),
-      rating: backendProduct.reviews && backendProduct.reviews.length > 0 
-        ? backendProduct.reviews[0].rating || 4.0 
-        : 4.0,
+      rating: avgRating != null ? Number(avgRating.toFixed(1)) : (backendProduct.rating || 4.0),
+      reviewCount: reviewCount,
       category: backendProduct.category?.categoryName || 'Baby Items',
       sizes: ['One Size'],
       colors: [backendProduct.color || 'Default'],
@@ -113,7 +119,9 @@ const Products = () => {
     return products
       .filter(product => {
         const matchesSearch = product.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
-        const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
+  const selCat = String(selectedCategory || '').toLowerCase();
+  const prodCat = String(product.category || '').toLowerCase();
+  const matchesCategory = selCat === 'all' || selCat === '' || prodCat === selCat;
         const matchesPrice = priceRange === 'all' || 
           (priceRange === 'under25' && product.price < 25) ||
           (priceRange === '25to40' && product.price >= 25 && product.price <= 40) ||
@@ -203,6 +211,9 @@ const Products = () => {
           setPriceRange={setPriceRange}
           sortBy={sortBy}
           setSortBy={setSortBy}
+          categories={categories}
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
         />
 
         {/* Products Grid */}
