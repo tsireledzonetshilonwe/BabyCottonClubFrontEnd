@@ -398,7 +398,44 @@ body, .product-page-bg {
     font-weight: 700;
     margin: 0 0 0.4rem 0;
     color: #2d3748;
-    text-align: center;
+}
+
+/* Back to products button styling (matches primary Add to Cart look) */
+.back-to-products-btn {
+    display: inline-block;
+    background: #d32f2f;
+    color: #fff !important;
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.18s, transform 0.12s;
+}
+.back-to-products-btn:hover {
+    background: #b71c1c;
+    transform: translateY(-2px);
+}
+.back-to-products-btn:disabled {
+    background: #d1d5db;
+    color: #6b7280 !important;
+    cursor: not-allowed;
+}
+
+/* Ensure link elements used as buttons don't show underlines */
+.back-to-products-link,
+.back-to-products-link a,
+.back-to-products-link:link,
+.back-to-products-link:visited,
+a.button-as-link,
+a.button-as-link:link,
+a.button-as-link:visited,
+.baby-pink-card a,
+.baby-pink-card a:link,
+.baby-pink-card a:visited {
+    text-decoration: none !important;
 }
 .product-info p {
     margin: 0.2rem 0;

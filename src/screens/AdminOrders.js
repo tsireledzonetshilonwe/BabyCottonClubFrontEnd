@@ -95,6 +95,34 @@ const AdminOrders = () => {
       // Replace local order with returned data when possible
       setOrders(prevOrders => prevOrders.map(o => (o.orderId === orderId || o.id === orderId) ? ({ ...o, ...(updated || {}), status: newStatus }) : o));
 
+      // If status changed to Delivered but order lacks a customer link, let admin attach a customer so customer-side sees the update
+      try {
+        const statusLower = (newStatus || '').toString().toLowerCase();
+        if (statusLower === 'delivered') {
+          const orderObj = orders.find(o => o.orderId === orderId || o.id === orderId) || {};
+          const hasCustomer = !!(orderObj.customerId || (orderObj.customer && orderObj.customer.customerId));
+          if (!hasCustomer) {
+            // Prompt admin to attach by email
+            const email = window.prompt('This order has no customer reference. Enter the customer email to attach (leave blank to skip):');
+            if (email) {
+              const found = customers.find(c => c.email && c.email.toLowerCase() === email.toLowerCase());
+              if (found) {
+                // Attach customer by calling full updateOrder
+                try {
+                  await updateOrder(orderId, { customer: { customerId: found.customerId } });
+                } catch (attachErr) {
+                  console.warn('Failed to attach customer to order', attachErr);
+                }
+              } else {
+                alert('No customer found with that email. Please ensure the customer exists.');
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Post-status attach flow failed', e);
+      }
+
       setUpdatingOrderIds(prev => prev.filter(id => id !== orderId));
     } catch (error) {
       console.error('Error updating order status:', error);
@@ -154,36 +182,18 @@ const AdminOrders = () => {
         marginBottom: '24px' 
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <Link 
-                        to="/admin/dashboard" 
-            style={{ 
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 16px',
-              backgroundColor: '#FFB6C1',
-              color: '#8B0000',
-              borderRadius: '8px',
-              border: '1px solid #FFB6C1',
-              fontSize: '14px',
-              fontWeight: '500',
-              textDecoration: 'none',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#FF69B4';
-              e.target.style.borderColor = '#FF69B4';
-              e.target.style.transform = 'translateY(-1px)';
-              e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = '#FFB6C1';
-              e.target.style.borderColor = '#FFB6C1';
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
-            }}
-          >
+          <Link to="/admin/dashboard" style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 16px',
+            backgroundColor: '#FFB6C1',
+            color: '#8B0000',
+            borderRadius: '8px',
+            border: '1px solid #FFB6C1',
+            fontSize: '14px',
+            textDecoration: 'none'
+          }}>
             <ArrowLeft style={{ width: '16px', height: '16px' }} />
             Back to Dashboard
           </Link>
