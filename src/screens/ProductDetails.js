@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import api, { fetchAllReviews, fetchProducts, fetchCustomerById } from '../api/api';
 import { Button } from '../components/ui/button';
 import { resolveProductImage, IMAGE_PLACEHOLDER } from '../utils/images';
+import { mapToCategory } from '../utils/categoryMapper';
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -69,6 +70,8 @@ const ProductDetails = () => {
   const reviewCount = (reviews || []).length;
   const avgRating = reviewCount > 0 ? (reviews.reduce((s, r) => s + (Number(r.rating) || 0), 0) / reviewCount) : null;
 
+  
+
   return (
     <div className="container mx-auto p-6">
       <div className="flex flex-col md:flex-row gap-6">
@@ -90,7 +93,7 @@ const ProductDetails = () => {
           </div>
           <div className="mb-4">
             <span className="text-xl font-semibold">R{product.price}</span>
-            <span className="ml-4 text-sm text-muted-foreground">Category: {product.category?.categoryName || product.category || 'Baby Items'}</span>
+            <span className="ml-4 text-sm text-muted-foreground">Category: {product.category?.categoryName || product.category || mapToCategory({ name: product.productName || product.name, category: product.category?.categoryName }) || 'Other'}</span>
           </div>
 
           <div className="mb-6">
@@ -127,7 +130,7 @@ const ProductDetails = () => {
           </div>
 
           <div className="mt-6">
-            <Link to="/products" className="mr-4 back-to-products-link">
+            <Link to="/products" className="mr-4 back-to-products-link" style={{ textDecoration: 'none' }}>
               <Button variant="default" className="back-to-products-btn">Back to products</Button>
             </Link>
           </div>
