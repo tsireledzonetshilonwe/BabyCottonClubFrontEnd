@@ -24,51 +24,31 @@ export const CartProvider = ({ children }) => {
     }
   }, [cartItems]);
 
-  // Auto-save to backend with debouncing (DISABLED - Backend constraints)
-  useEffect(() => {
-    // Cart auto-save to backend is disabled due to backend constraints:
-    // 1. Unique constraint prevents multiple carts per customer
-    // 2. Detached entity errors when creating cart items
-    // 3. Complex entity relationships requiring full object structures
-    
-    // Cart items are still persisted to localStorage and will be saved
-    // to database during checkout process when it's more critical
-    
-    console.log("Cart auto-save to backend is disabled - using localStorage only");
-    console.log("Cart will be saved to database during checkout process");
-    
-    // Keep localStorage working as backup
-    // (This is already handled in the useEffect above)
-    
-  }, [cartItems]);
-
-  const addToCart = (item) => {
-    // Validate item structure
-    if (!item.id) {
-      console.error("Item missing ID:", item);
-      return;
-    }
-    
+  /** 🧩 Add to cart */
+  const addToCart = (product) => {
     setCartItems((prev) => {
-      const existing = prev.find((i) => i.id === item.id);
-      
+      const existing = prev.find((item) => item.id === product.id);
       if (existing) {
-        // Item exists, increase quantity
-        return prev.map((i) =>
-          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+        return prev.map((item) =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
         );
+      } else {
+        return [...prev, { ...product, quantity: 1 }];
       }
-      
-      // New item, add to cart
-      return [...prev, { ...item, quantity: 1 }];
     });
   };
 
-  const removeFromCart = (id) =>
-    setCartItems((prev) => prev.filter((i) => i.id !== id));
+  /** 🗑️ Remove item */
+  const removeFromCart = (id) => {
+    setCartItems((prev) => prev.filter((item) => item.id !== id));
+  };
 
+  /** 🧼 Clear all items */
   const clearCart = () => setCartItems([]);
 
+  /** ➕ Increase item quantity */
   const increaseQuantity = (id) =>
     setCartItems((prev) =>
       prev.map((i) =>
@@ -76,6 +56,7 @@ export const CartProvider = ({ children }) => {
       )
     );
 
+  /** ➖ Decrease item quantity */
   const decreaseQuantity = (id) =>
     setCartItems((prev) =>
       prev
@@ -87,6 +68,88 @@ export const CartProvider = ({ children }) => {
         .filter((i) => i.quantity > 0)
     );
 
+  /**
+   * 🧾 Save cart to backend
+   */
+  const saveCartToBackend = async () => {
+    const cartFromLocalStorage = JSON.parse(localStorage.getItem("cartItems") || "[]");
+    const customer = JSON.parse(localStorage.getItem("customer") || "{}");
+    const customerId = customer.customerId;
+    const cartId = Number(localStorage.getItem("cartId")) || null;
+
+    if (!customerId) {
+      console.warn("No valid customerId found. User must be logged in.");
+      return;
+    }
+
+    const items = cartFromLocalStorage.map((item) => ({
+      productId: Number(item.id),
+      quantity: item.quantity,
+    }));
+
+    try {
+      if (cartId) {
+        // 🧱 Update existing cart
+        const updatePayload = {
+          cartId,
+          customerId,
+          items,
+        };
+        const res = await api.put("/api/cart/update", updatePayload);
+        console.log("Cart updated:", res.data);
+      } else {
+        // 🆕 Create new cart
+        const createPayload = {
+          customer: { customerId },
+          items,
+          checkedOut: false,
+        };
+        const res = await api.post("/api/cart/create", createPayload);
+        console.log("Cart created:", res.data);
+        if (res.data && res.data.cartId) {
+          localStorage.setItem("cartId", res.data.cartId);
+        }
+      }
+    } catch (err) {
+      console.error("Cart save error:", err);
+    }
+  };
+
+  // 🕒 Auto-save cart to backend (debounced effect)
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      (async () => {
+        try {
+          const customerStr = localStorage.getItem("customer");
+          if (!customerStr) {
+            console.log("No customer logged in, skipping backend cart save");
+            return;
+          }
+
+          const customer = JSON.parse(customerStr);
+          const customerId = Number(customer.customerId);
+
+          if (!customerId || isNaN(customerId)) {
+            console.warn("Invalid customerId, skipping backend cart save");
+            return;
+          }
+
+          if (cartItems.length === 0) {
+            console.log("Cart is empty, skipping backend cart save");
+            return;
+          }
+
+          await saveCartToBackend();
+        } catch (error) {
+          console.error("Auto-save cart failed:", error);
+        }
+      })();
+    }, 1500); // wait 1.5 seconds after last change
+
+    return () => clearTimeout(timeout);
+  }, [cartItems]);
+
+  // ✅ Return context provider
   return (
     <CartContext.Provider
       value={{
@@ -96,6 +159,7 @@ export const CartProvider = ({ children }) => {
         clearCart,
         increaseQuantity,
         decreaseQuantity,
+        saveCartToBackend,
       }}
     >
       {children}

@@ -7,6 +7,41 @@ const api = axios.create({
   },
 });
 
+// Add request interceptor to automatically include JWT token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor to handle 401/403 errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      console.warn('⚠️ Authentication failed. Token may be invalid or expired.');
+      
+      // Check if this is not a login request
+      const isLoginRequest = error.config.url?.includes('/login');
+      if (!isLoginRequest) {
+        // Clear invalid token
+        localStorage.removeItem('token');
+        
+        // Optionally redirect to login (uncomment if needed)
+        // window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 // ----------------- PRODUCTS -----------------
 export const fetchProducts = async () => {
   const res = await api.get("/api/products/getall");
