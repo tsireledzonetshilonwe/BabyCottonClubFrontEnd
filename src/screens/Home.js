@@ -5,6 +5,7 @@ import { useCart } from "../context/CartContext";
 import "./Home.css";
 import { fetchProducts } from "../api/api";
 import { resolveProductImage, IMAGE_PLACEHOLDER, normalizeLocalImage } from "../utils/images";
+import { mapToCategory } from '../utils/categoryMapper';
 import ProductCard from "../components/ProductCard";
 
 // Use public images to avoid bundling missing src/assets
@@ -56,11 +57,11 @@ export default function Home() {
 
         // Featured categories
         const categories = [
-                { name: "Onesies", image: "/images/onesie.jpg" },
-                { name: "Blankets", image: "/images/bedding.jpg" },
                 { name: "Shoes", image: "/images/sneakers.jpg" },
-                { name: "Accessories", image: "/images/top.jpg" },
-                { name: "Gift Sets", image: "/images/dress.jpg" }
+                { name: "Dresses", image: "/images/dress.jpg" },
+                { name: "Duvet", image: "/images/duvet.jpg" },
+                { name: "2 Piece Sets", image: "/images/img_1.png" },
+                { name: "Rompers", image: "/images/onesie.webp" }
         ];
 
         // Normalize for ProductCard and limit to 4 featured
@@ -77,7 +78,7 @@ export default function Home() {
                         image: resolveProductImage(p),
                         rating: avgRating != null ? Number(avgRating.toFixed(1)) : (p.rating || 4.0),
                         reviewCount,
-                        category: p.category?.categoryName || "Baby Items",
+                        category: p.category?.categoryName || "Other",
                         sizes: ["One Size"],
                         colors: [p.color || "Default"],
                         description: p.description || `High-quality ${(p.productName || p.name || 'baby item').toLowerCase()} for your little one.`,
@@ -85,7 +86,7 @@ export default function Home() {
                         backendData: p,
                 };
         };
-        const normalizedProducts = Array.isArray(products) ? products.map(convertBackendProduct) : [];
+        const normalizedProducts = Array.isArray(products) ? products.map(p => ({ ...convertBackendProduct(p), category: mapToCategory({ name: p.productName || p.name, category: p.category?.categoryName }) })) : [];
         const featuredProducts = normalizedProducts.slice(0, 4);
 
         const handleAddToCart = async (product) => {

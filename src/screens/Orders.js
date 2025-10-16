@@ -200,18 +200,7 @@ function Orders() {
       // remove undefined/null to avoid backend NPE on unexpected fields
       const filteredPayload = Object.fromEntries(Object.entries(payload).filter(([, v]) => v !== undefined && v !== null && v !== ""));
 
-      console.debug('Submitting review payload', filteredPayload);
-
       const created = await createReview(filteredPayload);
-      console.debug('Review created (server response):', created);
-      // surface quick debug info to user so they can see what the server actually persisted
-      try {
-        const createdComment = created?.comment ?? created?.text ?? created?.content ?? '(missing)';
-        const createdCustomer = created?.customer ? (created.customer.firstName || created.customer.name || created.customer.email || JSON.stringify(created.customer)) : (created?.customerId ?? '(missing)');
-        alert(`Review created. comment: ${createdComment}\ncustomer: ${createdCustomer}`);
-      } catch (e) {
-        // ignore any alert errors
-      }
       // refresh reviews
       const refreshed = await fetchAllReviews();
       setReviews(refreshed || []);
@@ -222,24 +211,11 @@ function Orders() {
       } catch (e) {
         // ignore if window not available in some test environments
       }
-      alert('Review submitted');
+      // Inform the customer their review was recorded
+      alert('your review has been submitted!');
     } catch (err) {
-      console.error('Failed to submit review', {
-        message: err?.message,
-        status: err?.response?.status,
-        data: err?.response?.data,
-      });
-      const status = err?.response?.status;
-      const data = err?.response?.data;
-      if (status === 500) {
-        // Give actionable hint for server errors
-        alert('Failed to submit review: Server error (500). Check backend logs for details.');
-      } else if (data) {
-        const msg = data?.message || data;
-        alert(`Failed to submit review: ${JSON.stringify(msg)}`);
-      } else {
-        alert(`Failed to submit review: ${err?.message || 'Unknown error'}`);
-      }
+      // Log error for debugging but avoid showing noisy popups to users here
+      console.error('Failed to submit review', err);
     } finally {
       setSubmitting(prev => ({ ...prev, [lineIdKey]: false }));
     }
