@@ -233,7 +233,7 @@ function AdminDashboard() {
       </div>
 
       {/* Recent Orders */}
-      <Card style={{ 
+      <Card className="admin-quick-actions" style={{ 
         marginTop: '32px',
         borderRadius: '16px',
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
@@ -348,9 +348,10 @@ function AdminDashboard() {
               flexDirection: 'column', 
               background: 'var(--primary)',
               border: 'none',
-              borderRadius: '12px'
+              borderRadius: '12px',
+              textDecoration: 'none'
             }}>
-              <Link to="/admin/products">
+              <Link to="/admin/products" style={{ textDecoration: 'none' }}>
                 <Package style={{ width: '32px', height: '32px', marginBottom: '12px', color: 'white' }} />
                 <span style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px', color: 'white' }}>Products</span>
                 <span style={{ fontSize: '14px', opacity: '0.9', color: 'white' }}>Manage products catalog</span>
@@ -363,9 +364,10 @@ function AdminDashboard() {
               flexDirection: 'column',
               background: '#8ECDDD',
               border: 'none',
-              borderRadius: '12px'
+              borderRadius: '12px',
+              textDecoration: 'none'
             }}>
-              <Link to="/admin/orders">
+              <Link to="/admin/orders" style={{ textDecoration: 'none' }}>
                 <ShoppingCart style={{ width: '32px', height: '32px', marginBottom: '12px', color: 'white' }} />
                 <span style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px', color: 'white' }}>Orders</span>
                 <span style={{ fontSize: '14px', opacity: '0.9', color: 'white' }}>Order management</span>
@@ -378,9 +380,10 @@ function AdminDashboard() {
               flexDirection: 'column',
               background: '#A78BFA',
               border: 'none',
-              borderRadius: '12px'
+              borderRadius: '12px',
+              textDecoration: 'none'
             }}>
-              <Link to="/admin/customers">
+              <Link to="/admin/customers" style={{ textDecoration: 'none' }}>
                 <Users style={{ width: '32px', height: '32px', marginBottom: '12px', color: 'white' }} />
                 <span style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px', color: 'white' }}>Customers</span>
                 <span style={{ fontSize: '14px', opacity: '0.9', color: 'white' }}>Customer information</span>
