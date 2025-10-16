@@ -127,8 +127,8 @@ const ContactPage = () => {
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <h3 style={{ color: '#5D5D5D', marginBottom: '0.5rem', fontSize: '1.1rem', fontWeight: '600' }}>Visit Us</h3>
-                                    <p style={{ color: '#5D5D5D', margin: '0.2rem 0', fontSize: '1rem' }}>123 Cotton Street</p>
-                                    <p style={{ color: '#5D5D5D', margin: '0.2rem 0', fontSize: '1rem' }}>Babyville, Cape Town 8001</p>
+                                    <p style={{ color: '#5D5D5D', margin: '0.2rem 0', fontSize: '1rem' }}>89 Kloof Street</p>
+                                    <p style={{ color: '#5D5D5D', margin: '0.2rem 0', fontSize: '1rem' }}>Gardens, Cape Town 8001</p>
                                     <p style={{ color: '#5D5D5D', margin: '0.2rem 0', fontSize: '1rem' }}>South Africa</p>
                                 </div>
                             </div>
