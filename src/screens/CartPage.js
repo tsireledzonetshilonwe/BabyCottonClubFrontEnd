@@ -1,4 +1,3 @@
-
 import React, { useEffect, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -199,9 +198,11 @@ export default function CartPage() {
                     <p className="text-muted-foreground mb-8">
                         Discover our beautiful collection of baby clothing
                     </p>
-                    <Button asChild>
-                        <Link to="/products">Continue Shopping</Link>
-                    </Button>
+                    <div className="flex justify-center">
+                        <Button onClick={() => window.location.href = "/products"}>
+                            Continue Shopping
+                        </Button>
+                    </div>
                 </div>
             </div>
         );
@@ -263,9 +264,11 @@ export default function CartPage() {
                                 Proceed to Checkout
                             </Button>
 
-                            <Button variant="outline" asChild className="w-full">
-                                <Link to="/products">Continue Shopping</Link>
-                            </Button>
+                            <div className="flex justify-center">
+                                <Button onClick={() => window.location.href = "/products"}>
+                                    Continue Shopping
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
@@ -295,7 +298,7 @@ const saveCartToBackend = async (cartItems) => {
         }
 
         // Try to update existing cart first, then create if needed
-                const updatePayload = {
+        const updatePayload = {
             customer: {
                 customerId: customer.customerId,
                 firstName: customer.firstName || "Customer",
@@ -303,10 +306,10 @@ const saveCartToBackend = async (cartItems) => {
                 email: customer.email || "customer@example.com"
             },
             items: cartItems.map(item => ({
-                        productId: item.id,  // Only send product ID, not full object
-                        quantity: item.quantity,
-                        unitPrice: parseFloat(item.unitPrice ?? item.price),
-                        subTotal: (parseFloat(item.unitPrice ?? item.price) || 0) * item.quantity
+                productId: item.id,  // Only send product ID, not full object
+                quantity: item.quantity,
+                unitPrice: parseFloat(item.unitPrice ?? item.price),
+                subTotal: (parseFloat(item.unitPrice ?? item.price) || 0) * item.quantity
             })),
             isCheckedOut: false
         };
