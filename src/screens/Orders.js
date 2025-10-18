@@ -1,430 +1,339 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2 } from 'lucide-react';
-import api, { fetchAllReviews, createReview } from "../api/api";
-import { getStoredCustomer } from "../utils/customer";
-import { Button } from '../components/ui/button';
-import "./Orders.css";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Separator } from "../components/ui/separator";
+import { ShoppingBag } from "lucide-react";
+import { useCart } from "../context/CartContext";
+import { useAuth } from "../contexts/AuthContext";
+import { createOrder, createOrderLine } from "../api/api";
+import api from "../api/api";
+import CartItem from "../components/CartItem";
+import "./CartPage.css";
 
-const formatCurrency = (amount) =>
-  new Intl.NumberFormat("en-ZA", {
-    style: "currency",
-    currency: "ZAR",
-    minimumFractionDigits: 2,
-  }).format(amount);
+export default function CartPage() {
+    const {
+        cartItems,
+        removeFromCart,
+        clearCart,
+        increaseQuantity,
+        decreaseQuantity,
+    } = useCart();
+    const navigate = useNavigate();
 
-const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString("en-ZA", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-};
+    // Memoized calculations for better performance
+    const getTotalPrice = useMemo(() => {
+        return cartItems.reduce(
+            (sum, item) => {
+                const price = parseFloat(item.unitPrice ?? item.price) || 0;
+                return sum + price * item.quantity;
+            },
+            0
+        );
+    }, [cartItems]);
 
-const statusColors = {
-  Pending: { bg: "#fff3cd", color: "#856404", border: "#ffc107" },
-  Processing: { bg: "#cce5ff", color: "#004085", border: "#007bff" },
-  Shipped: { bg: "#d1ecf1", color: "#0c5460", border: "#17a2b8" },
-  Delivered: { bg: "#d4edda", color: "#155724", border: "#28a745" },
-  Completed: { bg: "#d4edda", color: "#155724", border: "#28a745" },
-  Cancelled: { bg: "#f8d7da", color: "#721c24", border: "#dc3545" },
-};
+    const getTotalItems = useMemo(() => {
+        return cartItems.reduce(
+            (sum, item) => sum + item.quantity,
+            0
+        );
+    }, [cartItems]);
 
-function Orders() {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [expandedOrderId, setExpandedOrderId] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [search, setSearch] = useState("");
-  const [reviews, setReviews] = useState([]);
-  const [reviewInputs, setReviewInputs] = useState({});
-  const [submitting, setSubmitting] = useState({});
-  
-  
-  
-  const navigate = useNavigate();
+    const shipping = useMemo(() => {
+        return getTotalPrice > 500 ? 0 : 150; // Free shipping over R500, otherwise R150
+    }, [getTotalPrice]);
 
-  const fetchCustomerOrders = async (isManualRefresh = false) => {
-    if (isManualRefresh) setRefreshing(true);
+    const tax = useMemo(() => {
+        return getTotalPrice * 0.15; // 15% VAT (South African tax rate)
+    }, [getTotalPrice]);
 
-    try {
-      // Get logged-in customer (normalized)
-      const customer = getStoredCustomer();
-      if (!customer || !customer.customerId) {
-        setError("Please log in to view your orders.");
-        setLoading(false);
-        return;
-      }
+    const total = useMemo(() => {
+        return getTotalPrice + shipping + tax;
+    }, [getTotalPrice, shipping, tax]);
 
-      // Try a dedicated endpoint that returns orders for a customer (preferred)
-      try {
-        const res = await api.get(`/api/order/customer/${customer.customerId}`);
-        console.log("ORDERS FOR CUSTOMER from /api/order/customer ->", res.data);
-        // Ensure we always store an array
-        setOrders(Array.isArray(res.data) ? res.data : (res.data ? [res.data] : []));
-      } catch (err) {
-        // If dedicated endpoint not available (404) or fails, fallback to fetching all and filtering
-        if (err.response && err.response.status === 404) {
-          console.warn("/api/order/customer endpoint not found; falling back to /api/order/getall");
-          const res2 = await api.get("/api/order/getall");
-          console.log("RAW ORDERS FROM /api/order/getall ->", res2.data);
-          const customerOrders = (res2.data || []).filter((order) => {
-            const cid = customer.customerId;
-            if (!cid) return false;
-            if (order?.customer?.customerId === cid) return true;
-            if (order?.customerId === cid) return true;
-            if (order?.customer?.id === cid) return true;
-            return false;
-          });
-          setOrders(customerOrders);
-        } else {
-          throw err; // rethrow other errors to be caught by outer catch
+    // Optimized quantity change handler
+    const handleQuantityChange = useCallback((id, newQuantity) => {
+        if (newQuantity < 1 || newQuantity > 999) return; // Reasonable limits
+
+        // Update the quantity using existing cart functions
+        const currentItem = cartItems.find(item => item.id === id);
+        if (currentItem) {
+            const difference = newQuantity - currentItem.quantity;
+            if (difference > 0) {
+                // Increase quantity
+                for (let i = 0; i < difference; i++) {
+                    increaseQuantity(id);
+                }
+            } else if (difference < 0) {
+                // Decrease quantity
+                for (let i = 0; i < Math.abs(difference); i++) {
+                    decreaseQuantity(id);
+                }
+            }
         }
-      }
-      setLoading(false);
-      if (isManualRefresh) setRefreshing(false);
-    } catch (err) {
-      console.error("Failed to fetch orders:", err);
-      setError("Failed to load your orders. Please try again later.");
-      setLoading(false);
-      if (isManualRefresh) setRefreshing(false);
-    }
-  };
+    }, [cartItems, increaseQuantity, decreaseQuantity]);
 
-  // Helpers to normalize different backend shapes
-  const getLineProductId = (line) => {
-    if (!line) return undefined;
-    if (typeof line.productId === "number") return line.productId;
-    if (line.product && typeof line.product === "object") {
-      return line.product.productId ?? line.product.id ?? line.productId;
-    }
-    if (typeof line.product === "number") return line.product;
-    return line.productId ?? undefined;
-  };
+    // Test backend connectivity on component mount
+    useEffect(() => {
+        const testBackendConnection = async () => {
+            try {
+                // Test if backend is running by trying to fetch products
+                const response = await api.get("/api/products/getall");
+                console.log("Backend connection successful:", response.status);
+            } catch (error) {
+                console.error("Backend connection failed:", error);
+                if (error.code === 'ECONNREFUSED' || error.message.includes('Network Error')) {
+                    console.error("Backend server is not running on http://localhost:8080");
+                }
+            }
+        };
+        testBackendConnection();
+    }, []);
 
-  const getLineProductName = (line) => {
-    if (!line) return "";
-    if (line.product && typeof line.product === "object") {
-      return line.product.name || line.product.productName || line.product.title || "";
-    }
-    return line.productName || line.name || "";
-  };
+    // Optimized checkout handler
+    const handleCheckout = useCallback(async () => {
+        // Check if user is logged in
+        const customer = JSON.parse(localStorage.getItem("customer") || "{}");
+        console.log("Customer from localStorage:", customer);
 
-  // Normalize order-line id across different backend shapes
-  const getLineId = (line) => {
-    if (!line) return undefined;
-    return line.orderLineId ?? line.id ?? line.orderlineId ?? line.order_line_id ?? undefined;
-  };
+        // Fix for large customerId issue - use a valid backend customer ID
+        if (!customer.customerId || customer.customerId > 2147483647) {
+            console.warn("Invalid customerId detected, using default customer (ID: 1)");
+            customer.customerId = 1; // Use the existing customer from backend
+        }
 
-  const handleManualRefresh = () => {
-    fetchCustomerOrders(true);
-  };
+        if (!customer.customerId) {
+            alert("Please log in to proceed with checkout");
+            navigate("/login");
+            return;
+        }
 
-  // copy order id feedback
-  
-  
+        // Use existing checkout logic
+        try {
+            console.log("🛒 Starting checkout process...");
 
-  useEffect(() => {
-    fetchCustomerOrders();
+            // Validate cart is not empty
+            if (cartItems.length === 0) {
+                alert("Your cart is empty. Please add items before checkout.");
+                return;
+            }
+            console.log(" Cart items:", cartItems.length);
 
-    const pollInterval = setInterval(() => {
-      fetchCustomerOrders();
-    }, 30000);
+            // Calculate total amount
+            const totalAmount = Number(total) || Number(getTotalPrice) || 0;
+            console.log("Calculated totalAmount:", totalAmount);
 
-    const handleFocus = () => {
-      fetchCustomerOrders();
-    };
-    window.addEventListener("focus", handleFocus);
+            // Ensure totalAmount is within reasonable range for backend int
+            if (totalAmount > 2147483647 || totalAmount < 0 || isNaN(totalAmount)) {
+                throw new Error(`Invalid total amount: ${totalAmount}`);
+            }
 
-    return () => {
-      clearInterval(pollInterval);
-      window.removeEventListener("focus", handleFocus);
-    };
-  }, []);
+            // Build order payload with nested orderLines (send IDs only for product)
+            const orderData = {
+                customerId: customer.customerId,
+                orderDate: new Date().toISOString().slice(0,10),
+                totalAmount: Math.round(totalAmount * 100) / 100, // Round to 2 decimal places
+                status: "Pending",
+                orderLines: cartItems.map(item => {
+                    const unit = parseFloat(item.unitPrice ?? item.price) || 0;
+                    return {
+                        quantity: item.quantity,
+                        unitPrice: unit,
+                        subTotal: Math.round((unit * item.quantity) * 100) / 100,
+                        productId: item.id
+                    };
+                })
+            };
 
-  // load reviews for display and checking
-  useEffect(() => {
-    const loadReviews = async () => {
-      try {
-        const res = await fetchAllReviews();
-        setReviews(res || []);
-      } catch (err) {
-        console.warn('Failed to load reviews', err);
-        setReviews([]);
-      }
-    };
-    loadReviews();
-  }, []);
+            console.log("Order data being sent (with nested lines):", orderData);
 
-  const handleReviewInput = (orderLineId, field, value) => {
-    setReviewInputs(prev => ({ ...prev, [orderLineId]: { ...(prev[orderLineId]||{}), [field]: value } }));
-  };
+            let order;
+            try {
+                // Prefer the central API helper
+                order = await createOrder(orderData);
+                console.log("Order created with nested lines:", order);
+            } catch (orderErr) {
+                console.error("Failed to create order with nested lines:", orderErr);
+                // Try direct POST as fallback
+                try {
+                    const resp = await api.post('/api/order/create', orderData);
+                    order = resp.data;
+                    console.log('Order created (fallback):', order);
+                } catch (fallbackErr) {
+                    console.error('All methods to create order failed:', fallbackErr);
+                    throw new Error('Failed to create order');
+                }
+            }
 
-  const handleReviewSubmit = async (orderLine, product) => {
-  // support multiple id shapes safely
-  const lineIdKey = getLineId(orderLine);
-    const vals = reviewInputs[lineIdKey] || {};
-    const rating = Number(vals.rating);
-    const comment = (vals.comment || '').trim();
-    if (!rating || !comment) {
-      alert('Please provide rating and comment');
-      return;
-    }
-    setSubmitting(prev => ({ ...prev, [lineIdKey]: true }));
-    try {
-      const customer = getStoredCustomer();
+            // 5. Clear cart after successful order creation
+            clearCart();
+            console.log("Cart cleared");
 
-      // Derive productId robustly from several possible shapes
-      const derivedProductId = getLineProductId(orderLine) || product?.productId || product?.id || product?.productId;
+            // 6. Save order ID and navigate to shipping
+            localStorage.setItem("orderId", order.orderId);
+            localStorage.setItem("orderTotal", total.toFixed(2));
+            console.log("Order ID saved:", order.orderId);
+            console.log("Order total saved:", total.toFixed(2));
 
-      // Derive orderLineId defensively
-      const derivedOrderLineId = orderLine?.orderLineId ?? orderLine?.id ?? orderLine?.orderlineId ?? null;
+            alert("Order created successfully! Proceeding to shipping.");
+            navigate("/shipping", {
+                state: {
+                    totalAmount: total.toFixed(2),
+                    orderId: order.orderId
+                }
+            });
 
-      // Try to include orderId if present (some backends expect it)
-      const derivedOrderId = orderLine?.orderId ?? orderLine?.order?.orderId ?? null;
+        } catch (err) {
+            console.error("Checkout error:", err);
+            alert("Failed to create order. Please try again. Error: " + err.message);
+        }
+    }, [cartItems, getTotalPrice, clearCart, navigate, total]);
 
-      // Ensure rating is an integer between 1 and 5
-      const safeRating = Math.max(1, Math.min(5, Math.round(Number(rating) || 0)));
-
-      // Construct payload to match backend Review entity fields exactly
-      const payload = {
-        rating: safeRating,
-        // backend Review uses 'reviewComment' field (JsonAlias accepts comment/text/content too)
-        reviewComment: comment,
-        // nested product and customer objects expected by controller mapping
-        ...(derivedProductId != null ? { product: { productId: Number(derivedProductId) } } : {}),
-        ...(customer?.customerId != null ? { customer: { customerId: Number(customer.customerId) } } : {}),
-      };
-
-      // remove undefined/null to avoid backend NPE on unexpected fields
-      const filteredPayload = Object.fromEntries(Object.entries(payload).filter(([, v]) => v !== undefined && v !== null && v !== ""));
-
-      const created = await createReview(filteredPayload);
-      // refresh reviews
-      const refreshed = await fetchAllReviews();
-      setReviews(refreshed || []);
-      setReviewInputs(prev => ({ ...prev, [lineIdKey]: { rating: '', comment: '' } }));
-      // Notify other parts of the app (product list/details) that a new review was created
-      try {
-        window.dispatchEvent(new CustomEvent('reviewCreated', { detail: { productId: derivedProductId } }));
-      } catch (e) {
-        // ignore if window not available in some test environments
-      }
-      // Inform the customer their review was recorded
-      alert('your review has been submitted!');
-    } catch (err) {
-      // Log error for debugging but avoid showing noisy popups to users here
-      console.error('Failed to submit review', err);
-    } finally {
-      setSubmitting(prev => ({ ...prev, [lineIdKey]: false }));
-    }
-  };
-
-  // derive filtered/paged list (no status or sort filtering; show all orders)
-  const processedOrders = React.useMemo(() => {
-    let arr = Array.isArray(orders) ? [...orders] : [];
-    // optional search across order id, product names, email
-    const q = String(search || "").trim().toLowerCase();
-    if (q) {
-      arr = arr.filter(o => {
-        if (String(o.orderId || '').toLowerCase().includes(q)) return true;
-        if (String(o.totalAmount || o.total || '').toLowerCase().includes(q)) return true;
-        const cust = o.customer || {};
-        if (String(cust.email || cust.name || cust.firstName || '').toLowerCase().includes(q)) return true;
-        const names = (o.orderLines || []).map(getLineProductName).join(' ').toLowerCase();
-        if (names.includes(q)) return true;
-        return false;
-      });
-    }
-    return arr;
-  }, [orders, search]);
-
-  // show all orders (no pagination)
-
-  return (
-    <div className="orders-page-wrapper">
-      <div className="orders-container">
-        <div className="orders-header">
-          <div>
-            <h1 className="orders-title">My Orders</h1>
-            <p className="orders-subtitle">Track and manage your orders</p>
-          </div>
-          <div className="orders-controls">
-            <input className="search-input" placeholder="Search orders or products..." value={search} onChange={e => setSearch(e.target.value)} />
-            <button className={`refresh-button ${refreshing || loading ? 'is-loading' : ''}`} onClick={handleManualRefresh} disabled={refreshing || loading} aria-busy={refreshing || loading} aria-label="Refresh orders">
-              {refreshing ? (<><span className="refresh-spinner" aria-hidden="true"></span><span>Refreshing...</span></>) : (<><span className="refresh-emoji" aria-hidden="true">🔄</span><span>Refresh</span></>)}
-            </button>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="orders-loading">
-            <div className="loading-spinner"></div>
-            <p>Loading your orders...</p>
-          </div>
-        ) : error ? (
-          <div className="orders-error">
-            <div className="error-icon">⚠️</div>
-            <h3>Oops! Something went wrong</h3>
-            <p>{error}</p>
-            {error.includes("log in") && (
-              <button className="btn-primary" onClick={() => navigate("/login")}>
-                Go to Login
-              </button>
-            )}
-          </div>
-        ) : orders.length === 0 ? (
-          <div className="orders-empty">
-            <div className="empty-icon">📦</div>
-            <h3>No orders yet</h3>
-            <p>You haven't placed any orders yet. Start shopping to see your orders here!</p>
-            <Link to="/products" className="btn-primary">
-              Start Shopping
-            </Link>
-          </div>
-        ) : (
-          <div className="orders-list">
-            {processedOrders.map((order) => (
-              <div className="order-card" key={order.orderId}>
-                <div className="order-header">
-                  <div className="order-info">
-                    <h3 className="order-number">Order #{order.orderId}</h3>
-                    <p className="order-date">Placed on {formatDate(order.orderDate)}</p>
-                  </div>
-                  <div className="order-right">
-                    <div className="order-status">
-                      <span className={`status-badge status-${String(order.status||'Pending').toLowerCase()}`.replace(/\s/g,'-')}>{order.status || 'Pending'}</span>
+    if (cartItems.length === 0) {
+        return (
+            <div className="container mx-auto px-4 py-16">
+                <div className="text-center">
+                    <ShoppingBag className="h-24 w-24 text-muted-foreground mx-auto mb-6" />
+                    <h1 className="text-3xl font-bold mb-4">Your cart is empty</h1>
+                    <p className="text-muted-foreground mb-8">
+                        Discover our beautiful collection of baby clothing
+                    </p>
+                    <div className="flex justify-center">
+                        <Button onClick={() => window.location.href = "/products"}>
+                            Continue Shopping
+                        </Button>
                     </div>
-                    <div className="order-actions">
-                      <button className="btn-secondary" onClick={() => setExpandedOrderId(expandedOrderId === order.orderId ? null : order.orderId)}>{expandedOrderId === order.orderId ? 'Hide Details' : 'View Details'}</button>
-                      {(order.status === 'Shipped' || order.status === 'Processing') && (<button className="btn-outline">Track Order</button>)}
-                    </div>
-                  </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="container mx-auto px-4 py-8">
+            <h1 className="text-3xl font-bold mb-8">Shopping Cart</h1>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Cart Items */}
+                <div className="lg:col-span-2 space-y-4">
+                    {cartItems.map((item) => (
+                        <CartItem
+                            key={item.id}
+                            item={item}
+                            onQuantityChange={handleQuantityChange}
+                            onRemove={removeFromCart}
+                        />
+                    ))}
                 </div>
 
-                <div className="order-summary">
-                  <div className="order-total">
-                    <span className="total-label">Total:</span>
-                    <span className="total-amount">{formatCurrency(order.totalAmount)}</span>
-                  </div>
-
-                  {order.orderLines && order.orderLines.length > 0 && (
-                    <div className="order-items-preview">
-                      <span className="items-count">{order.orderLines.length} item{order.orderLines.length !== 1 ? "s" : ""}</span>
-                    </div>
-                  )}
-                </div>
-                {expandedOrderId === order.orderId && (
-                  <div className="order-details" style={{ marginTop: 12 }}>
-                    <h4 style={{ marginBottom: 8 }}>Order details</h4>
-
-                    <div style={{ overflowX: "auto" }}>
-                      <table className="order-lines-table" style={{ width: "100%", borderCollapse: "collapse" }}>
-                        <thead>
-                          <tr>
-                            <th style={{ textAlign: "left", padding: 8, borderBottom: "1px solid #eee" }}>Product</th>
-                            <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>Qty</th>
-                            <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>Unit</th>
-                            <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>Subtotal</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(order.orderLines || []).map((line, idx) => {
-                            const pid = getLineProductId(line);
-                            const pname = getLineProductName(line) || `Product #${pid ?? "?"}`;
-                            const qty = line.quantity ?? line.qty ?? 0;
-                            const unit = (line.unitPrice ?? line.price ?? 0).toFixed ? Number(line.unitPrice ?? line.price ?? 0).toFixed(2) : String(line.unitPrice ?? line.price ?? 0);
-                            const subtotal = (line.subTotal ?? line.subtotal ?? (qty * (line.unitPrice ?? line.price ?? 0)) ).toFixed ? Number(line.subTotal ?? line.subtotal ?? qty * (line.unitPrice ?? line.price ?? 0)).toFixed(2) : String(line.subTotal ?? line.subtotal ?? 0);
-                            return (
-                              <tr key={idx}>
-                                <td style={{ padding: 8, borderBottom: "1px solid #f4f4f4" }}>{pname} {pid ? <span style={{ color: '#666' }}>#{pid}</span> : null}</td>
-                                <td style={{ padding: 8, textAlign: 'right', borderBottom: "1px solid #f4f4f4" }}>{qty}</td>
-                                <td style={{ padding: 8, textAlign: 'right', borderBottom: "1px solid #f4f4f4" }}>R{unit}</td>
-                                <td style={{ padding: 8, textAlign: 'right', borderBottom: "1px solid #f4f4f4" }}>R{subtotal}</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Reviews: allow writing reviews for delivered orders */}
-                    {String(order.status || '').toLowerCase() === 'delivered' && (
-                      <div style={{ marginTop: 16 }}>
-                        <h5 style={{ marginBottom: 8 }}>Write reviews for delivered items</h5>
-                        {(order.orderLines || []).map((line) => {
-                          const pid = getLineProductId(line);
-                          const product = line.product || { productId: pid };
-                          const orderLineId = getLineId(line);
-                          const customer = getStoredCustomer();
-                          const myReview = reviews.find(r => String(r.orderLineId ?? r.id ?? r.orderlineId ?? r.order_line_id) === String(orderLineId) && String(r.customerId ?? r.customer?.customerId) === String(customer?.customerId));
-                          return (
-                            <div key={orderLineId} style={{ padding: 8, borderBottom: '1px dashed #eee' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div>
-                                  <strong>{getLineProductName(line)}</strong>
-                                  <div style={{ fontSize: 13, color: '#666' }}>Qty: {line.quantity}</div>
-                                </div>
-                                <div style={{ minWidth: 240 }}>
-                                  {myReview ? (
-                                    <div>
-                                      <div><strong>Your review:</strong></div>
-                                      <div>Rating: {myReview.rating} / 5</div>
-                                      <div>{myReview.reviewComment ?? myReview.comment ?? myReview.text ?? ''}</div>
-                                    </div>
-                                  ) : (
-                                    <form onSubmit={(e) => { e.preventDefault(); handleReviewSubmit(line, product); }} className="review-form">
-                                      <select className="review-select" required value={reviewInputs[orderLineId]?.rating || ''} onChange={(e) => handleReviewInput(orderLineId, 'rating', e.target.value)}>
-                                        <option value="">Rate</option>
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                        <option value="4">4</option>
-                                        <option value="5">5</option>
-                                      </select>
-                                      <input className="review-input" required value={reviewInputs[orderLineId]?.comment || ''} onChange={(e) => handleReviewInput(orderLineId, 'comment', e.target.value)} placeholder="Write a short review" />
-                                      <Button type="submit" size="sm" className="review-submit" disabled={submitting[orderLineId]}>
-                                        {submitting[orderLineId] ? (
-                                          <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Sending...</span>
-                                        ) : 'Submit'}
-                                      </Button>
-                                    </form>
-                                  )}
-                                </div>
-                              </div>
+                {/* Order Summary */}
+                <div className="lg:col-span-1">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Order Summary</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex justify-between">
+                                <span>Subtotal ({getTotalItems} items)</span>
+                                <span>R{getTotalPrice.toFixed(2)}</span>
                             </div>
-                          );
-                        })}
-                      </div>
-                    )}
 
-                    {/* Shipping / address */}
-                    {(order.shippingAddress || order.address || order.customerAddress) && (
-                      <div style={{ marginTop: 12 }}>
-                        <h5 style={{ marginBottom: 6 }}>Shipping address</h5>
-                        <div style={{ color: '#444' }}>
-                          {order.shippingAddress?.line1 || order.address?.line1 || order.customerAddress || order.shippingAddress || order.address}
-                        </div>
-                      </div>
-                    )}
+                            <div className="flex justify-between">
+                                <span>Shipping</span>
+                                <span>{shipping === 0 ? 'FREE' : `R${shipping.toFixed(2)}`}</span>
+                            </div>
 
-                    {/* Payment / totals */}
-                    <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ color: '#666' }}>Subtotal</div>
-                        <div style={{ fontWeight: 600 }}>R{(order.subtotal ?? order.totalAmount ?? order.total ?? 0).toFixed ? Number(order.subtotal ?? order.totalAmount ?? order.total ?? 0).toFixed(2) : String(order.subtotal ?? order.totalAmount ?? order.total ?? 0)}</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+                            <div className="flex justify-between">
+                                <span>VAT (15%)</span>
+                                <span>R{tax.toFixed(2)}</span>
+                            </div>
+
+                            <Separator />
+
+                            <div className="flex justify-between font-semibold text-lg">
+                                <span>Total</span>
+                                <span>R{total.toFixed(2)}</span>
+                            </div>
+
+                            {shipping > 0 && (
+                                <p className="text-sm text-muted-foreground">
+                                    Add R{(500 - getTotalPrice).toFixed(2)} more for free shipping!
+                                </p>
+                            )}
+
+                            <Button onClick={handleCheckout} className="w-full" size="lg">
+                                Proceed to Checkout
+                            </Button>
+
+                            <div className="flex justify-center">
+                                <Button onClick={() => window.location.href = "/products"}>
+                                    Continue Shopping
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+        </div>
+    );
 }
 
-export default Orders;
+// Helper function for saving cart to backend
+const saveCartToBackend = async (cartItems) => {
+    try {
+        const customer = JSON.parse(localStorage.getItem("customer"));
+        if (!customer || !customer.customerId) {
+            console.log("No customer found, skipping cart save");
+            return;
+        }
+
+        // Fix large customerId issue
+        if (customer.customerId > 2147483647) {
+            console.warn("Large customerId detected in cart save, using ID: 1");
+            customer.customerId = 1;
+        }
+
+        if (cartItems.length === 0) {
+            console.log("Cart is empty, skipping save");
+            return;
+        }
+
+        // Try to update existing cart first, then create if needed
+        const updatePayload = {
+            customer: {
+                customerId: customer.customerId,
+                firstName: customer.firstName || "Customer",
+                lastName: customer.lastName || "User",
+                email: customer.email || "customer@example.com"
+            },
+            items: cartItems.map(item => ({
+                productId: item.id,  // Only send product ID, not full object
+                quantity: item.quantity,
+                unitPrice: parseFloat(item.unitPrice ?? item.price),
+                subTotal: (parseFloat(item.unitPrice ?? item.price) || 0) * item.quantity
+            })),
+            isCheckedOut: false
+        };
+
+        try {
+            const response = await api.put("/api/cart/update", updatePayload);
+            console.log("Cart updated successfully:", response.data);
+        } catch (updateError) {
+            if (updateError.response?.status === 404) {
+                // Cart doesn't exist, create new one
+                const response = await api.post("/api/cart/create", updatePayload);
+                console.log("New cart created successfully:", response.data);
+            } else {
+                throw updateError;
+            }
+        }
+
+    } catch (error) {
+        if (error.response?.data?.message?.includes("Duplicate entry")) {
+            console.log("Customer already has a cart, skipping cart save");
+            return;
+        }
+
+        console.error("Failed to save cart to backend:", error);
+        throw error;
+    }
+};

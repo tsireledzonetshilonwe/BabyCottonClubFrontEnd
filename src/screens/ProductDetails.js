@@ -4,6 +4,11 @@ import api, { fetchAllReviews, fetchProducts, fetchCustomerById } from '../api/a
 import { Button } from '../components/ui/button';
 import { resolveProductImage, IMAGE_PLACEHOLDER } from '../utils/images';
 import { mapToCategory } from '../utils/categoryMapper';
+import { useCart } from '../context/CartContext';
+import { useToast } from '../hooks/use-toast';
+import SizeSelector from '../components/SizeSelector';
+import { normalizeLocalImage } from '../utils/images';
+import { ShoppingCart } from 'lucide-react';
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -12,6 +17,11 @@ const ProductDetails = () => {
   const [customerCache, setCustomerCache] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedSize, setSelectedSize] = useState(null);
+  const [sizeError, setSizeError] = useState(null);
+  
+  const { addToCart } = useCart();
+  const { toast } = useToast();
 
   useEffect(() => {
     const load = async () => {
@@ -70,6 +80,60 @@ const ProductDetails = () => {
   const reviewCount = (reviews || []).length;
   const avgRating = reviewCount > 0 ? (reviews.reduce((s, r) => s + (Number(r.rating) || 0), 0) / reviewCount) : null;
 
+  // Check if product has sizes (and it's not just "One Size")
+  const hasSizes = product?.sizes && 
+    Array.isArray(product.sizes) && 
+    product.sizes.length > 0 && 
+    !(product.sizes.length === 1 && product.sizes[0] === 'One Size');
+  
+  const handleAddToCart = () => {
+    // Validate size if product has sizes
+    if (hasSizes && !selectedSize) {
+      setSizeError('Please select a size before adding to cart');
+      toast({
+        title: 'Size Required',
+        description: 'Please select a size before adding to cart',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    setSizeError(null);
+    
+    try {
+      const cartItem = {
+        id: product.productId,
+        name: product.productName || product.name,
+        price: product.price,
+        image: normalizeLocalImage(product.imageUrl) || resolveProductImage(product)
+      };
+      
+      // Include size if selected
+      if (hasSizes && selectedSize) {
+        cartItem.size = selectedSize;
+      }
+      
+      addToCart(cartItem);
+      
+      const sizeInfo = selectedSize ? ` (Size: ${selectedSize})` : '';
+      toast({
+        title: 'Added to cart',
+        description: `${product.productName || product.name}${sizeInfo} has been added to your cart`,
+      });
+      
+      // Reset size selection after adding
+      if (hasSizes) {
+        setSelectedSize(null);
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to add item to cart',
+        variant: 'destructive',
+      });
+    }
+  };
+
   
 
   return (
@@ -94,6 +158,35 @@ const ProductDetails = () => {
           <div className="mb-4">
             <span className="text-xl font-semibold">R{product.price}</span>
             <span className="ml-4 text-sm text-muted-foreground">Category: {product.category?.categoryName || product.category || mapToCategory({ name: product.productName || product.name, category: product.category?.categoryName }) || 'Other'}</span>
+          </div>
+
+          {/* Size selector if product has sizes */}
+          {hasSizes && (
+            <div className="mb-6">
+              <SizeSelector
+                sizes={product.sizes}
+                selectedSize={selectedSize}
+                onSizeChange={(size) => {
+                  setSelectedSize(size);
+                  setSizeError(null);
+                }}
+                required={true}
+                error={sizeError}
+              />
+            </div>
+          )}
+
+          {/* Add to Cart button */}
+          <div className="mb-6">
+            <Button 
+              onClick={handleAddToCart} 
+              size="lg"
+              className="baby-pink-button"
+              disabled={product.inStock === 'Out of Stock'}
+            >
+              <ShoppingCart className="h-5 w-5 mr-2" />
+              {product.inStock === 'Out of Stock' ? 'Out of Stock' : 'Add to Cart'}
+            </Button>
           </div>
 
           <div className="mb-6">

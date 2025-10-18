@@ -41,7 +41,10 @@ const HomePage = () => {
             rating: avgRating != null ? Number(avgRating.toFixed(1)) : (p.rating || 4.0),
             reviewCount,
             category: mapToCategory({ name: p.productName || p.name, category: p.category?.categoryName }) || 'Other',
-            sizes: ['One Size'],
+            // Use sizes from backend if available
+            sizes: p.sizes && Array.isArray(p.sizes) && p.sizes.length > 0 
+                ? p.sizes 
+                : ['One Size'],
             colors: [p.color || 'Default'],
             description: p.description || `High-quality ${(p.productName || p.name || 'baby item').toLowerCase()} for your little one.`,
             inStock: p.inStock === 'available' || p.inStock === 'In Stock',
@@ -55,13 +58,20 @@ const HomePage = () => {
     const handleAddToCart = async (product) => {
         const p = product.backendData || {};
         try {
-            await addToCart({
+            const cartItem = {
                 id: p.productId || product.id,
                 name: p.productName || product.name,
                 price: p.price ?? product.price,
                 image: normalizeLocalImage(p.imageUrl || product.image) || product.image,
                 quantity: 1,
-            });
+            };
+            
+            // Include size if provided
+            if (product.size) {
+                cartItem.size = product.size;
+            }
+            
+            await addToCart(cartItem);
         } catch (e) {
             console.error('Add to cart failed', e);
         }

@@ -141,7 +141,6 @@ const ContactPage = () => {
                     <h2 style={{ color: '#f7b6d5', marginBottom: '2rem', fontSize: '2.5rem', fontWeight: '700' }}>Frequently Asked Questions</h2>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', maxWidth: '1000px', margin: '0 auto' }}>
                         {[
-                            { question: 'What is your return policy?', answer: 'We offer 30-day returns on all unworn items with original tags.' },
                             { question: 'How long does shipping take?', answer: 'Standard shipping takes 3-5 business days within South Africa.' },
                             { question: 'Are your products hypoallergenic?', answer: 'Yes! All our cotton products are hypoallergenic and chemical-free.' }
                         ].map((faq, index) => (

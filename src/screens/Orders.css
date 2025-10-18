@@ -283,3 +283,142 @@
   .review-select { width: 100%; }
   .review-submit { width: 100%; }
 }
+
+.tracking-section {
+    margin-top: 16px;
+    padding: 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: #fafafa;
+}
+
+.tracking-header h4 {
+    margin: 0 0 4px 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.tracking-date {
+    margin: 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.tracking-steps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin: 20px 0;
+    position: relative;
+}
+
+.tracking-steps::before {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: #e0e0e0;
+    z-index: 1;
+}
+
+.tracking-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+}
+
+.step-indicator {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #e0e0e0;
+    border: 2px solid #fff;
+    margin-bottom: 8px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.tracking-step.completed .step-indicator {
+    background: #28a745;
+    border-color: #28a745;
+}
+
+.checkmark {
+    transition: all 0.3s ease;
+}
+
+.tracking-step span {
+    font-size: 0.8rem;
+    color: #666;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.tracking-step.completed span {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.tracking-details {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.tracking-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tracking-label {
+    font-size: 0.85rem;
+    color: #666;
+    font-weight: 500;
+}
+
+.tracking-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #333;
+}
+
+/* Current step highlighting */
+.tracking-step.current .step-indicator {
+    background: #007bff;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+}
+
+.tracking-step.current span {
+    color: #007bff;
+    font-weight: 600;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .tracking-steps {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    .tracking-steps::before {
+        display: none;
+    }
+
+    .tracking-details {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+}
