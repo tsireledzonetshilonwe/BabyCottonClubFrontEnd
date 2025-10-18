@@ -207,4 +207,23 @@ export const clearCartFromBackend = async (customerId) => {
   return res.data;
 };
 
+// ----------------- EMAIL SUBSCRIPTION (Frontend Only) -----------------
+// Email subscriptions are stored in localStorage (no backend endpoint needed)
+export const subscribeToAlerts = async (email) => {
+  // Store in localStorage
+  const subscriptions = JSON.parse(localStorage.getItem('emailSubscriptions') || '[]');
+  
+  // Check if email already exists
+  if (subscriptions.includes(email)) {
+    return { success: true, message: 'You are already subscribed!', email };
+  }
+  
+  // Add new email
+  subscriptions.push(email);
+  localStorage.setItem('emailSubscriptions', JSON.stringify(subscriptions));
+  
+  // Return success response
+  return { success: true, message: 'Successfully subscribed!', email };
+};
+
 export default api;
