@@ -19,10 +19,16 @@ const productImages = {
 };
 
 const categories = [
+  { name: "All", sub: [] },
+  { name: "Shoes", sub: ["Sneakers", "Sandals", "Loafers", "Boots"] },
+  { name: "Dresses", sub: ["Casual", "Party", "Everyday"] },
+  { name: "Duvet", sub: ["Single", "Double", "Kids"] },
+  { name: "2 Piece Sets", sub: ["Sets", "Matching"] },
+  { name: "Rompers", sub: ["Short", "Long"] },
   { name: "Women", sub: ["Jeans", "Tops", "Activewear", "Sale"] },
   { name: "Men", sub: ["Jeans", "Tops", "Activewear", "Sale"] },
   { name: "Kids", sub: ["T-Shirts", "Shorts", "Sale"] },
-  { name: "Baby", sub: ["Essentials", "New Arrivals", "Sale"] },
+  
 ];
 
 function OrderLines({ isAuthenticated }) {

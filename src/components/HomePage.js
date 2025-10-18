@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import { fetchProducts } from '../api/api';
 import ProductCard from '../components/ProductCard';
 import { resolveProductImage, normalizeLocalImage } from '../utils/images';
+import { mapToCategory } from '../utils/categoryMapper';
 
 const HomePage = () => {
     const { addToCart } = useCart();
@@ -39,7 +40,7 @@ const HomePage = () => {
             image: resolveProductImage(p),
             rating: avgRating != null ? Number(avgRating.toFixed(1)) : (p.rating || 4.0),
             reviewCount,
-            category: p.category?.categoryName || 'Baby Items',
+            category: mapToCategory({ name: p.productName || p.name, category: p.category?.categoryName }) || 'Other',
             sizes: ['One Size'],
             colors: [p.color || 'Default'],
             description: p.description || `High-quality ${(p.productName || p.name || 'baby item').toLowerCase()} for your little one.`,

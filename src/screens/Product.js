@@ -9,6 +9,7 @@ import { useDebounce } from '../hooks/useDebounce';
 import { fetchProducts } from '../services/simpleApi';
 import ProductCard from '../components/ProductCard';
 import { resolveProductImage, normalizeLocalImage } from '../utils/images';
+import { mapToCategory } from '../utils/categoryMapper';
 import SimpleFilters from '../components/SimpleFilters';
 
 const Products = () => {
@@ -44,7 +45,7 @@ const Products = () => {
     image: resolveProductImage(backendProduct),
       rating: avgRating != null ? Number(avgRating.toFixed(1)) : (backendProduct.rating || 4.0),
       reviewCount: reviewCount,
-      category: backendProduct.category?.categoryName || 'Baby Items',
+  category: mapToCategory({ name: backendProduct.productName || backendProduct.name, category: backendProduct.category?.categoryName }) || 'Other',
       sizes: ['One Size'],
       colors: [backendProduct.color || 'Default'],
       description: backendProduct.description || `High-quality ${(backendProduct.productName || backendProduct.name || 'baby item').toLowerCase()} for your little one.`,
@@ -65,10 +66,15 @@ const Products = () => {
       
       const backendProducts = await fetchProducts();
       
-      // Extract unique categories from products
-      const backendCategories = ['all', ...new Set(backendProducts.map(product => 
-        product.category?.categoryName || 'Baby Items'
-      ))];
+      // Extract unique categories from products and merge with site-wide defaults
+      const defaultCategories = ['Shoes', 'Dresses', 'Duvet', '2 Piece Sets', 'Rompers'];
+      const productCats = Array.from(new Set(backendProducts.map(product => 
+  product.category?.categoryName || 'Other'
+      )));
+      // Merge defaults and product categories, dedupe and sort alphabetically, keep 'all' at the front
+      const merged = Array.from(new Set([...defaultCategories, ...productCats]));
+      merged.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+      const backendCategories = ['all', ...merged];
       
       console.log('Successfully loaded', backendProducts.length, 'products from backend');
       
