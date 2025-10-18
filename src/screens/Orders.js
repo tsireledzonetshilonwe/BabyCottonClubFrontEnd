@@ -46,74 +46,32 @@ function Orders() {
 
     const navigate = useNavigate();
 
-    // Helper to determine if order is cafeteria/food order
-    const isCafeteriaOrder = (order) => {
-        return order.orderType === 'cafeteria' ||
-            order.orderType === 'Cafeteria' ||
-            (order.orderLines && order.orderLines.some(line =>
-                line.product?.category?.toLowerCase().includes('food') ||
-                line.product?.category?.toLowerCase().includes('beverage') ||
-                line.product?.category?.toLowerCase().includes('cafe') ||
-                line.productName?.toLowerCase().includes('coffee') ||
-                line.productName?.toLowerCase().includes('juice') ||
-                line.productName?.toLowerCase().includes('sandwich') ||
-                line.productName?.toLowerCase().includes('burger')
-            ));
-    };
-
     // Helper to get appropriate tracking steps based on order type
     const getTrackingStepLabels = (order) => {
-        const cafeteriaOrder = isCafeteriaOrder(order);
-
-        if (cafeteriaOrder) {
-            return {
-                step1: 'Order Placed',
-                step2: 'Preparing',
-                step3: 'Ready',
-                step4: 'Collected'
-            };
-        } else {
-            return {
-                step1: 'Order Placed',
-                step2: 'Processing',
-                step3: 'Shipped',
-                step4: 'Delivered'
-            };
-        }
+        return {
+            step1: 'Order Placed',
+            step2: 'Processing',
+            step3: 'Shipped',
+            step4: 'Delivered'
+        };
     };
 
     // Improved helper to get step completion based on current status
     const getStepCompletion = (orderStatus, stepLabels) => {
         const status = (orderStatus || 'Pending').toLowerCase();
-        const isCafeteria = stepLabels.step4 === 'Collected';
 
-        if (isCafeteria) {
-            // Cafeteria order flow: Pending → Processing → Ready → Collected
-            switch (status) {
-                case 'collected':
-                    return { step1: true, step2: true, step3: true, step4: true };
-                case 'ready':
-                    return { step1: true, step2: true, step3: true, step4: false };
-                case 'processing':
-                    return { step1: true, step2: true, step3: false, step4: false };
-                case 'pending':
-                default:
-                    return { step1: true, step2: false, step3: false, step4: false };
-            }
-        } else {
-            // Regular order flow: Pending → Processing → Shipped → Delivered/Completed
-            switch (status) {
-                case 'completed':
-                case 'delivered':
-                    return { step1: true, step2: true, step3: true, step4: true };
-                case 'shipped':
-                    return { step1: true, step2: true, step3: true, step4: false };
-                case 'processing':
-                    return { step1: true, step2: true, step3: false, step4: false };
-                case 'pending':
-                default:
-                    return { step1: true, step2: false, step3: false, step4: false };
-            }
+        // Regular order flow: Pending → Processing → Shipped → Delivered/Completed
+        switch (status) {
+            case 'completed':
+            case 'delivered':
+                return { step1: true, step2: true, step3: true, step4: true };
+            case 'shipped':
+                return { step1: true, step2: true, step3: true, step4: false };
+            case 'processing':
+                return { step1: true, step2: true, step3: false, step4: false };
+            case 'pending':
+            default:
+                return { step1: true, step2: false, step3: false, step4: false };
         }
     };
 
@@ -465,7 +423,7 @@ function Orders() {
                                                     </span>
                                                 </div>
 
-                                                {/* Step 2 - Processing/Preparing */}
+                                                {/* Step 2 - Processing */}
                                                 <div style={{
                                                     display: "flex",
                                                     flexDirection: "column",
@@ -508,7 +466,7 @@ function Orders() {
                                                     </span>
                                                 </div>
 
-                                                {/* Step 3 - Shipped/Ready */}
+                                                {/* Step 3 - Shipped */}
                                                 <div style={{
                                                     display: "flex",
                                                     flexDirection: "column",
@@ -551,7 +509,7 @@ function Orders() {
                                                     </span>
                                                 </div>
 
-                                                {/* Step 4 - Delivered/Collected */}
+                                                {/* Step 4 - Delivered */}
                                                 <div style={{
                                                     display: "flex",
                                                     flexDirection: "column",
