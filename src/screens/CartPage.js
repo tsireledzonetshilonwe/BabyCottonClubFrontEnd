@@ -52,27 +52,23 @@ export default function CartPage() {
         return getTotalPrice + shipping + tax;
     }, [getTotalPrice, shipping, tax]);
 
-    // Optimized quantity change handler (with size support)
-    const handleQuantityChange = useCallback((id, newQuantity, size = null) => {
+    // Optimized quantity change handler
+    const handleQuantityChange = useCallback((id, newQuantity) => {
         if (newQuantity < 1 || newQuantity > 999) return; // Reasonable limits
 
         // Update the quantity using existing cart functions
-        // Find item by both id and size if size is provided
-        const currentItem = cartItems.find(item => 
-            size ? (item.id === id && item.size === size) : item.id === id
-        );
-        
+        const currentItem = cartItems.find(item => item.id === id);
         if (currentItem) {
             const difference = newQuantity - currentItem.quantity;
             if (difference > 0) {
                 // Increase quantity
                 for (let i = 0; i < difference; i++) {
-                    increaseQuantity(id, size);
+                    increaseQuantity(id);
                 }
             } else if (difference < 0) {
                 // Decrease quantity
                 for (let i = 0; i < Math.abs(difference); i++) {
-                    decreaseQuantity(id, size);
+                    decreaseQuantity(id);
                 }
             }
         }
@@ -122,46 +118,7 @@ export default function CartPage() {
                 alert("Your cart is empty. Please add items before checkout.");
                 return;
             }
-            console.log("📦 Cart items:", cartItems.length);
-
-            // Step 1: Save cart to database before creating order
-            try {
-                const cartPayload = {
-                    customer: { customerId: customer.customerId },
-                    items: cartItems.map(item => ({
-                        productId: item.id,
-                        quantity: item.quantity,
-                        ...(item.size && { size: item.size }) // Include size if present
-                    })),
-                    checkedOut: false
-                };
-
-                console.log("💾 Saving cart to database before checkout...");
-                console.log("🔍 CARTPAGE UPDATE PAYLOAD:", JSON.stringify(cartPayload, null, 2));
-                
-                try {
-                    await api.put("/api/cart/update", cartPayload);
-                    console.log("✅ Cart saved to database (updated)");
-                } catch (updateError) {
-                    console.error("❌ CartPage update error:", {
-                        status: updateError.response?.status,
-                        data: updateError.response?.data,
-                        message: updateError.message
-                    });
-                    
-                    if (updateError.response?.status === 404) {
-                        await api.post("/api/cart/create", cartPayload);
-                        console.log("✅ Cart saved to database (created)");
-                    } else if (updateError.response?.status === 403) {
-                        console.warn("⚠️ Cart save blocked - continuing with order creation");
-                    } else {
-                        console.warn("⚠️ Cart save failed - continuing with order creation:", updateError.message);
-                    }
-                }
-            } catch (cartError) {
-                console.warn("⚠️ Cart save error (non-critical):", cartError.message);
-                // Continue with order creation even if cart save fails
-            }
+            console.log(" Cart items:", cartItems.length);
 
             // Calculate total amount
             const totalAmount = Number(total) || Number(getTotalPrice) || 0;
@@ -184,8 +141,7 @@ export default function CartPage() {
                         quantity: item.quantity,
                         unitPrice: unit,
                         subTotal: Math.round((unit * item.quantity) * 100) / 100,
-                        productId: item.id,
-                        ...(item.size && { size: item.size }) // Include size if present
+                        productId: item.id
                     };
                 })
             };
@@ -210,45 +166,15 @@ export default function CartPage() {
                 }
             }
 
-            // Step 2: Mark cart as checked out in database
-            try {
-                const checkedOutCartPayload = {
-                    customer: { customerId: customer.customerId },
-                    items: cartItems.map(item => ({
-                        productId: item.id,
-                        quantity: item.quantity,
-                        ...(item.size && { size: item.size }) // Include size if present
-                    })),
-                    checkedOut: true
-                };
-
-                console.log("✓ Marking cart as checked out in database...");
-                console.log("🔍 CHECKOUT UPDATE PAYLOAD:", JSON.stringify(checkedOutCartPayload, null, 2));
-                
-                try {
-                    await api.put("/api/cart/update", checkedOutCartPayload);
-                    console.log("✅ Cart marked as checked out in database");
-                } catch (markError) {
-                    console.error("❌ Checkout marking error:", {
-                        status: markError.response?.status,
-                        data: markError.response?.data,
-                        message: markError.message
-                    });
-                    console.warn("⚠️ Failed to mark cart as checked out:", markError.message);
-                }
-            } catch (error) {
-                console.warn("⚠️ Cart checkout marking failed (non-critical):", error.message);
-            }
-
-            // Step 3: Clear cart from localStorage after successful order creation
+            // 5. Clear cart after successful order creation
             clearCart();
-            console.log("🗑️ Cart cleared from localStorage");
+            console.log("Cart cleared");
 
-            // Step 4: Save order ID and navigate to shipping
+            // 6. Save order ID and navigate to shipping
             localStorage.setItem("orderId", order.orderId);
             localStorage.setItem("orderTotal", total.toFixed(2));
-            console.log("📝 Order ID saved:", order.orderId);
-            console.log("💰 Order total saved:", total.toFixed(2));
+            console.log("Order ID saved:", order.orderId);
+            console.log("Order total saved:", total.toFixed(2));
 
             alert("Order created successfully! Proceeding to shipping.");
             navigate("/shipping", {
@@ -368,33 +294,30 @@ const saveCartToBackend = async (cartItems) => {
             return;
         }
 
-        // Build cart payload - match backend expected format
-        const cartPayload = {
-            customer: { customerId: customer.customerId },
+        // Try to update existing cart first, then create if needed
+                const updatePayload = {
+            customer: {
+                customerId: customer.customerId,
+                firstName: customer.firstName || "Customer",
+                lastName: customer.lastName || "User",
+                email: customer.email || "customer@example.com"
+            },
             items: cartItems.map(item => ({
-                productId: item.id,
-                quantity: item.quantity,
-                ...(item.size && { size: item.size }) // Include size if present
+                        productId: item.id,  // Only send product ID, not full object
+                        quantity: item.quantity,
+                        unitPrice: parseFloat(item.unitPrice ?? item.price),
+                        subTotal: (parseFloat(item.unitPrice ?? item.price) || 0) * item.quantity
             })),
-            checkedOut: false
+            isCheckedOut: false
         };
 
-        console.log("Saving cart to backend:", cartPayload);
-        console.log("🔍 SAVECARTTODB PAYLOAD:", JSON.stringify(cartPayload, null, 2));
-
         try {
-            const response = await api.put("/api/cart/update", cartPayload);
+            const response = await api.put("/api/cart/update", updatePayload);
             console.log("Cart updated successfully:", response.data);
         } catch (updateError) {
-            console.error("❌ SaveCartToDb error:", {
-                status: updateError.response?.status,
-                data: updateError.response?.data,
-                message: updateError.message
-            });
-            
             if (updateError.response?.status === 404) {
                 // Cart doesn't exist, create new one
-                const response = await api.post("/api/cart/create", cartPayload);
+                const response = await api.post("/api/cart/create", updatePayload);
                 console.log("New cart created successfully:", response.data);
             } else {
                 throw updateError;
