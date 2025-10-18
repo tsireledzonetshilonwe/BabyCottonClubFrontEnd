@@ -9,6 +9,7 @@ import { useToast } from '../hooks/use-toast';
 import SizeSelector from '../components/SizeSelector';
 import { normalizeLocalImage } from '../utils/images';
 import { ShoppingCart } from 'lucide-react';
+import SizeGuide from '../components/SizeGuide';
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -19,6 +20,7 @@ const ProductDetails = () => {
   const [error, setError] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
   const [sizeError, setSizeError] = useState(null);
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
   
   const { addToCart } = useCart();
   const { toast } = useToast();
@@ -71,10 +73,6 @@ const ProductDetails = () => {
     };
     load();
   }, [id]);
-
-  if (loading) return <div className="container mx-auto p-4">Loading...</div>;
-  if (error) return <div className="container mx-auto p-4 text-destructive">{error}</div>;
-  if (!product) return <div className="container mx-auto p-4">Product not found</div>;
 
   // compute average rating and count from reviews array
   const reviewCount = (reviews || []).length;
@@ -134,13 +132,63 @@ const ProductDetails = () => {
     }
   };
 
-  
+  // Early returns to avoid accessing properties on a null product during load
+  if (loading) {
+    return (
+      <div className="container mx-auto p-6 max-w-6xl">
+        <p className="text-muted-foreground">Loading product…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-6 max-w-6xl">
+        <p className="text-red-600">{String(error)}</p>
+        <div className="mt-4">
+          <Link to="/products" className="no-underline">
+            <Button className="bg-pink-500 hover:bg-pink-600 text-white">Back to Products</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="container mx-auto p-6 max-w-6xl">
+        <p className="text-gray-700">Product not found.</p>
+        <div className="mt-4">
+          <Link to="/products" className="no-underline">
+            <Button className="bg-pink-500 hover:bg-pink-600 text-white">Back to Products</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="w-full md:w-1/3 bg-muted p-4 rounded">
-          <img src={resolveProductImage(product)} onError={(e)=>{e.currentTarget.src=IMAGE_PLACEHOLDER}} alt={product.productName || product.name} className="w-full object-contain h-64 mx-auto" />
+    <div className="container mx-auto p-6 max-w-6xl">
+      {/* Back Button with Pink Styling - No Underline */}
+      <div className="mb-6">
+        <Link to="/products" style={{ textDecoration: 'none' }}>
+          <Button className="bg-pink-500 hover:bg-pink-600 text-white px-6 py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+            Back to Products
+          </Button>
+        </Link>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Product Image Section */}
+        <div className="w-full lg:w-2/5">
+          <div className="bg-white p-6 rounded-lg border">
+            <img
+              src={resolveProductImage(product)}
+              onError={(e) => { e.currentTarget.src = IMAGE_PLACEHOLDER }}
+              alt={product.productName || product.name}
+              className="w-full h-80 object-contain"
+            />
+          </div>
         </div>
         <div className="flex-1">
           <h1 className="text-2xl font-bold mb-2">{product.productName || product.name}</h1>
@@ -149,7 +197,7 @@ const ProductDetails = () => {
             <div className="flex items-center mr-3" aria-hidden>
               {[...Array(5)].map((_, i) => (
                 <span key={i} className={`mr-1 ${i < Math.round(Number(avgRating || product.rating || 0)) ? 'text-yellow-400' : 'text-gray-300'}`}>
-                  ★
+                  ⭐
                 </span>
               ))}
             </div>
@@ -163,6 +211,22 @@ const ProductDetails = () => {
           {/* Size selector if product has sizes */}
           {hasSizes && (
             <div className="mb-6">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <h4 style={{ margin: 0 }}>Select Size</h4>
+                <button 
+                  onClick={() => setShowSizeGuide(true)}
+                  style={{
+                    background: 'none',
+                    border: '1px solid #333',
+                    padding: '5px 15px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    borderRadius: '4px'
+                  }}
+                >
+                  Size Guide
+                </button>
+              </div>
               <SizeSelector
                 sizes={product.sizes}
                 selectedSize={selectedSize}
@@ -189,48 +253,63 @@ const ProductDetails = () => {
             </Button>
           </div>
 
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-2">Reviews</h2>
-            {reviews.length === 0 && (<p className="text-sm text-muted-foreground">No reviews yet.</p>)}
-            <div className="space-y-4">
-              {reviews.map((r) => {
-                const idKey = String(r.reviewId || r.id || Math.random());
-                // pick comment from several possible field names (backend uses reviewComment)
-                const comment = String(r.reviewComment ?? r.comment ?? r.text ?? r.content ?? r.body ?? '').trim();
-                // resolve customer: prefer nested, else look in cache by customerId
-                let customer = r.customer || null;
-                const cid = r.customerId || (r.customer && (r.customer.customerId || r.customer.id));
-                if (!customer && cid) {
-                  customer = customerCache[String(cid)] || null;
-                }
+            {/* Reviews Section with Grid Layout */}
+            <section className="mt-10">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Customer Reviews</h2>
+              {reviews.length === 0 ? (
+                <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                  <div className="text-4xl text-gray-400 mb-3">💬</div>
+                  <p className="text-gray-500 text-lg">No reviews yet</p>
+                  <p className="text-gray-400 text-sm mt-1">Be the first to share your thoughts!</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {reviews.map((r) => {
+                    const idKey = String(r.reviewId || r.id || Math.random());
+                    const comment = String(r.reviewComment ?? r.comment ?? r.text ?? r.content ?? r.body ?? '').trim();
+                    let customer = r.customer || null;
+                    const cid = r.customerId || (r.customer && (r.customer.customerId || r.customer.id));
+                    if (!customer && cid) {
+                      customer = customerCache[String(cid)] || null;
+                    }
 
-                const customerName = customer && (customer.firstName || customer.name || customer.fullName)
-                  ? `${customer.firstName || customer.name || customer.fullName}${customer.lastName ? ' ' + customer.lastName : ''}`
-                  : (customer && (customer.email || customer.username) ? (customer.email || customer.username) : 'Anonymous');
+                    const customerName = customer && (customer.firstName || customer.name || customer.fullName)
+                      ? `${customer.firstName || customer.name || customer.fullName}${customer.lastName ? ' ' + customer.lastName : ''}`
+                      : (customer && (customer.email || customer.username) ? (customer.email || customer.username) : 'Anonymous');
 
-                return (
-                  <div key={idKey} className="p-3 border rounded">
-                    <div className="flex items-center justify-between">
-                      <div className="font-medium">{customerName}</div>
-                      <div className="text-sm text-muted-foreground">{r.rating} ★</div>
-                    </div>
-                    <div className="text-sm text-muted-foreground mt-2">{comment || '(no comment)'}</div>
-                    <div className="text-xs text-muted-foreground mt-1">{r.reviewDate}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <Link to="/products" className="mr-4 back-to-products-link" style={{ textDecoration: 'none' }}>
-              <Button variant="default" className="back-to-products-btn">Back to products</Button>
-            </Link>
-          </div>
+                    return (
+                      <div key={idKey} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col justify-between min-h-[160px]">
+                        <div className="flex items-center mb-4">
+                          <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center border mr-3">
+                            <span className="text-gray-700 font-semibold text-lg">
+                              {customerName.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-900 text-base">{customerName}</div>
+                            <div className="text-xs text-gray-500">{r.reviewDate}</div>
+                          </div>
+                          <div className="ml-auto flex items-center space-x-1 bg-yellow-50 px-2 py-1 rounded-full border border-yellow-100">
+                            <span className="text-yellow-500 text-base">★</span>
+                            <span className="font-bold text-gray-900 text-base">{r.rating}</span>
+                          </div>
+                        </div>
+                        <div className="text-gray-700 text-base leading-relaxed">
+                          {comment || 'No comment provided.'}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
         </div>
       </div>
-    </div>
-  );
+
+        {/* Size Guide Modal */}
+        <SizeGuide isOpen={showSizeGuide} onClose={() => setShowSizeGuide(false)} />
+      </div>
+    );
 };
 
 export default ProductDetails;

@@ -66,6 +66,11 @@ const ProductCard = memo(({ product, onAddToCart, showViewButton = true }) => {
           <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
             {product.description}
           </p>
+          {product.sizes && product.sizes.length > 0 && (
+            <p className="text-xs text-muted-foreground mb-2" style={{ color: '#87CEEB', fontWeight: '500' }}>
+              Sizes: {product.sizes.length > 3 ? `${product.sizes.slice(0, 3).join(', ')}...` : product.sizes.join(', ')}
+            </p>
+          )}
           <div className="flex items-center mb-2" aria-label={`Average rating ${Number(product.rating || 0).toFixed(1)} out of 5, based on ${product.reviewCount || 0} reviews`}>
             <div className="flex items-center">
               {[...Array(5)].map((_, i) => (
