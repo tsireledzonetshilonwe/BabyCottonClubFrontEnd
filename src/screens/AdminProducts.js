@@ -241,17 +241,21 @@ const AdminProducts = () => {
             </h1>
           </div>
         </div>
-        
-        <Button onClick={openAddDialog} style={{
-          background: 'var(--primary)',
-          border: 'none',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          <Plus style={{ width: '16px', height: '16px' }} />
-          Add Product
-        </Button>
+
+
+          <Link to="/admin/products/add" style={{ textDecoration: 'none' }}>
+              <Button style={{
+                  background: 'var(--primary)',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+              }}>
+                  <Plus style={{ width: '16px', height: '16px' }} />
+                  Add Product
+              </Button>
+          </Link>
+
       </div>
 
       {/* Search */}

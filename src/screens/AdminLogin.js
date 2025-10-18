@@ -18,8 +18,14 @@ function AdminLogin({ setIsAdmin }) {
     
     try {
       const admin = await loginAdmin(email, password);
-      if (admin && admin.adminId) {
+      if (admin && (admin.adminId || admin.id)) {
+        // Persist the full admin object
         localStorage.setItem("admin", JSON.stringify(admin));
+        // If the server returned a token (common property names), store it separately
+        const token = admin?.token || admin?.accessToken || admin?.authToken || admin?.jwt || admin?.bearer;
+        if (token) {
+          localStorage.setItem('adminToken', token);
+        }
         if (setIsAdmin) setIsAdmin(true);
         navigate("/admin/dashboard");
       } else {

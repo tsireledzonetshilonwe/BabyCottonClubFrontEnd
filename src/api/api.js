@@ -1,11 +1,29 @@
 import axios from "axios";
+import { getToken } from '../utils/auth';
 
 const api = axios.create({
   baseURL: "http://localhost:8080",
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // ensure cookies are included for session-based auth
+  xsrfCookieName: 'XSRF-TOKEN',
+  xsrfHeaderName: 'X-XSRF-TOKEN',
 });
+
+// Attach Authorization header automatically when a token is available
+api.interceptors.request.use((config) => {
+  try {
+    const token = getToken();
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch (e) {
+    // ignore errors reading token
+  }
+  return config;
+}, (error) => Promise.reject(error));
 
 // ----------------- PRODUCTS -----------------
 export const fetchProducts = async () => {
@@ -19,8 +37,54 @@ export const fetchProductsByName = async (name) => {
 };
 
 export const createProduct = async (productData) => {
-  const res = await api.post("/api/products/create", productData);
-  return res.data;
+  try {
+    // If productData is FormData (file upload), let axios/browser set the Content-Type
+    if (typeof FormData !== 'undefined' && productData instanceof FormData) {
+      const res = await api.post('/api/products/create', productData, {
+        withCredentials: true,
+        headers: {
+          // let axios set multipart boundary
+        }
+      });
+      return res.data;
+    }
+
+    // Otherwise send JSON
+    const res = await api.post('/api/products/create', productData, {
+      withCredentials: true,
+      headers: { 'Content-Type': 'application/json' }
+    });
+    return res.data;
+  } catch (err) {
+    const status = err?.response?.status;
+    // If server returns 403, attempt admin-scoped endpoint as a fallback
+    if (status === 403) {
+      try {
+        if (typeof FormData !== 'undefined' && productData instanceof FormData) {
+          const res2 = await api.post('/api/admin/products/create', productData, { withCredentials: true });
+          return res2.data;
+        } else {
+          const res2 = await api.post('/api/admin/products/create', productData, { withCredentials: true, headers: { 'Content-Type': 'application/json' } });
+          return res2.data;
+        }
+      } catch (err2) {
+        // fall through to throw original error below
+        console.error('Fallback to /api/admin/products/create failed', err2?.response?.status, err2?.response?.data);
+      }
+    }
+
+    // Re-throw a cleaner error with status if available
+    let message = err?.message || 'Create product failed';
+    const data = err?.response?.data;
+    if (data) {
+      if (typeof data === 'string') message = data;
+      else if (data.message) message = data.message;
+      else message = JSON.stringify(data);
+    }
+    const e = new Error(message + (status ? ` (status ${status})` : ''));
+    e.status = status;
+    throw e;
+  }
 };
 
 export const updateProduct = async (productData) => {
@@ -118,9 +182,18 @@ export const createOrderLine = async (orderLineData) => {
 
 // ----------------- ADMINS -----------------
 export const loginAdmin = async (email, password) => {
-  // Admin controller might also use @RequestParam now
-  const res = await api.post(`/api/admin/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
-  return res.data;
+  try {
+    const res = await api.post(`/api/admin/login`, { email, password }, { withCredentials: true });
+    return res.data;
+  } catch (err) {
+    // fallback to legacy query-param form
+    try {
+      const res2 = await api.post(`/api/admin/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, null, { withCredentials: true });
+      return res2.data;
+    } catch (err2) {
+      throw err2;
+    }
+  }
 };
 
 // ----------------- ADDRESSES -----------------

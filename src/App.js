@@ -4,6 +4,7 @@ import { CartProvider } from "./context/CartContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 
+
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { getStoredCustomer } from "./utils/customer";
@@ -30,6 +31,9 @@ import Products from "./screens/Product";
 import ProductDetails from "./screens/ProductDetails";
 import Shipping from "./screens/Shipping";
 import Profile from "./screens/Profile";
+import AddProduct from './screens/AddProduct';
+
+
 
 // Static Pages
 import HomePage from './components/HomePage';
@@ -71,6 +75,10 @@ function App() {
                   <Route path="/" element={<HomePage />} />
                   <Route path="/homepage" element={<HomePage />} />
                   <Route path="/home" element={<Home />} />
+                    <Route path="/admin/products" element={<AdminProducts />} />
+                    <Route path="/admin/products/add" element={<AddProduct />} />
+
+
 
                   {/* Customer Profile */}
                   <Route path="/profile" element={

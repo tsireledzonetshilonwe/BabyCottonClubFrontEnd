@@ -1,0 +1,169 @@
+/* css */
+/* File: src/screens/AddProduct.css */
+
+/* Page container */
+.add-product-page {
+    max-width: 720px;
+    margin: 24px auto;
+    padding: 16px;
+}
+
+/* Card wrapper using existing baby-pink look */
+.add-product-card {
+    background: white;
+    border: 1px solid #FFB6C1;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(255, 182, 193, 0.15);
+    padding: 20px;
+}
+
+/* Form layout */
+.add-product-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Two-column rows on larger screens */
+.form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+@media (min-width: 768px) {
+    .form-row.split {
+        flex-direction: row;
+        gap: 16px;
+    }
+    .form-row.split > * {
+        flex: 1;
+    }
+}
+
+/* Labels and inputs */
+.add-product-form .label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 6px;
+}
+
+/* Reuse App.css input visual style */
+.add-product-form input[type="text"],
+.add-product-form input[type="email"],
+.add-product-form input[type="number"],
+.add-product-form input[type="search"],
+.add-product-form textarea,
+.add-product-form select {
+    height: 2.5rem;
+    width: 100%;
+    border-radius: 0.375rem;
+    border: 1px solid #d1d5db;
+    background-color: #ffffff;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    font-family: inherit;
+}
+
+.add-product-form textarea {
+    min-height: 96px;
+    resize: vertical;
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+}
+
+/* Focus state */
+.add-product-form input:focus,
+.add-product-form textarea:focus,
+.add-product-form select:focus {
+    outline: none;
+    border-color: #FFB6C1;
+    box-shadow: 0 0 0 3px rgba(255, 182, 193, 0.1);
+}
+
+/* File input styling */
+.file-input {
+    display: block;
+    padding: 8px 10px;
+    border-radius: 0.375rem;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+/* Image preview box */
+.image-preview {
+    margin-top: 8px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.preview-box {
+    width: 128px;
+    height: 128px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.preview-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Form action buttons */
+.form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    opacity: 0.98;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid #d1d5db;
+    color: var(--text);
+}
+
+/* Disabled state */
+.btn:disabled {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .add-product-page { padding: 12px; }
+    .preview-box { width: 100px; height: 100px; }
+}
