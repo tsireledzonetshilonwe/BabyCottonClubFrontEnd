@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import api from "../api/api";
+import { handleCartError } from "../utils/cartErrorHandler";
+import { validateUpdatePayload, validateCreatePayload, debugCartItems } from "../utils/cartDebugger";
 
 const CartContext = createContext(null);
 export const useCart = () => useContext(CartContext);
@@ -24,13 +26,19 @@ export const CartProvider = ({ children }) => {
     }
   }, [cartItems]);
 
-  /** 🧩 Add to cart */
+  /** 🧩 Add to cart with size support */
   const addToCart = (product) => {
     setCartItems((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
+      // Match by both id and size (if size is provided)
+      const existing = prev.find((item) => 
+        item.id === product.id && 
+        (product.size ? item.size === product.size : !item.size)
+      );
+      
       if (existing) {
         return prev.map((item) =>
-          item.id === product.id
+          item.id === product.id && 
+          (product.size ? item.size === product.size : !item.size)
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
@@ -40,31 +48,54 @@ export const CartProvider = ({ children }) => {
     });
   };
 
-  /** 🗑️ Remove item */
-  const removeFromCart = (id) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
+  /** 🗑️ Remove item (with size support) */
+  const removeFromCart = (id, size = null) => {
+    setCartItems((prev) => 
+      prev.filter((item) => {
+        // If size is provided, match both id and size
+        if (size) {
+          return !(item.id === id && item.size === size);
+        }
+        // Otherwise just match id
+        return item.id !== id;
+      })
+    );
   };
 
   /** 🧼 Clear all items */
   const clearCart = () => setCartItems([]);
 
-  /** ➕ Increase item quantity */
-  const increaseQuantity = (id) =>
+  /** ➕ Increase item quantity (with size support) */
+  const increaseQuantity = (id, size = null) =>
     setCartItems((prev) =>
-      prev.map((i) =>
-        i.id === id ? { ...i, quantity: i.quantity + 1 } : i
-      )
+      prev.map((i) => {
+        // If size is provided, match both id and size
+        if (size) {
+          return i.id === id && i.size === size 
+            ? { ...i, quantity: i.quantity + 1 } 
+            : i;
+        }
+        // Otherwise just match id
+        return i.id === id ? { ...i, quantity: i.quantity + 1 } : i;
+      })
     );
 
-  /** ➖ Decrease item quantity */
-  const decreaseQuantity = (id) =>
+  /** ➖ Decrease item quantity (with size support) */
+  const decreaseQuantity = (id, size = null) =>
     setCartItems((prev) =>
       prev
-        .map((i) =>
-          i.id === id && i.quantity > 1
+        .map((i) => {
+          // If size is provided, match both id and size
+          if (size) {
+            return i.id === id && i.size === size && i.quantity > 1
+              ? { ...i, quantity: i.quantity - 1 }
+              : i;
+          }
+          // Otherwise just match id
+          return i.id === id && i.quantity > 1
             ? { ...i, quantity: i.quantity - 1 }
-            : i
-        )
+            : i;
+        })
         .filter((i) => i.quantity > 0)
     );
 
@@ -85,6 +116,7 @@ export const CartProvider = ({ children }) => {
     const items = cartFromLocalStorage.map((item) => ({
       productId: Number(item.id),
       quantity: item.quantity,
+      ...(item.size && { size: item.size }), // Include size if present
     }));
 
     try {
@@ -95,8 +127,27 @@ export const CartProvider = ({ children }) => {
           customerId,
           items,
         };
+        
+        // 🔍 VALIDATE: Check payload structure
+        const validation = validateUpdatePayload(updatePayload);
+        if (!validation.valid) {
+          console.error("❌ INVALID UPDATE PAYLOAD:");
+          validation.errors.forEach(err => console.error(err));
+          throw new Error("Invalid cart update payload: " + validation.errors.join(", "));
+        }
+        
+        // 🔍 DEBUG: Log the exact payload being sent
+        console.log("🔍 UPDATE CART PAYLOAD:", JSON.stringify(updatePayload, null, 2));
+        console.log("📊 Update details:", {
+          cartId: cartId,
+          customerId: customerId,
+          itemCount: items.length,
+          items: items
+        });
+        debugCartItems(cartFromLocalStorage);
+        
         const res = await api.put("/api/cart/update", updatePayload);
-        console.log("Cart updated:", res.data);
+        console.log("✅ Cart updated successfully:", res.data);
       } else {
         // 🆕 Create new cart
         const createPayload = {
@@ -104,14 +155,73 @@ export const CartProvider = ({ children }) => {
           items,
           checkedOut: false,
         };
+        
+        // 🔍 VALIDATE: Check payload structure
+        const validation = validateCreatePayload(createPayload);
+        if (!validation.valid) {
+          console.error("❌ INVALID CREATE PAYLOAD:");
+          validation.errors.forEach(err => console.error(err));
+          throw new Error("Invalid cart create payload: " + validation.errors.join(", "));
+        }
+        
+        // 🔍 DEBUG: Log the exact payload being sent
+        console.log("🔍 CREATE CART PAYLOAD:", JSON.stringify(createPayload, null, 2));
+        debugCartItems(cartFromLocalStorage);
+        
         const res = await api.post("/api/cart/create", createPayload);
-        console.log("Cart created:", res.data);
+        console.log("✅ Cart created successfully:", res.data);
         if (res.data && res.data.cartId) {
           localStorage.setItem("cartId", res.data.cartId);
         }
       }
     } catch (err) {
-      console.error("Cart save error:", err);
+      // 🔍 DEBUG: Log the exact error response
+      console.error("❌ Cart save error:", {
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
+        message: err.message,
+        config: {
+          url: err.config?.url,
+          method: err.config?.method,
+          data: err.config?.data
+        }
+      });
+      
+      // 🔄 If cart not found (404), create a new cart instead
+      if (err.response?.status === 404 && cartId) {
+        console.warn("⚠️ Cart not found in database. Creating new cart...");
+        
+        // Clear the invalid cartId
+        localStorage.removeItem("cartId");
+        
+        // Create new cart
+        try {
+          const createPayload = {
+            customer: { customerId },
+            items,
+            checkedOut: false,
+          };
+          
+          console.log("🔍 CREATING NEW CART (after 404):", JSON.stringify(createPayload, null, 2));
+          
+          const res = await api.post("/api/cart/create", createPayload);
+          console.log("✅ New cart created successfully:", res.data);
+          
+          if (res.data && res.data.cartId) {
+            localStorage.setItem("cartId", res.data.cartId);
+            console.log("✅ New cartId saved:", res.data.cartId);
+          }
+          
+          return; // Success - don't show error to user
+        } catch (createErr) {
+          console.error("❌ Failed to create new cart:", createErr);
+          handleCartError(createErr);
+        }
+      } else {
+        // Handle other errors (validation, network, etc.)
+        handleCartError(err);
+      }
     }
   };
 

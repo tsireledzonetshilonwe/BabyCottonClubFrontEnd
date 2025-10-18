@@ -38,7 +38,7 @@ const CartItem = memo(({ item, onQuantityChange, onRemove }) => {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => onQuantityChange(item.id, item.quantity - 1)}
+              onClick={() => onQuantityChange(item.id, item.quantity - 1, item.size)}
               disabled={item.quantity <= 1}
             >
               <Minus className="h-4 w-4" />
@@ -46,7 +46,7 @@ const CartItem = memo(({ item, onQuantityChange, onRemove }) => {
             <Input
               type="number"
               value={item.quantity}
-              onChange={(e) => onQuantityChange(item.id, parseInt(e.target.value) || 1)}
+              onChange={(e) => onQuantityChange(item.id, parseInt(e.target.value) || 1, item.size)}
               className="w-16 text-center"
               min="1"
               max="999"
@@ -54,7 +54,7 @@ const CartItem = memo(({ item, onQuantityChange, onRemove }) => {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => onQuantityChange(item.id, item.quantity + 1)}
+              onClick={() => onQuantityChange(item.id, item.quantity + 1, item.size)}
             >
               <Plus className="h-4 w-4" />
             </Button>
@@ -65,7 +65,7 @@ const CartItem = memo(({ item, onQuantityChange, onRemove }) => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onRemove(item.id)}
+              onClick={() => onRemove(item.id, item.size)}
               className="text-destructive hover:text-destructive"
             >
               <Trash2 className="h-4 w-4" />

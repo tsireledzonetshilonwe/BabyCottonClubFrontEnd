@@ -46,7 +46,10 @@ const Products = () => {
       rating: avgRating != null ? Number(avgRating.toFixed(1)) : (backendProduct.rating || 4.0),
       reviewCount: reviewCount,
   category: mapToCategory({ name: backendProduct.productName || backendProduct.name, category: backendProduct.category?.categoryName }) || 'Other',
-      sizes: ['One Size'],
+      // Use sizes from backend if available, otherwise default to One Size
+      sizes: backendProduct.sizes && Array.isArray(backendProduct.sizes) && backendProduct.sizes.length > 0 
+        ? backendProduct.sizes 
+        : ['One Size'],
       colors: [backendProduct.color || 'Default'],
       description: backendProduct.description || `High-quality ${(backendProduct.productName || backendProduct.name || 'baby item').toLowerCase()} for your little one.`,
       inStock: backendProduct.inStock === 'available' || backendProduct.inStock === 'In Stock',
@@ -163,15 +166,24 @@ const Products = () => {
     }
 
     try {
-      await addToCart({
+      const cartItem = {
         id: product.backendData.productId,
         name: product.backendData.productName || product.backendData.name,
         price: product.backendData.price,
         image: normalizeLocalImage(product.backendData.imageUrl) || resolveProductImage(product.backendData)
-      });
+      };
+      
+      // Include size if provided
+      if (product.size) {
+        cartItem.size = product.size;
+      }
+      
+      await addToCart(cartItem);
+      
+      const sizeInfo = product.size ? ` (Size: ${product.size})` : '';
       toast({
         title: 'Added to cart',
-        description: `${product.name} has been added to your cart`,
+        description: `${product.name}${sizeInfo} has been added to your cart`,
       });
     } catch (error) {
       toast({

@@ -1,12 +1,40 @@
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Star, ShoppingCart } from 'lucide-react';
+import SizeSelector from './SizeSelector';
 
 // Memoized product card component to prevent unnecessary re-renders
 const ProductCard = memo(({ product, onAddToCart, showViewButton = true }) => {
+  const [selectedSize, setSelectedSize] = useState(null);
+  const [sizeError, setSizeError] = useState(null);
+  
+  // Check if product has sizes (and it's not just "One Size")
+  const hasSizes = product.sizes && 
+    Array.isArray(product.sizes) && 
+    product.sizes.length > 0 && 
+    !(product.sizes.length === 1 && product.sizes[0] === 'One Size');
+  
+  const handleAddToCart = () => {
+    // Validate size if product has sizes
+    if (hasSizes && !selectedSize) {
+      setSizeError('Please select a size');
+      return;
+    }
+    
+    setSizeError(null);
+    
+    // Add size to product if selected
+    const productWithSize = hasSizes ? { ...product, size: selectedSize } : product;
+    onAddToCart(productWithSize);
+    
+    // Reset size selection after adding
+    if (hasSizes) {
+      setSelectedSize(null);
+    }
+  };
   // No inline review previews here: product list shows only star ratings.
   const PLACEHOLDER_IMG =
     'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="320" height="160"><rect width="100%" height="100%" fill="%23f3f4f6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%239ca3af" font-family="sans-serif" font-size="14">No Image</text></svg>';
@@ -58,10 +86,27 @@ const ProductCard = memo(({ product, onAddToCart, showViewButton = true }) => {
 
           <div className="mt-auto pt-2">
             <div className="text-lg font-semibold mb-2">R{product.price}</div>
+            
+            {/* Size selector if product has sizes */}
+            {hasSizes && (
+              <div className="mb-3">
+                <SizeSelector
+                  sizes={product.sizes}
+                  selectedSize={selectedSize}
+                  onSizeChange={(size) => {
+                    setSelectedSize(size);
+                    setSizeError(null);
+                  }}
+                  required={true}
+                  error={sizeError}
+                />
+              </div>
+            )}
+            
             <div className="flex items-stretch w-full" style={{ gap: 8 }}>
               <Button
                 size="sm"
-                onClick={() => onAddToCart(product)}
+                onClick={handleAddToCart}
                 disabled={!product.inStock}
                 className="baby-pink-button flex-1 justify-center"
               >

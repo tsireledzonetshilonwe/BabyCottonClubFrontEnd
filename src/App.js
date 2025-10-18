@@ -8,6 +8,11 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { getStoredCustomer } from "./utils/customer";
 
+// Load cart debugging tools in development
+if (process.env.NODE_ENV === 'development') {
+  import('./utils/cartInspector');
+}
+
 // Screens
 import Home from "./screens/Home";
 import AdminLogin from "./screens/AdminLogin";
