@@ -19,37 +19,30 @@ const ProductCard = memo(({ product, onAddToCart, showViewButton = true }) => {
     product.sizes.length > 0 && 
     !(product.sizes.length === 1 && product.sizes[0] === 'One Size');
 
-  // Helpers for two-step size selection
+  // Helpers for size handling
   const normalize = (s) => (s || '').toString().trim();
   const toKey = (s) => normalize(s).toLowerCase();
   const backendSizes = Array.isArray(product.sizes) ? product.sizes.map(normalize) : [];
-  const hasCategoryBasedSizes = backendSizes.some(s => ['newborn', 'baby', 'toddler'].includes(toKey(s)));
-  const sizeCategories = hasCategoryBasedSizes
-    ? Array.from(new Set(backendSizes
-        .map(s => toKey(s))
-        .filter(s => ['newborn', 'baby', 'toddler'].includes(s))
-      ))
-    : [];
-  const babySizes = ['0-3M', '3-6M', '6-9M', '9-12M', '12-18M', '18-24M'];
-  const toddlerSizes = ['2-3 years', '3-4 years', '4-5 years', '5-6 years'];
-  const newbornSizes = ['Newborn'];
-  const duvetSizes = ['Cot Duvet', 'Toddler Duvet', 'Single Duvet', 'Double Duvet'];
-  const getSizesForCategory = (key) => {
-    switch (toKey(key)) {
-      case 'baby': return babySizes;
-      case 'toddler': return toddlerSizes;
-      case 'newborn': return newbornSizes;
-      default: return [];
-    }
-  };
-  let derivedSizes = [];
+  
+  // Detect product category to determine how to send size to backend
+  let productCategory = null;
   if (/duvet/i.test(product.category)) {
-    derivedSizes = duvetSizes;
-  } else if (hasCategoryBasedSizes) {
-    derivedSizes = selectedSizeCategory ? getSizesForCategory(selectedSizeCategory) : [];
+    productCategory = 'Duvets';
+  } else if (/shoe|boot|sneaker|loafer/i.test(product.category)) {
+    productCategory = 'Shoes';
   } else {
-    derivedSizes = backendSizes;
+    // Check if it's clothing - infer category from sizes
+    const hasBabySizes = backendSizes.some(s => /^\d+-\d+M$/i.test(s));
+    const hasToddlerSizes = backendSizes.some(s => /^\d+-\d+\s*years?$/i.test(s));
+    const hasNewbornSize = backendSizes.some(s => /^newborn$/i.test(s));
+    
+    if (hasNewbornSize) productCategory = 'Newborn';
+    else if (hasBabySizes) productCategory = 'Baby';
+    else if (hasToddlerSizes) productCategory = 'Toddler';
   }
+  
+  // Use backend sizes directly for display
+  const derivedSizes = backendSizes;
   
   const handleAddToCart = () => {
     // If size required and not selected, show modal
@@ -59,7 +52,20 @@ const ProductCard = memo(({ product, onAddToCart, showViewButton = true }) => {
       return;
     }
     setSizeError(null);
-    const productWithSize = hasSizes ? { ...product, size: selectedSize } : product;
+    
+    // Prepare product with size information
+    let productWithSize = { ...product };
+    if (hasSizes && selectedSize) {
+      // For shoes and duvets, send category to backend, display actual size
+      if (productCategory && ['Duvets', 'Shoes'].includes(productCategory)) {
+        productWithSize.size = productCategory;
+        productWithSize.displaySize = selectedSize;
+      } else {
+        // For clothing and generic products, send actual size
+        productWithSize.size = selectedSize;
+      }
+    }
+    
     onAddToCart(productWithSize);
     if (hasSizes) {
       setSelectedSize(null);
@@ -126,42 +132,6 @@ const ProductCard = memo(({ product, onAddToCart, showViewButton = true }) => {
             {/* Size selector if product has sizes (for preview, not modal) */}
             {hasSizes && (
               <div className="mb-3">
-                {hasCategoryBasedSizes && !/duvet/i.test(product.category) ? (
-                  <div className="flex flex-wrap gap-2 mb-2" role="tablist" aria-label="Size categories">
-                    {['newborn', 'baby', 'toddler']
-                      .filter(k => sizeCategories.includes(k))
-                      .map((catKey) => {
-                        const isActive = toKey(selectedSizeCategory) === catKey;
-                        const label = catKey.charAt(0).toUpperCase() + catKey.slice(1);
-                        return (
-                          <button
-                            key={catKey}
-                            type="button"
-                            role="tab"
-                            aria-selected={isActive}
-                            onClick={() => {
-                              setSelectedSizeCategory(catKey);
-                              setSelectedSize(null);
-                              setSizeError(null);
-                            }}
-                            style={{
-                              padding: '0.3rem 0.7rem',
-                              border: isActive ? '1.5px solid #FFB6C1' : '1.5px solid #e5e7eb',
-                              borderRadius: '9999px',
-                              backgroundColor: isActive ? '#FFB6C1' : '#ffffff',
-                              color: isActive ? '#ffffff' : '#5D5D5D',
-                              fontWeight: isActive ? 600 : 500,
-                              fontSize: '0.8rem',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s ease-in-out',
-                            }}
-                          >
-                            {label}
-                          </button>
-                        );
-                      })}
-                  </div>
-                ) : null}
                 <SizeSelector
                   sizes={derivedSizes}
                   selectedSize={selectedSize}
@@ -179,42 +149,6 @@ const ProductCard = memo(({ product, onAddToCart, showViewButton = true }) => {
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.25)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ background: 'white', borderRadius: 12, padding: 24, minWidth: 320, boxShadow: '0 2px 16px rgba(0,0,0,0.12)' }}>
             <h3 style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: 12 }}>Select Size</h3>
-            {hasCategoryBasedSizes && !/duvet/i.test(product.category) ? (
-              <div className="flex flex-wrap gap-2 mb-3" role="tablist" aria-label="Size categories">
-                {['newborn', 'baby', 'toddler']
-                  .filter(k => sizeCategories.includes(k))
-                  .map((catKey) => {
-                    const isActive = toKey(selectedSizeCategory) === catKey;
-                    const label = catKey.charAt(0).toUpperCase() + catKey.slice(1);
-                    return (
-                      <button
-                        key={catKey}
-                        type="button"
-                        role="tab"
-                        aria-selected={isActive}
-                        onClick={() => {
-                          setSelectedSizeCategory(catKey);
-                          setSelectedSize(null);
-                          setSizeError(null);
-                        }}
-                        style={{
-                          padding: '0.4rem 0.9rem',
-                          border: isActive ? '1.5px solid #FFB6C1' : '1.5px solid #e5e7eb',
-                          borderRadius: '9999px',
-                          backgroundColor: isActive ? '#FFB6C1' : '#ffffff',
-                          color: isActive ? '#ffffff' : '#5D5D5D',
-                          fontWeight: isActive ? 600 : 500,
-                          fontSize: '0.85rem',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease-in-out',
-                        }}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-              </div>
-            ) : null}
             <SizeSelector
               sizes={derivedSizes}
               selectedSize={selectedSize}

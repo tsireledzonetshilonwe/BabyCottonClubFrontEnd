@@ -53,7 +53,7 @@ const HomePage = () => {
     };
 
     const normalized = products.map(convertBackendProduct);
-    const featured = normalized.slice(0, 4);
+    const featured = normalized.slice(0, 3);
 
     const handleAddToCart = async (product) => {
         const p = product.backendData || {};
@@ -168,7 +168,7 @@ const HomePage = () => {
                     ) : (
                         <div className="products-grid" style={{
                             display: 'grid',
-                            gridTemplateColumns: 'repeat(4, minmax(220px, 1fr))',
+                            gridTemplateColumns: 'repeat(3, minmax(250px, 1fr))',
                             gap: '2rem',
                             maxWidth: '1200px',
                             margin: '0 auto'

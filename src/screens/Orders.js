@@ -646,6 +646,7 @@ function Orders() {
                                                     <thead>
                                                     <tr>
                                                         <th style={{ textAlign: "left", padding: 8, borderBottom: "1px solid #eee" }}>Product</th>
+                                                        <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>Size</th>
                                                         <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>Qty</th>
                                                         <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>Unit</th>
                                                         <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>Subtotal</th>
@@ -661,6 +662,7 @@ function Orders() {
                                                         return (
                                                             <tr key={idx}>
                                                                 <td style={{ padding: 8, borderBottom: "1px solid #f4f4f4" }}>{pname} {pid ? <span style={{ color: '#666' }}>#{pid}</span> : null}</td>
+                                                                <td style={{ padding: 8, textAlign: 'right', borderBottom: "1px solid #f4f4f4" }}>{line.size || "-"}</td>
                                                                 <td style={{ padding: 8, textAlign: 'right', borderBottom: "1px solid #f4f4f4" }}>{qty}</td>
                                                                 <td style={{ padding: 8, textAlign: 'right', borderBottom: "1px solid #f4f4f4" }}>R{unit}</td>
                                                                 <td style={{ padding: 8, textAlign: 'right', borderBottom: "1px solid #f4f4f4" }}>R{subtotal}</td>

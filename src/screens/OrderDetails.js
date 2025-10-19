@@ -78,6 +78,7 @@ function OrderDetails({ user }) {
                   </Link>
                 </td>
                 <td>{line.product?.sku || "-"}</td>
+                <td>{line.size || "-"}</td>
                 <td>{line.quantity}</td>
                 <td>{formatCurrency(line.unitPrice)}</td>
                 <td>{formatCurrency(line.subTotal)}</td>

@@ -218,18 +218,66 @@ window.fixCart404 = function() {
   console.log("✅ Cart fixed! Try adding an item to cart now.");
 };
 
+window.checkBackendData = function() {
+  console.group("🔍 Backend Data Check");
+  
+  const customer = localStorage.getItem('customer');
+  const cartItems = localStorage.getItem('cartItems');
+  
+  if (customer) {
+    try {
+      const cust = JSON.parse(customer);
+      console.log("👤 Current Customer:");
+      console.log("   ID:", cust.customerId);
+      console.log("   Name:", cust.name || cust.firstName + " " + cust.lastName);
+      console.log("   Email:", cust.email);
+      console.warn("⚠️ CHECK: Does this customer exist in backend database?");
+      console.log(`   Run this SQL: SELECT * FROM customers WHERE customer_id = ${cust.customerId};`);
+    } catch (e) {
+      console.error("❌ Failed to parse customer:", e);
+    }
+  } else {
+    console.error("❌ No customer logged in");
+  }
+  
+  if (cartItems) {
+    try {
+      const items = JSON.parse(cartItems);
+      console.log("\n� Cart Items:");
+      items.forEach((item, idx) => {
+        console.log(`   Item ${idx + 1}:`);
+        console.log(`      Product ID: ${item.id}`);
+        console.log(`      Name: ${item.name}`);
+        console.log(`      Quantity: ${item.quantity}`);
+        console.log(`      Size: ${item.size || 'N/A'}`);
+        console.warn(`      ⚠️ CHECK: Does product ${item.id} exist in database?`);
+      });
+      console.log(`\n   Run this SQL: SELECT * FROM products WHERE product_id IN (${items.map(i => i.id).join(', ')});`);
+    } catch (e) {
+      console.error("❌ Failed to parse cart items:", e);
+    }
+  }
+  
+  console.groupEnd();
+  
+  console.log("\n💡 If any of these IDs don't exist in the backend database,");
+  console.log("   that's why you're getting 500 errors!");
+};
+
 console.log(`
-🔍 Cart Debug Tools Loaded!
+�🔍 Cart Debug Tools Loaded!
 
 Available commands in console:
-- inspectCart()     → View current cart state and validate payload
-- testCartUpdate()  → Test cart update API call with current cart
-- fixCartTypes()    → Fix type issues in localStorage (string → number)
-- clearCartDebug()  → Clear cart and start fresh
-- fixCart404()      → Fix "Cart not found" 404 errors
+- inspectCart()        → View current cart state and validate payload
+- testCartUpdate()     → Test cart update API call with current cart
+- fixCartTypes()       → Fix type issues in localStorage (string → number)
+- clearCartDebug()     → Clear cart and start fresh
+- fixCart404()         → Fix "Cart not found" 404 errors
+- checkBackendData()   → Check if customer/products exist in backend
 
 Example: Type "inspectCart()" in console and press Enter
 
-🔧 QUICK FIX for "Cart not found: 2" error:
-   Type: fixCart404()
+🔧 QUICK FIXES:
+   - Cart not found (404): fixCart404()
+   - Server error (500): checkBackendData()
 `);

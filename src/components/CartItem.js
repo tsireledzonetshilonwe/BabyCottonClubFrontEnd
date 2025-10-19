@@ -26,8 +26,10 @@ const CartItem = memo(({ item, onQuantityChange, onRemove }) => {
           <div className="flex-1">
             <h3 className="font-semibold">{item.name}</h3>
             <p className="text-muted-foreground">R{parseFloat(item.price).toFixed(2)}</p>
-            {item.size && (
-              <p className="text-sm text-muted-foreground">Size: {item.size}</p>
+            {(item.displaySize || item.size) && (
+              <p className="text-sm text-muted-foreground">
+                Size: {item.displaySize || item.size}
+              </p>
             )}
             {item.color && (
               <p className="text-sm text-muted-foreground">Color: {item.color}</p>

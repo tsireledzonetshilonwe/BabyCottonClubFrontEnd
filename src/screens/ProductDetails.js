@@ -92,53 +92,28 @@ const ProductDetails = () => {
   // Derive product category name
   const productCategoryName = normalize(product?.category?.categoryName || product?.category || mapToCategory({ name: product?.productName || product?.name, category: product?.category?.categoryName }));
 
-  // Determine if backend sizes indicate category-based selection (newborn/baby/toddler)
+  // Get backend sizes
   const backendSizes = Array.isArray(product?.sizes) ? product.sizes.map(normalize) : [];
-  const hasCategoryBasedSizes = backendSizes.some(s => ['newborn', 'baby', 'toddler'].includes(toKey(s)));
 
-  // Available size categories from backend (intersection with our known ones)
-  const sizeCategories = hasCategoryBasedSizes
-    ? Array.from(new Set(backendSizes
-        .map(s => toKey(s))
-        .filter(s => ['newborn', 'baby', 'toddler'].includes(s))
-      ))
-    : [];
-
-  // Map categories to concrete sizes
-  const babySizes = ['0-3M', '3-6M', '6-9M', '9-12M', '12-18M', '18-24M'];
-  const toddlerSizes = ['2-3 years', '3-4 years', '4-5 years', '5-6 years'];
-  const newbornSizes = ['Newborn'];
-  const duvetSizes = ['Cot Duvet', 'Toddler Duvet', 'Single Duvet', 'Double Duvet'];
-
-  const getSizesForCategory = (key) => {
-    switch (toKey(key)) {
-      case 'baby': return babySizes;
-      case 'toddler': return toddlerSizes;
-      case 'newborn': return newbornSizes;
-      default: return [];
-    }
-  };
-
-  // Derive the sizes to render in the selector
-  let derivedSizes = [];
+  // Detect product category to determine how to send size to backend
+  let productCategory = null;
   if (/duvet/i.test(productCategoryName)) {
-    // Duvet products: always show duvet sizes
-    derivedSizes = duvetSizes;
-  } else if (hasCategoryBasedSizes) {
-    // Show sizes based on the selected size category
-    derivedSizes = selectedSizeCategory ? getSizesForCategory(selectedSizeCategory) : [];
+    productCategory = 'Duvets';
+  } else if (/shoe|boot|sneaker|loafer/i.test(productCategoryName)) {
+    productCategory = 'Shoes';
   } else {
-    // Fallback: use backend-provided concrete sizes
-    derivedSizes = backendSizes;
+    // Check if it's clothing - infer category from sizes
+    const hasBabySizes = backendSizes.some(s => /^\d+-\d+M$/i.test(s));
+    const hasToddlerSizes = backendSizes.some(s => /^\d+-\d+\s*years?$/i.test(s));
+    const hasNewbornSize = backendSizes.some(s => /^newborn$/i.test(s));
+    
+    if (hasNewbornSize) productCategory = 'Newborn';
+    else if (hasBabySizes) productCategory = 'Baby';
+    else if (hasToddlerSizes) productCategory = 'Toddler';
   }
 
-  // Auto-select the sole newborn size when the newborn category is chosen
-  useEffect(() => {
-    if (selectedSizeCategory && toKey(selectedSizeCategory) === 'newborn') {
-      setSelectedSize('Newborn');
-      setSizeError(null);
-    }
-  }, [selectedSizeCategory]);
+  // Use backend sizes directly for display
+  const derivedSizes = backendSizes;
   
   const handleAddToCart = () => {
     // Validate size if product has sizes
@@ -164,7 +139,14 @@ const ProductDetails = () => {
       
       // Include size if selected
       if (hasSizes && selectedSize) {
-        cartItem.size = selectedSize;
+        // For shoes and duvets, send category to backend, display actual size
+        if (productCategory && ['Duvets', 'Shoes'].includes(productCategory)) {
+          cartItem.size = productCategory;
+          cartItem.displaySize = selectedSize;
+        } else {
+          // For clothing and generic products, send actual size
+          cartItem.size = selectedSize;
+        }
       }
       
       addToCart(cartItem);
@@ -292,43 +274,6 @@ const ProductDetails = () => {
                   Size Guide
                 </button>
               </div>
-              {/* Step 1: Category selection when applicable and not duvet */}
-              {hasCategoryBasedSizes && !/duvet/i.test(productCategoryName) && (
-                <div className="flex flex-wrap gap-2 mb-3" role="tablist" aria-label="Size categories">
-                  {['newborn', 'baby', 'toddler']
-                    .filter(k => sizeCategories.includes(k))
-                    .map((catKey) => {
-                      const isActive = toKey(selectedSizeCategory) === catKey;
-                      const label = catKey.charAt(0).toUpperCase() + catKey.slice(1);
-                      return (
-                        <button
-                          key={catKey}
-                          type="button"
-                          role="tab"
-                          aria-selected={isActive}
-                          onClick={() => {
-                            setSelectedSizeCategory(catKey);
-                            setSelectedSize(null);
-                            setSizeError(null);
-                          }}
-                          style={{
-                            padding: '0.4rem 0.9rem',
-                            border: isActive ? '1.5px solid #FFB6C1' : '1.5px solid #e5e7eb',
-                            borderRadius: '9999px',
-                            backgroundColor: isActive ? '#FFB6C1' : '#ffffff',
-                            color: isActive ? '#ffffff' : '#5D5D5D',
-                            fontWeight: isActive ? 600 : 500,
-                            fontSize: '0.85rem',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease-in-out',
-                          }}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                </div>
-              )}
               <SizeSelector
                 sizes={derivedSizes}
                 selectedSize={selectedSize}

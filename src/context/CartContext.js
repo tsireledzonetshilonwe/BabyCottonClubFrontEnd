@@ -188,14 +188,13 @@ export const CartProvider = ({ children }) => {
         }
       });
       
-      // 🔄 If cart not found (404), create a new cart instead
       if (err.response?.status === 404 && cartId) {
         console.warn("⚠️ Cart not found in database. Creating new cart...");
         
-        // Clear the invalid cartId
+        
         localStorage.removeItem("cartId");
         
-        // Create new cart
+       
         try {
           const createPayload = {
             customer: { customerId },
@@ -204,6 +203,8 @@ export const CartProvider = ({ children }) => {
           };
           
           console.log("🔍 CREATING NEW CART (after 404):", JSON.stringify(createPayload, null, 2));
+          console.log("📋 Customer ID:", customerId, typeof customerId);
+          console.log("📋 Items:", items);
           
           const res = await api.post("/api/cart/create", createPayload);
           console.log("✅ New cart created successfully:", res.data);
@@ -215,17 +216,34 @@ export const CartProvider = ({ children }) => {
           
           return; // Success - don't show error to user
         } catch (createErr) {
-          console.error("❌ Failed to create new cart:", createErr);
+          console.error("❌ Failed to create new cart:", {
+            status: createErr.response?.status,
+            statusText: createErr.response?.statusText,
+            data: createErr.response?.data,
+            message: createErr.message,
+            requestData: createErr.config?.data,
+            url: createErr.config?.url
+          });
+          
+          // If 500 error, show user-friendly message
+          if (createErr.response?.status === 500) {
+            console.error("🔴 BACKEND ERROR: The server couldn't create a cart. Check backend logs.");
+            console.error("💡 Possible causes:");
+            console.error("   - Customer ID doesn't exist in database");
+            console.error("   - Product ID doesn't exist in database");
+            console.error("   - Database connection issue");
+            console.error("   - Backend validation error");
+          }
+          
           handleCartError(createErr);
         }
       } else {
-        // Handle other errors (validation, network, etc.)
+       
         handleCartError(err);
       }
     }
   };
 
-  // 🕒 Auto-save cart to backend (debounced effect)
   useEffect(() => {
     const timeout = setTimeout(() => {
       (async () => {
@@ -254,7 +272,7 @@ export const CartProvider = ({ children }) => {
           console.error("Auto-save cart failed:", error);
         }
       })();
-    }, 1500); // wait 1.5 seconds after last change
+    }, 1500); 
 
     return () => clearTimeout(timeout);
   }, [cartItems]);
