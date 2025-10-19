@@ -27,26 +27,23 @@ function Login() {
       console.log("Login response from backend:", customer);
 
       if (customer && customer.customerId) {
-        console.log("✅ Customer logged in with ID:", customer.customerId);
-        
-        // Store customer data
+        console.log("Customer logged in with ID:", customer.customerId);
         localStorage.setItem('customer', JSON.stringify(customer));
         localStorage.setItem('customerId', customer.customerId);
-        
-        // Store JWT token if provided by backend
+
         if (customer.token) {
           localStorage.setItem('token', customer.token);
-          console.log("🔐 JWT token saved");
+          console.log("JWT token saved");
         }
-        
+
         navigate('/');
       } else {
-        console.error("❌ Login response missing customerId:", customer);
+        console.error("Login response missing customerId:", customer);
         setError('Invalid email or password.');
       }
     } catch (err) {
       setError('Login failed. Please check your credentials.');
-      console.error("❌ Login error:", err);
+      console.error("Login error:", err);
     } finally {
       setLoading(false);
     }
@@ -125,16 +122,6 @@ function Login() {
           </form>
 
           <div className="login-footer">
-            <p style={{ marginBottom: '0.5rem' }}>
-              Forgot your password?{' '}
-              <span
-                className="signup-link"
-                style={{ cursor: 'pointer' }}
-                onClick={() => navigate('/forgot-password')}
-              >
-                Reset it here
-              </span>
-            </p>
             <p>
               Don't have an account?{' '}
               <span
