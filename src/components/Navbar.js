@@ -12,8 +12,14 @@ function Navbar() {
     const isAdmin = !!localStorage.getItem("admin");
 
     const handleLogout = () => {
+        // Clear all authentication data
         localStorage.removeItem("customer");
+        localStorage.removeItem("customerId");
         localStorage.removeItem("admin");
+        localStorage.removeItem("token"); // Clear JWT token
+        localStorage.removeItem("cartItems"); // Clear cart on logout
+        
+        console.log("🚪 User logged out - token cleared");
         navigate("/");
     };
 

@@ -437,6 +437,13 @@ a.button-as-link:visited,
 .baby-pink-card a:visited {
     text-decoration: none !important;
 }
+
+/* Extra specificity: target anchor and its direct children to ensure no underline on the Back to products link */
+a.back-to-products-link,
+a.back-to-products-link > *,
+a.back-to-products-link button {
+    text-decoration: none !important;
+}
 .product-info p {
     margin: 0.2rem 0;
     color: #6b7280;
@@ -655,6 +662,43 @@ a.button-as-link:visited,
     margin-bottom: 0.3rem;
     color: #5a67d8;
 }
+/* ProductDetails specific review summary */
+.rating-summary {
+    display: flex;
+    gap: 1.25rem;
+    align-items: flex-start;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 1rem;
+}
+.rating-left {
+    width: 110px;
+    text-align: center;
+}
+.avg-rating {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+.avg-stars { margin-top: 0.4rem; }
+.review-count { color: #6b7280; margin-top: 0.25rem; }
+.rating-right {
+    flex: 1;
+}
+.rating-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.45rem; }
+.star-label { width: 28px; font-size: 0. ninerem; color: #6b7280; }
+.rating-bar-wrap { flex: 1; background: #f1f5f9; border-radius: 999px; height: 10px; overflow: hidden; }
+.rating-bar { height: 100%; background: linear-gradient(90deg, #34D399, #059669); }
+.rating-num { width: 36px; text-align: right; color: #6b7280; font-size: 0. ninerem; }
+
+.write-review-btn { background: #2b8cff !important; color: white !important; border-radius: 24px; padding: 0.6rem 1.2rem; }
+
+.reviews-list { margin-top: 0.5rem; }
+.review-card { padding: 1rem; border-radius: 12px; background: #fff; box-shadow: 0 6px 18px rgba(15,23,42,0.06); border: 1px solid #f3f4f6; }
+.review-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+.reviewer-name { font-weight: 700; color: #111827; }
+.review-rating { color: #f59e0b; }
+.review-meta { color: #6b7280; margin-bottom: 0.5rem; }
+.review-body { color: #374151; }
 /* Review Form */
 .review-form {
     display: flex;
@@ -735,4 +779,3 @@ a.button-as-link:visited,
  box-shadow: none;
  transform: none;
 }
-

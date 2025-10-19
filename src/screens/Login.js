@@ -24,17 +24,29 @@ function Login() {
 
     try {
       const customer = await loginCustomer(email, password);
+      console.log("Login response from backend:", customer);
 
       if (customer && customer.customerId) {
+        console.log("✅ Customer logged in with ID:", customer.customerId);
+        
+        // Store customer data
         localStorage.setItem('customer', JSON.stringify(customer));
         localStorage.setItem('customerId', customer.customerId);
+        
+        // Store JWT token if provided by backend
+        if (customer.token) {
+          localStorage.setItem('token', customer.token);
+          console.log("🔐 JWT token saved");
+        }
+        
         navigate('/');
       } else {
+        console.error("❌ Login response missing customerId:", customer);
         setError('Invalid email or password.');
       }
     } catch (err) {
       setError('Login failed. Please check your credentials.');
-      console.error(err);
+      console.error("❌ Login error:", err);
     } finally {
       setLoading(false);
     }

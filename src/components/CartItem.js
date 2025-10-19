@@ -6,17 +6,19 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 
 // Memoized cart item component to prevent unnecessary re-renders
 const CartItem = memo(({ item, onQuantityChange, onRemove }) => {
+  const PLACEHOLDER_IMG =
+    'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><rect width="100%" height="100%" fill="%23f3f4f6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%239ca3af" font-family="sans-serif" font-size="14">No Image</text></svg>';
   return (
     <Card>
       <CardContent className="p-6">
         <div className="flex items-center space-x-4">
           <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden">
             <img
-              src={item.image || require('../assets/img.png')}
+              src={item.image || PLACEHOLDER_IMG}
               alt={item.name}
               className="w-full h-full object-cover"
               onError={(e) => {
-                e.target.src = require('../assets/img.png');
+                e.target.src = PLACEHOLDER_IMG;
               }}
             />
           </div>
@@ -24,8 +26,10 @@ const CartItem = memo(({ item, onQuantityChange, onRemove }) => {
           <div className="flex-1">
             <h3 className="font-semibold">{item.name}</h3>
             <p className="text-muted-foreground">R{parseFloat(item.price).toFixed(2)}</p>
-            {item.size && (
-              <p className="text-sm text-muted-foreground">Size: {item.size}</p>
+            {(item.displaySize || item.size) && (
+              <p className="text-sm text-muted-foreground">
+                Size: {item.displaySize || item.size}
+              </p>
             )}
             {item.color && (
               <p className="text-sm text-muted-foreground">Color: {item.color}</p>
@@ -36,7 +40,7 @@ const CartItem = memo(({ item, onQuantityChange, onRemove }) => {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => onQuantityChange(item.id, item.quantity - 1)}
+              onClick={() => onQuantityChange(item.id, item.quantity - 1, item.size)}
               disabled={item.quantity <= 1}
             >
               <Minus className="h-4 w-4" />
@@ -44,7 +48,7 @@ const CartItem = memo(({ item, onQuantityChange, onRemove }) => {
             <Input
               type="number"
               value={item.quantity}
-              onChange={(e) => onQuantityChange(item.id, parseInt(e.target.value) || 1)}
+              onChange={(e) => onQuantityChange(item.id, parseInt(e.target.value) || 1, item.size)}
               className="w-16 text-center"
               min="1"
               max="999"
@@ -52,7 +56,7 @@ const CartItem = memo(({ item, onQuantityChange, onRemove }) => {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => onQuantityChange(item.id, item.quantity + 1)}
+              onClick={() => onQuantityChange(item.id, item.quantity + 1, item.size)}
             >
               <Plus className="h-4 w-4" />
             </Button>
@@ -63,7 +67,7 @@ const CartItem = memo(({ item, onQuantityChange, onRemove }) => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onRemove(item.id)}
+              onClick={() => onRemove(item.id, item.size)}
               className="text-destructive hover:text-destructive"
             >
               <Trash2 className="h-4 w-4" />

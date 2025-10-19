@@ -3,10 +3,17 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { CartProvider } from "./context/CartContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import ErrorBoundary from "./components/ErrorBoundary";
+import AddProduct from './screens/AddProduct';
+
 
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { getStoredCustomer } from "./utils/customer";
+
+// Load cart debugging tools in development
+if (process.env.NODE_ENV === 'development') {
+  import('./utils/cartInspector');
+}
 
 // Screens
 import Home from "./screens/Home";
@@ -90,6 +97,7 @@ function App() {
                   <Route path="/shipping" element={<Shipping />} />
                   <Route path="/supplier-search" element={<SupplierSearch />} />
 
+
                   {/* Auth Routes */}
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<SignUp />} />
@@ -103,6 +111,7 @@ function App() {
                   <Route path="/admin/orders" element={<AdminOrders />} />
                   <Route path="/admin/customers" element={<AdminCustomers />} />
                   <Route path="/admin/products" element={<AdminProducts />} />
+                    <Route path="/admin/add-product" element={<AddProduct />} />
 
                   {/* Orders */}
                   <Route path="/orders" element={<Orders />} />
