@@ -113,8 +113,25 @@ function Login() {
           </form>
 
           <div className="login-footer">
-            <p>Don't have an account? 
-              <a href="/signup" className="signup-link">Sign up here</a>
+            <p style={{ marginBottom: '0.5rem' }}>
+              Forgot your password?{' '}
+              <span
+                className="signup-link"
+                style={{ cursor: 'pointer' }}
+                onClick={() => navigate('/forgot-password')}
+              >
+                Reset it here
+              </span>
+            </p>
+            <p>
+              Don't have an account?{' '}
+              <span
+                className="signup-link"
+                style={{ cursor: 'pointer' }}
+                onClick={() => navigate('/signup')}
+              >
+                Sign up here
+              </span>
             </p>
           </div>
         </div>

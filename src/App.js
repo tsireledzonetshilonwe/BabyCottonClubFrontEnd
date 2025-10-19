@@ -20,6 +20,8 @@ import Orders from "./screens/Orders";
 import Customers from "./screens/Customers";
 import Login from "./screens/Login";
 import SignUp from "./screens/SignUp";
+import ForgotPassword from "./screens/ForgotPassword";
+import ResetPassword from "./screens/ResetPassword";
 import CreateOrder from "./screens/CreateOrder";
 import OrderDetails from "./screens/OrderDetails";
 import OrderLineDetails from "./screens/OrderLineDetails";
@@ -37,7 +39,6 @@ import AboutPage from './components/AboutPage';
 import ProductsPage from './components/ProductsPage';
 import ContactPage from './components/ContactPage';
 import OrderConfirmation from './components/OrderConfirmation';
-
 
 import "./App.css";
 
@@ -92,6 +93,8 @@ function App() {
                   {/* Auth Routes */}
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<SignUp />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
 
                   {/* Admin Routes */}
                   <Route path="/admin/login" element={<AdminLogin setIsAdmin={setIsAdmin} />} />
@@ -111,8 +114,7 @@ function App() {
                   {/* Static Pages */}
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/contact" element={<ContactPage />} />
-
-                    <Route path="/order-confirmation" element={<OrderConfirmation />} />
+                  <Route path="/order-confirmation" element={<OrderConfirmation />} />
                 </Routes>
               </ErrorBoundary>
             </main>

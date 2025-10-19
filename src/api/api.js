@@ -5,6 +5,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+
 });
 
 // ----------------- PRODUCTS -----------------
@@ -180,5 +181,19 @@ export const clearCartFromBackend = async (customerId) => {
   const res = await api.delete(`/api/cart/${customerId}`);
   return res.data;
 };
+
+// ----------------- PASSWORD RESET -----------------
+
+export const sendResetToken = async (email) => {
+  const res = await api.post(`/password/forgot?email=${encodeURIComponent(email)}`);
+  return res.data;
+};
+
+export const resetPassword = async (token, newPassword) => {
+  const res = await api.post(`/password/reset?token=${encodeURIComponent(token)}&newPassword=${encodeURIComponent(newPassword)}`);
+  return res.data;
+};
+
+
 
 export default api;
