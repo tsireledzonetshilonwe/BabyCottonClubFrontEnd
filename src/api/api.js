@@ -28,16 +28,27 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401 || error.response?.status === 403) {
-            console.warn(' Authentication failed. Token may be invalid or expired.');
+            console.warn('⚠️ Authentication failed. Token may be invalid or expired.');
 
             // Check if this is not a login request
             const isLoginRequest = error.config?.url?.includes('/login');
             if (!isLoginRequest) {
-                // Clear invalid token
+                // Clear invalid token and admin data
                 localStorage.removeItem('token');
-
-                // Optionally redirect to login (uncomment if needed)
-                // window.location.href = '/login';
+                
+                // Check if this was an admin request (admin routes typically include /admin/)
+                const isAdminRequest = error.config?.url?.includes('/admin') || 
+                                      window.location.pathname.includes('/admin');
+                
+                if (isAdminRequest) {
+                    localStorage.removeItem('admin');
+                    console.warn('🔐 Admin session expired. Redirecting to admin login...');
+                    // Only redirect if we're on an admin page
+                    if (window.location.pathname.includes('/admin') && 
+                        !window.location.pathname.includes('/admin/login')) {
+                        window.location.href = '/admin/login';
+                    }
+                }
             }
         }
         return Promise.reject(error);
