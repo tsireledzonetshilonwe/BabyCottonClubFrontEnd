@@ -121,7 +121,6 @@ export default function Payment() {
             localStorage.removeItem("orderId");
             localStorage.removeItem("orderTotal");
 
-            alert(`Payment of R${totalAmount.toFixed(2)} successful with ${paymentMethod}!`);
             navigate("/order-confirmation", {
                 state: {
                     orderId: orderId,

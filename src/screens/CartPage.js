@@ -175,7 +175,6 @@ export default function CartPage() {
             console.log("Order ID saved:", order.orderId);
             console.log("Order total saved:", total.toFixed(2));
 
-            alert("Order created successfully! Proceeding to shipping.");
             navigate("/shipping", {
                 state: {
                     totalAmount: total.toFixed(2),

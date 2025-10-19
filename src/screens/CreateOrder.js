@@ -73,7 +73,6 @@ function CreateOrder() {
 
     try {
       await createOrder(payload);
-      alert("Order created successfully!");
       navigate("/orders");
     } catch (err) {
       alert("Error creating order: " + (err.response?.data?.message || err.message));
