@@ -55,7 +55,7 @@ const AdminProducts = () => {
         if (window.confirm('Are you sure you want to delete this product?')) {
             try {
                 await deleteProduct(productId);
-                alert('Product deleted successfully');
+                // silently refresh list without popup
                 loadProducts();
             } catch (error) {
                 console.error('Error deleting product:', error);

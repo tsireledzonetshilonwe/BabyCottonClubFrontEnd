@@ -74,9 +74,8 @@ function SignUp() {
       if (customer && customer.customerId) {
         console.log('✅ User successfully registered:', customer);
         
-        // Don't auto-login, redirect to login page instead
-        alert('Account created successfully! Please log in with your credentials.');
-        navigate('/login');
+  // Don't auto-login, just redirect to login page silently
+  navigate('/login');
       } else {
         setError('Registration failed. Please try again.');
       }

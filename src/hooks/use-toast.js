@@ -9,11 +9,11 @@ export const useToast = () => {
     
     setToasts(prev => [...prev, newToast]);
     
-    // Simple alert fallback for now
+    // Avoid intrusive alerts; log instead. UI can read `toasts` to display.
     if (variant === 'destructive') {
-      alert(`Error: ${title}\n${description}`);
+      console.error(`[Toast Error] ${title}: ${description}`);
     } else {
-      alert(`${title}\n${description}`);
+      console.log(`[Toast] ${title}: ${description}`);
     }
     
     // Remove toast after 5 seconds
