@@ -21,6 +21,7 @@ const ProductDetails = () => {
   const [selectedSize, setSelectedSize] = useState(null);
   const [sizeError, setSizeError] = useState(null);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
+  const [selectedSizeCategory, setSelectedSizeCategory] = useState(null);
   
   const { addToCart } = useCart();
   const { toast } = useToast();
@@ -83,6 +84,61 @@ const ProductDetails = () => {
     Array.isArray(product.sizes) && 
     product.sizes.length > 0 && 
     !(product.sizes.length === 1 && product.sizes[0] === 'One Size');
+
+  // Normalize helpers
+  const normalize = (s) => (s || '').toString().trim();
+  const toKey = (s) => normalize(s).toLowerCase();
+
+  // Derive product category name
+  const productCategoryName = normalize(product?.category?.categoryName || product?.category || mapToCategory({ name: product?.productName || product?.name, category: product?.category?.categoryName }));
+
+  // Determine if backend sizes indicate category-based selection (newborn/baby/toddler)
+  const backendSizes = Array.isArray(product?.sizes) ? product.sizes.map(normalize) : [];
+  const hasCategoryBasedSizes = backendSizes.some(s => ['newborn', 'baby', 'toddler'].includes(toKey(s)));
+
+  // Available size categories from backend (intersection with our known ones)
+  const sizeCategories = hasCategoryBasedSizes
+    ? Array.from(new Set(backendSizes
+        .map(s => toKey(s))
+        .filter(s => ['newborn', 'baby', 'toddler'].includes(s))
+      ))
+    : [];
+
+  // Map categories to concrete sizes
+  const babySizes = ['0-3M', '3-6M', '6-9M', '9-12M', '12-18M', '18-24M'];
+  const toddlerSizes = ['2-3 years', '3-4 years', '4-5 years', '5-6 years'];
+  const newbornSizes = ['Newborn'];
+  const duvetSizes = ['Cot Duvet', 'Toddler Duvet', 'Single Duvet', 'Double Duvet'];
+
+  const getSizesForCategory = (key) => {
+    switch (toKey(key)) {
+      case 'baby': return babySizes;
+      case 'toddler': return toddlerSizes;
+      case 'newborn': return newbornSizes;
+      default: return [];
+    }
+  };
+
+  // Derive the sizes to render in the selector
+  let derivedSizes = [];
+  if (/duvet/i.test(productCategoryName)) {
+    // Duvet products: always show duvet sizes
+    derivedSizes = duvetSizes;
+  } else if (hasCategoryBasedSizes) {
+    // Show sizes based on the selected size category
+    derivedSizes = selectedSizeCategory ? getSizesForCategory(selectedSizeCategory) : [];
+  } else {
+    // Fallback: use backend-provided concrete sizes
+    derivedSizes = backendSizes;
+  }
+
+  // Auto-select the sole newborn size when the newborn category is chosen
+  useEffect(() => {
+    if (selectedSizeCategory && toKey(selectedSizeCategory) === 'newborn') {
+      setSelectedSize('Newborn');
+      setSizeError(null);
+    }
+  }, [selectedSizeCategory]);
   
   const handleAddToCart = () => {
     // Validate size if product has sizes
@@ -190,22 +246,31 @@ const ProductDetails = () => {
             />
           </div>
         </div>
-        <div className="flex-1">
+        <div className="w-full lg:w-3/5">
           <h1 className="text-2xl font-bold mb-2">{product.productName || product.name}</h1>
-          <p className="text-muted-foreground mb-4">{product.description}</p>
-          <div className="flex items-center mb-4">
-            <div className="flex items-center mr-3" aria-hidden>
-              {[...Array(5)].map((_, i) => (
-                <span key={i} className={`mr-1 ${i < Math.round(Number(avgRating || product.rating || 0)) ? 'text-yellow-400' : 'text-gray-300'}`}>
-                  ⭐
-                </span>
-              ))}
+          <p className="text-gray-600 leading-relaxed mb-4">{product.description}</p>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center" aria-hidden>
+                {[...Array(5)].map((_, i) => (
+                  <span
+                    key={i}
+                    className={`text-xl ${i < Math.round(Number(avgRating || product.rating || 0)) ? 'text-yellow-400' : 'text-gray-300'}`}
+                  >
+                    ★
+                  </span>
+                ))}
+              </div>
+              <span className="text-gray-600">
+                {avgRating ? Number(avgRating).toFixed(1) : (product.rating || '4.0')} ({reviewCount} reviews)
+              </span>
             </div>
-            <div className="text-sm text-muted-foreground">{avgRating ? Number(avgRating).toFixed(1) : (product.rating || '4.0')} · {reviewCount} review{reviewCount === 1 ? '' : 's'}</div>
+            <div className="text-2xl font-bold text-gray-900">R{product.price}</div>
           </div>
-          <div className="mb-4">
-            <span className="text-xl font-semibold">R{product.price}</span>
-            <span className="ml-4 text-sm text-muted-foreground">Category: {product.category?.categoryName || product.category || mapToCategory({ name: product.productName || product.name, category: product.category?.categoryName }) || 'Other'}</span>
+
+          {/* Category */}
+          <div className="text-gray-600 mb-4">
+            <strong>Category:</strong> {product.category?.categoryName || product.category || mapToCategory({ name: product.productName || product.name, category: product.category?.categoryName }) || 'Other'}
           </div>
 
           {/* Size selector if product has sizes */}
@@ -227,8 +292,45 @@ const ProductDetails = () => {
                   Size Guide
                 </button>
               </div>
+              {/* Step 1: Category selection when applicable and not duvet */}
+              {hasCategoryBasedSizes && !/duvet/i.test(productCategoryName) && (
+                <div className="flex flex-wrap gap-2 mb-3" role="tablist" aria-label="Size categories">
+                  {['newborn', 'baby', 'toddler']
+                    .filter(k => sizeCategories.includes(k))
+                    .map((catKey) => {
+                      const isActive = toKey(selectedSizeCategory) === catKey;
+                      const label = catKey.charAt(0).toUpperCase() + catKey.slice(1);
+                      return (
+                        <button
+                          key={catKey}
+                          type="button"
+                          role="tab"
+                          aria-selected={isActive}
+                          onClick={() => {
+                            setSelectedSizeCategory(catKey);
+                            setSelectedSize(null);
+                            setSizeError(null);
+                          }}
+                          style={{
+                            padding: '0.4rem 0.9rem',
+                            border: isActive ? '1.5px solid #FFB6C1' : '1.5px solid #e5e7eb',
+                            borderRadius: '9999px',
+                            backgroundColor: isActive ? '#FFB6C1' : '#ffffff',
+                            color: isActive ? '#ffffff' : '#5D5D5D',
+                            fontWeight: isActive ? 600 : 500,
+                            fontSize: '0.85rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease-in-out',
+                          }}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                </div>
+              )}
               <SizeSelector
-                sizes={product.sizes}
+                sizes={derivedSizes}
                 selectedSize={selectedSize}
                 onSizeChange={(size) => {
                   setSelectedSize(size);
@@ -253,9 +355,13 @@ const ProductDetails = () => {
             </Button>
           </div>
 
-            {/* Reviews Section with Grid Layout */}
-            <section className="mt-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Customer Reviews</h2>
+            {/* Reviews Section */}
+            <div className="mt-8 pt-6 border-t">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">Customer Reviews</h2>
+                <div className="text-sm text-gray-600">{reviewCount} review{reviewCount === 1 ? '' : 's'}</div>
+              </div>
+
               {reviews.length === 0 ? (
                 <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
                   <div className="text-4xl text-gray-400 mb-3">💬</div>
@@ -263,7 +369,7 @@ const ProductDetails = () => {
                   <p className="text-gray-400 text-sm mt-1">Be the first to share your thoughts!</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {reviews.map((r) => {
                     const idKey = String(r.reviewId || r.id || Math.random());
                     const comment = String(r.reviewComment ?? r.comment ?? r.text ?? r.content ?? r.body ?? '').trim();
@@ -278,23 +384,25 @@ const ProductDetails = () => {
                       : (customer && (customer.email || customer.username) ? (customer.email || customer.username) : 'Anonymous');
 
                     return (
-                      <div key={idKey} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col justify-between min-h-[160px]">
-                        <div className="flex items-center mb-4">
-                          <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center border mr-3">
-                            <span className="text-gray-700 font-semibold text-lg">
-                              {customerName.charAt(0).toUpperCase()}
-                            </span>
+                      <div key={idKey} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center border">
+                              <span className="text-gray-700 font-semibold text-sm">
+                                {customerName.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-900 text-sm">{customerName}</div>
+                              <div className="text-xs text-gray-500">{r.reviewDate}</div>
+                            </div>
                           </div>
-                          <div>
-                            <div className="font-medium text-gray-900 text-base">{customerName}</div>
-                            <div className="text-xs text-gray-500">{r.reviewDate}</div>
-                          </div>
-                          <div className="ml-auto flex items-center space-x-1 bg-yellow-50 px-2 py-1 rounded-full border border-yellow-100">
-                            <span className="text-yellow-500 text-base">★</span>
-                            <span className="font-bold text-gray-900 text-base">{r.rating}</span>
+                          <div className="flex items-center space-x-1 bg-yellow-50 px-2 py-1 rounded-full border border-yellow-100">
+                            <span className="text-yellow-500 text-sm">⭐</span>
+                            <span className="font-bold text-gray-900 text-sm">{r.rating}</span>
                           </div>
                         </div>
-                        <div className="text-gray-700 text-base leading-relaxed">
+                        <div className="text-gray-700 text-sm leading-relaxed">
                           {comment || 'No comment provided.'}
                         </div>
                       </div>
@@ -302,7 +410,7 @@ const ProductDetails = () => {
                   })}
                 </div>
               )}
-            </section>
+            </div>
         </div>
       </div>
 

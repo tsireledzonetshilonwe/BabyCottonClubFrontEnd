@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCcw } from 'lucide-react';
 import api, { fetchAllReviews, createReview } from "../api/api";
 import { getStoredCustomer } from "../utils/customer";
 import { Button } from '../components/ui/button';
@@ -34,6 +34,22 @@ const statusColors = {
 };
 
 function Orders() {
+    const [cancellingOrderId, setCancellingOrderId] = useState(null);
+    // Cancel order handler
+    const handleCancelOrder = async (orderId) => {
+        if (!orderId) return;
+        const confirmed = window.confirm('Are you sure you want to cancel this order? This action cannot be undone.');
+        if (!confirmed) return;
+        setCancellingOrderId(orderId);
+        try {
+            await api.patch(`/api/order/status/${orderId}`, { status: 'Cancelled' });
+            await fetchCustomerOrders();
+        } catch (err) {
+            alert('Failed to cancel order. Please try again.');
+        } finally {
+            setCancellingOrderId(null);
+        }
+    };
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -231,6 +247,8 @@ function Orders() {
 
     const processedOrders = React.useMemo(() => {
         let arr = Array.isArray(orders) ? [...orders] : [];
+        // Hide cancelled orders from the list
+        arr = arr.filter(o => String(o.status || '').trim().toLowerCase() !== 'cancelled');
         const q = String(search || "").trim().toLowerCase();
         if (q) {
             arr = arr.filter(o => {
@@ -256,8 +274,24 @@ function Orders() {
                     </div>
                     <div className="orders-controls">
                         <input className="search-input" placeholder="Search orders or products..." value={search} onChange={e => setSearch(e.target.value)} />
-                        <button className={`refresh-button ${refreshing || loading ? 'is-loading' : ''}`} onClick={handleManualRefresh} disabled={refreshing || loading} aria-busy={refreshing || loading} aria-label="Refresh orders">
-                            {refreshing ? (<><span className="refresh-spinner" aria-hidden="true"></span><span>Refreshing...</span></>) : (<><span className="refresh-emoji" aria-hidden="true">🔄</span><span>Refresh</span></>)}
+                        <button
+                            className={`refresh-button ${refreshing || loading ? 'is-loading' : ''}`}
+                            onClick={handleManualRefresh}
+                            disabled={refreshing || loading}
+                            aria-busy={refreshing || loading}
+                            aria-label="Refresh orders"
+                        >
+                            {refreshing || loading ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
+                                    <span>Refreshing...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <RefreshCcw className="h-4 w-4 mr-2" aria-hidden="true" />
+                                    <span>Refresh</span>
+                                </>
+                            )}
                         </button>
                     </div>
                 </div>
@@ -283,7 +317,7 @@ function Orders() {
                         <div className="empty-icon">📦</div>
                         <h3>No orders yet</h3>
                         <p>You haven't placed any orders yet. Start shopping to see your orders here!</p>
-                        <Link to="/products" className="btn-primary">
+                        <Link to="/products" className="btn-primary" style={{ textDecoration: 'none' }}>
                             Start Shopping
                         </Link>
                     </div>
@@ -296,6 +330,7 @@ function Orders() {
                             const showTracking = expandedOrderId === order.orderId &&
                                 !['Cancelled'].includes(order.status);
 
+                            const canCancel = !['Shipped','Delivered','Completed','Cancelled'].includes(String(order.status||'').trim());
                             return (
                                 <div className="order-card" key={order.orderId}>
                                     <div className="order-header">
@@ -315,6 +350,16 @@ function Orders() {
                                                 </button>
                                                 {showTracking && (
                                                     <button className="btn-outline">Track Order</button>
+                                                )}
+                                                {canCancel && (
+                                                    <button
+                                                        className="btn-outline"
+                                                        style={{ marginLeft: 8, color: '#dc3545', borderColor: '#dc3545' }}
+                                                        disabled={cancellingOrderId === order.orderId}
+                                                        onClick={() => handleCancelOrder(order.orderId)}
+                                                    >
+                                                        {cancellingOrderId === order.orderId ? 'Cancelling...' : 'Cancel Order'}
+                                                    </button>
                                                 )}
                                             </div>
                                         </div>

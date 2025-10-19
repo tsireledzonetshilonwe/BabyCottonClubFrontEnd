@@ -10,29 +10,60 @@ import SizeSelector from './SizeSelector';
 const ProductCard = memo(({ product, onAddToCart, showViewButton = true }) => {
   const [selectedSize, setSelectedSize] = useState(null);
   const [sizeError, setSizeError] = useState(null);
+  const [showSizeModal, setShowSizeModal] = useState(false);
+  const [selectedSizeCategory, setSelectedSizeCategory] = useState(null);
   
   // Check if product has sizes (and it's not just "One Size")
   const hasSizes = product.sizes && 
     Array.isArray(product.sizes) && 
     product.sizes.length > 0 && 
     !(product.sizes.length === 1 && product.sizes[0] === 'One Size');
+
+  // Helpers for two-step size selection
+  const normalize = (s) => (s || '').toString().trim();
+  const toKey = (s) => normalize(s).toLowerCase();
+  const backendSizes = Array.isArray(product.sizes) ? product.sizes.map(normalize) : [];
+  const hasCategoryBasedSizes = backendSizes.some(s => ['newborn', 'baby', 'toddler'].includes(toKey(s)));
+  const sizeCategories = hasCategoryBasedSizes
+    ? Array.from(new Set(backendSizes
+        .map(s => toKey(s))
+        .filter(s => ['newborn', 'baby', 'toddler'].includes(s))
+      ))
+    : [];
+  const babySizes = ['0-3M', '3-6M', '6-9M', '9-12M', '12-18M', '18-24M'];
+  const toddlerSizes = ['2-3 years', '3-4 years', '4-5 years', '5-6 years'];
+  const newbornSizes = ['Newborn'];
+  const duvetSizes = ['Cot Duvet', 'Toddler Duvet', 'Single Duvet', 'Double Duvet'];
+  const getSizesForCategory = (key) => {
+    switch (toKey(key)) {
+      case 'baby': return babySizes;
+      case 'toddler': return toddlerSizes;
+      case 'newborn': return newbornSizes;
+      default: return [];
+    }
+  };
+  let derivedSizes = [];
+  if (/duvet/i.test(product.category)) {
+    derivedSizes = duvetSizes;
+  } else if (hasCategoryBasedSizes) {
+    derivedSizes = selectedSizeCategory ? getSizesForCategory(selectedSizeCategory) : [];
+  } else {
+    derivedSizes = backendSizes;
+  }
   
   const handleAddToCart = () => {
-    // Validate size if product has sizes
+    // If size required and not selected, show modal
     if (hasSizes && !selectedSize) {
-      setSizeError('Please select a size');
+      setShowSizeModal(true);
+      setSizeError(null);
       return;
     }
-    
     setSizeError(null);
-    
-    // Add size to product if selected
     const productWithSize = hasSizes ? { ...product, size: selectedSize } : product;
     onAddToCart(productWithSize);
-    
-    // Reset size selection after adding
     if (hasSizes) {
       setSelectedSize(null);
+      setSelectedSizeCategory(null);
     }
   };
   // No inline review previews here: product list shows only star ratings.
@@ -92,11 +123,47 @@ const ProductCard = memo(({ product, onAddToCart, showViewButton = true }) => {
           <div className="mt-auto pt-2">
             <div className="text-lg font-semibold mb-2">R{product.price}</div>
             
-            {/* Size selector if product has sizes */}
+            {/* Size selector if product has sizes (for preview, not modal) */}
             {hasSizes && (
               <div className="mb-3">
+                {hasCategoryBasedSizes && !/duvet/i.test(product.category) ? (
+                  <div className="flex flex-wrap gap-2 mb-2" role="tablist" aria-label="Size categories">
+                    {['newborn', 'baby', 'toddler']
+                      .filter(k => sizeCategories.includes(k))
+                      .map((catKey) => {
+                        const isActive = toKey(selectedSizeCategory) === catKey;
+                        const label = catKey.charAt(0).toUpperCase() + catKey.slice(1);
+                        return (
+                          <button
+                            key={catKey}
+                            type="button"
+                            role="tab"
+                            aria-selected={isActive}
+                            onClick={() => {
+                              setSelectedSizeCategory(catKey);
+                              setSelectedSize(null);
+                              setSizeError(null);
+                            }}
+                            style={{
+                              padding: '0.3rem 0.7rem',
+                              border: isActive ? '1.5px solid #FFB6C1' : '1.5px solid #e5e7eb',
+                              borderRadius: '9999px',
+                              backgroundColor: isActive ? '#FFB6C1' : '#ffffff',
+                              color: isActive ? '#ffffff' : '#5D5D5D',
+                              fontWeight: isActive ? 600 : 500,
+                              fontSize: '0.8rem',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease-in-out',
+                            }}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                  </div>
+                ) : null}
                 <SizeSelector
-                  sizes={product.sizes}
+                  sizes={derivedSizes}
                   selectedSize={selectedSize}
                   onSizeChange={(size) => {
                     setSelectedSize(size);
@@ -107,6 +174,75 @@ const ProductCard = memo(({ product, onAddToCart, showViewButton = true }) => {
                 />
               </div>
             )}
+      {/* Size selection modal for Add to Cart */}
+      {showSizeModal && hasSizes && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.25)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'white', borderRadius: 12, padding: 24, minWidth: 320, boxShadow: '0 2px 16px rgba(0,0,0,0.12)' }}>
+            <h3 style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: 12 }}>Select Size</h3>
+            {hasCategoryBasedSizes && !/duvet/i.test(product.category) ? (
+              <div className="flex flex-wrap gap-2 mb-3" role="tablist" aria-label="Size categories">
+                {['newborn', 'baby', 'toddler']
+                  .filter(k => sizeCategories.includes(k))
+                  .map((catKey) => {
+                    const isActive = toKey(selectedSizeCategory) === catKey;
+                    const label = catKey.charAt(0).toUpperCase() + catKey.slice(1);
+                    return (
+                      <button
+                        key={catKey}
+                        type="button"
+                        role="tab"
+                        aria-selected={isActive}
+                        onClick={() => {
+                          setSelectedSizeCategory(catKey);
+                          setSelectedSize(null);
+                          setSizeError(null);
+                        }}
+                        style={{
+                          padding: '0.4rem 0.9rem',
+                          border: isActive ? '1.5px solid #FFB6C1' : '1.5px solid #e5e7eb',
+                          borderRadius: '9999px',
+                          backgroundColor: isActive ? '#FFB6C1' : '#ffffff',
+                          color: isActive ? '#ffffff' : '#5D5D5D',
+                          fontWeight: isActive ? 600 : 500,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease-in-out',
+                        }}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+              </div>
+            ) : null}
+            <SizeSelector
+              sizes={derivedSizes}
+              selectedSize={selectedSize}
+              onSizeChange={(size) => {
+                setSelectedSize(size);
+                setSizeError(null);
+              }}
+              required={true}
+              error={sizeError}
+            />
+            <div style={{ display: 'flex', gap: 12, marginTop: 18 }}>
+              <Button size="sm" className="baby-pink-button flex-1" onClick={() => {
+                if (!selectedSize) {
+                  setSizeError('Please select a size');
+                  return;
+                }
+                setShowSizeModal(false);
+                handleAddToCart();
+              }}>
+                Add to Cart
+              </Button>
+              <Button size="sm" variant="outline" className="flex-1" onClick={() => setShowSizeModal(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
             
             <div className="flex items-stretch w-full" style={{ gap: 8 }}>
               <Button
