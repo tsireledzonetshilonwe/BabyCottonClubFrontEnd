@@ -3,10 +3,17 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { CartProvider } from "./context/CartContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import ErrorBoundary from "./components/ErrorBoundary";
+import AddProduct from './screens/AddProduct';
+
 
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { getStoredCustomer } from "./utils/customer";
+
+// Load cart debugging tools in development
+if (process.env.NODE_ENV === 'development') {
+  import('./utils/cartInspector');
+}
 
 // Screens
 import Home from "./screens/Home";
@@ -20,6 +27,8 @@ import Orders from "./screens/Orders";
 import Customers from "./screens/Customers";
 import Login from "./screens/Login";
 import SignUp from "./screens/SignUp";
+import ForgotPassword from "./screens/ForgotPassword";
+import ResetPassword from "./screens/ResetPassword";
 import CreateOrder from "./screens/CreateOrder";
 import OrderDetails from "./screens/OrderDetails";
 import OrderLineDetails from "./screens/OrderLineDetails";
@@ -27,6 +36,7 @@ import Payment from "./screens/Payment";
 import SupplierSearch from "./screens/SupplierSearch";
 import CartPage from "./screens/CartPage";
 import Products from "./screens/Product";
+import ProductDetails from "./screens/ProductDetails";
 import Shipping from "./screens/Shipping";
 import Profile from "./screens/Profile";
 
@@ -35,6 +45,7 @@ import HomePage from './components/HomePage';
 import AboutPage from './components/AboutPage';
 import ProductsPage from './components/ProductsPage';
 import ContactPage from './components/ContactPage';
+import OrderConfirmation from './components/OrderConfirmation';
 
 import "./App.css";
 
@@ -78,6 +89,7 @@ function App() {
 
                   {/* Customer & Product Routes */}
                   <Route path="/products" element={<Products />} />
+                  <Route path="/products/:id" element={<ProductDetails />} />
                   <Route path="/productspage" element={<ProductsPage />} />
                   <Route path="/customers" element={<Customers />} />
                   <Route path="/cart" element={<CartPage />} />
@@ -85,9 +97,12 @@ function App() {
                   <Route path="/shipping" element={<Shipping />} />
                   <Route path="/supplier-search" element={<SupplierSearch />} />
 
+
                   {/* Auth Routes */}
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<SignUp />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
 
                   {/* Admin Routes */}
                   <Route path="/admin/login" element={<AdminLogin setIsAdmin={setIsAdmin} />} />
@@ -96,6 +111,7 @@ function App() {
                   <Route path="/admin/orders" element={<AdminOrders />} />
                   <Route path="/admin/customers" element={<AdminCustomers />} />
                   <Route path="/admin/products" element={<AdminProducts />} />
+                    <Route path="/admin/add-product" element={<AddProduct />} />
 
                   {/* Orders */}
                   <Route path="/orders" element={<Orders />} />
@@ -107,6 +123,7 @@ function App() {
                   {/* Static Pages */}
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/contact" element={<ContactPage />} />
+                  <Route path="/order-confirmation" element={<OrderConfirmation />} />
                 </Routes>
               </ErrorBoundary>
             </main>

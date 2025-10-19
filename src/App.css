@@ -239,6 +239,11 @@
     }
 }
 
+/* Admin quick actions: ensure link text is not underlined */
+.admin-quick-actions a {
+    text-decoration: none !important;
+}
+
 .space-y-6 > * + * { 
     margin-top: 1.5rem; 
 }
@@ -621,6 +626,48 @@ body {
     background: #ffa9c2;
 }
 
+/* Remove underline from links used as buttons (e.g., View product details) */
+.button-as-link,
+.button-as-link:link,
+.button-as-link:visited,
+.baby-pink-card a.button-as-link {
+    text-decoration: none !important;
+    color: inherit;
+    display: inline-flex;
+    align-items: center;
+}
+
+.button-as-link:hover,
+.baby-pink-card a.button-as-link:hover {
+    text-decoration: none !important;
+}
+
+    /* Extra global safety: ensure back-to-products anchor and its button child never show an underline
+        This sits in App.css to increase cascade priority and override other styles */
+    a.back-to-products-link,
+    a.back-to-products-link:link,
+    a.back-to-products-link:visited,
+    a.back-to-products-link *,
+    a.back-to-products-link > button,
+    a.back-to-products-link > button * {
+        -webkit-text-decoration: none !important;
+        text-decoration: none !important;
+    }
+
+/* Extra specificity to ensure no underline inside product cards */
+.baby-pink-card .button-as-link,
+.baby-pink-card .button-as-link:link,
+.baby-pink-card .button-as-link:visited,
+.baby-pink-card a.button-as-link,
+.baby-pink-card a.button-as-link:link,
+.baby-pink-card a.button-as-link:visited,
+.baby-pink-card a.button-as-link:hover,
+.baby-pink-card a.button-as-link:active,
+.baby-pink-card a.button-as-link:focus {
+    text-decoration: none !important;
+    border-bottom: 0 !important;
+}
+
 /* Footer Styles */
 footer {
     background-color: var(--dark);
@@ -851,16 +898,19 @@ footer {
     display: none;
     align-items: center;
     gap: 0;
-    max-width: 350px;
-    flex: 1;
+    max-width: 420px;
+    /* prevent the search form from growing and pushing other header items */
+    flex: 0 1 420px;
     position: relative;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border: 2px solid rgba(255, 182, 193, 0.3);
-    box-shadow: 0 8px 32px rgba(255, 182, 193, 0.2);
-    border-radius: 30px;
-    overflow: hidden;
-    transition: all 0.3s ease;
+    /* make it visually inline with the header: transparent background, subtle border removed */
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border: none;
+    box-shadow: none;
+    border-radius: 6px; /* keep slight rounding for button alignment */
+    overflow: visible;
+    transition: all 0.12s ease;
 }
 
 @media (min-width: 1024px) {
@@ -871,7 +921,8 @@ footer {
 
 .search-input {
     flex: 1;
-    padding: 0.9rem 1.2rem;
+    /* slightly smaller vertical padding so the input fits cleanly inside the header height */
+    padding: 0.55rem 1rem;
     border: none;
     background: transparent;
     outline: none;
@@ -888,25 +939,25 @@ footer {
 }
 
 .search-form:focus-within {
-    border-color: #FFB6C1;
-    box-shadow: 0 0 0 4px rgba(255, 182, 193, 0.1), 
-                0 12px 40px rgba(255, 182, 193, 0.25);
-    transform: translateY(-2px) scale(1.02);
-    background: rgba(255, 255, 255, 1);
+    /* subtle focus outline for accessibility without the boxed card look */
+    outline: 2px solid rgba(142, 205, 221, 0.18);
+    outline-offset: 2px;
+    transform: translateY(0);
 }
 
 .search-button {
-    padding: 0.9rem 1.2rem;
+    /* match input vertical sizing so button aligns well */
+    padding: 0.55rem 0.9rem;
     background: linear-gradient(135deg, #FFB6C1 0%, #ff9bb3 50%, #ff85a2 100%);
     border: none;
     cursor: pointer;
     transition: all 0.3s ease;
     color: white;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 55px;
+    min-width: 48px;
     position: relative;
     overflow: hidden;
 }

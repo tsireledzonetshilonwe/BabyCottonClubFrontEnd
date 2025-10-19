@@ -18,14 +18,26 @@ function AdminLogin({ setIsAdmin }) {
     
     try {
       const admin = await loginAdmin(email, password);
+      console.log("Admin login response:", admin);
+      
       if (admin && admin.adminId) {
-        localStorage.setItem("admin", JSON.stringify(admin));
+        // Store admin data with loggedIn flag
+        const adminData = { ...admin, loggedIn: true };
+        localStorage.setItem("admin", JSON.stringify(adminData));
+        
+        // Store JWT token if provided by backend
+        if (admin.token) {
+          localStorage.setItem('token', admin.token);
+          console.log("🔐 Admin JWT token saved");
+        }
+        
         if (setIsAdmin) setIsAdmin(true);
         navigate("/admin/dashboard");
       } else {
         setError("Invalid admin credentials");
       }
     } catch (err) {
+      console.error("Admin login error:", err);
       setError("Login failed. Please try again.");
     } finally {
       setLoading(false);

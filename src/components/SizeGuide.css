@@ -1,0 +1,292 @@
+/* SizeGuide.css */
+.size-guide-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.size-guide-modal {
+    background: white;
+    border-radius: 12px;
+    max-width: 800px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.size-guide-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border-bottom: 2px solid #f0f0f0;
+    background: linear-gradient(135deg, #f7b6d5 0%, #aee1f9 100%);
+}
+
+.size-guide-header h2 {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: white;
+}
+
+.size-guide-close {
+    background: rgba(255, 255, 255, 0.3);
+    border: none;
+    font-size: 1.5rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    transition: all 0.2s ease;
+}
+
+.size-guide-close:hover {
+    background: rgba(255, 255, 255, 0.5);
+    transform: rotate(90deg);
+}
+
+.size-guide-tabs {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem 2rem;
+    background: #fafafa;
+    border-bottom: 1px solid #e0e0e0;
+    flex-wrap: wrap;
+}
+
+.size-tab {
+    padding: 0.75rem 1.5rem;
+    border: 2px solid #e0e0e0;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    color: #666;
+}
+
+.size-tab:hover {
+    border-color: #87CEEB;
+    color: #333;
+    transform: translateY(-2px);
+}
+
+.size-tab.active {
+    background: linear-gradient(135deg, #87CEEB 0%, #6DB8DB 100%);
+    color: white;
+    border-color: #87CEEB;
+}
+
+.size-guide-content {
+    padding: 2rem;
+}
+
+.size-guide-content h3 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.size-table-wrapper {
+    overflow-x: auto;
+    margin-bottom: 2rem;
+}
+
+.size-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.size-table thead {
+    background: linear-gradient(135deg, #f7b6d5 0%, #ff9bb3 100%);
+    color: white;
+}
+
+.size-table th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.size-table tbody tr {
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.2s ease;
+}
+
+.size-table tbody tr:hover {
+    background: #f9f9f9;
+}
+
+.size-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.size-table td {
+    padding: 1rem;
+    color: #555;
+}
+
+.size-table td strong {
+    color: #333;
+    font-weight: 700;
+}
+
+.size-guide-tips {
+    background: #f0f8ff;
+    border-left: 4px solid #87CEEB;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.size-guide-tips h4 {
+    margin: 0 0 1rem 0;
+    color: #333;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.size-guide-tips ul {
+    margin: 0;
+    padding-left: 1.5rem;
+    list-style-type: none;
+}
+
+.size-guide-tips li {
+    margin-bottom: 0.75rem;
+    color: #555;
+    line-height: 1.6;
+    position: relative;
+    padding-left: 1.2rem;
+}
+
+.size-guide-tips li:before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: #87CEEB;
+    font-weight: bold;
+}
+
+.size-guide-tips li:last-child {
+    margin-bottom: 0;
+}
+
+.size-guide-note {
+    background: #fff9e6;
+    border: 1px solid #ffd700;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    text-align: center;
+}
+
+.size-guide-note p {
+    margin: 0;
+    color: #666;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .size-guide-modal {
+        max-height: 95vh;
+        margin: 0.5rem;
+    }
+
+    .size-guide-header {
+        padding: 1rem 1.5rem;
+    }
+
+    .size-guide-header h2 {
+        font-size: 1.4rem;
+    }
+
+    .size-guide-tabs {
+        padding: 0.75rem 1rem;
+    }
+
+    .size-tab {
+        padding: 0.6rem 1rem;
+        font-size: 0.85rem;
+        flex: 1;
+        min-width: 90px;
+    }
+
+    .size-guide-content {
+        padding: 1.5rem 1rem;
+    }
+
+    .size-table {
+        font-size: 0.8rem;
+    }
+
+    .size-table th,
+    .size-table td {
+        padding: 0.75rem 0.5rem;
+    }
+
+    .size-guide-tips {
+        padding: 1rem;
+    }
+
+    .size-guide-tips li {
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .size-guide-header h2 {
+        font-size: 1.2rem;
+    }
+
+    .size-table th,
+    .size-table td {
+        padding: 0.6rem 0.4rem;
+        font-size: 0.75rem;
+    }
+
+    .size-tab {
+        font-size: 0.8rem;
+        padding: 0.5rem 0.75rem;
+    }
+}

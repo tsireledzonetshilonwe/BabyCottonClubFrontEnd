@@ -1,7 +1,53 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { subscribeToAlerts } from '../api/api';
 
 const ContactPage = () => {
+    const [email, setEmail] = useState('');
+    const [status, setStatus] = useState('');
+    const [message, setMessage] = useState('');
+
+    const handleSubscribe = async (e) => {
+        e.preventDefault();
+        
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email.trim()) {
+            setStatus('error');
+            setMessage('Please enter your email address');
+            return;
+        }
+        
+        if (!emailRegex.test(email)) {
+            setStatus('error');
+            setMessage('Please enter a valid email address');
+            return;
+        }
+
+        setStatus('loading');
+        setMessage('');
+
+        try {
+            await subscribeToAlerts(email);
+            setStatus('success');
+            setMessage('Thank you! You have been subscribed to our alerts.');
+            setEmail('');
+            
+            setTimeout(() => {
+                setStatus('');
+                setMessage('');
+            }, 5000);
+        } catch (err) {
+            setStatus('error');
+            const errorMsg = err?.response?.data?.message || err?.message || 'Failed to subscribe. Please try again.';
+            setMessage(errorMsg);
+            
+            setTimeout(() => {
+                setStatus('');
+                setMessage('');
+            }, 5000);
+        }
+    };
+
     return (
         <div className="contact-page" style={{ minHeight: '80vh', padding: '4rem 0', background: '#fdf6f9' }}>
             <div className="container">
@@ -101,7 +147,7 @@ const ContactPage = () => {
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <h3 style={{ color: '#5D5D5D', marginBottom: '0.5rem', fontSize: '1.1rem', fontWeight: '600' }}>Call Us</h3>
-                                    <p style={{ color: '#5D5D5D', margin: '0.2rem 0', fontSize: '1rem' }}>+27 21 123 4567</p>
+                                    <p style={{ color: '#5D5D5D', margin: '0.2rem 0', fontSize: '1rem' }}>(021) 436-6678</p>
                                     <p style={{ color: '#5D5D5D', margin: '0.2rem 0', fontSize: '1rem' }}>Mon-Fri: 8:00 AM - 5:00 PM</p>
                                 </div>
                             </div>
@@ -127,8 +173,8 @@ const ContactPage = () => {
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <h3 style={{ color: '#5D5D5D', marginBottom: '0.5rem', fontSize: '1.1rem', fontWeight: '600' }}>Visit Us</h3>
-                                    <p style={{ color: '#5D5D5D', margin: '0.2rem 0', fontSize: '1rem' }}>123 Cotton Street</p>
-                                    <p style={{ color: '#5D5D5D', margin: '0.2rem 0', fontSize: '1rem' }}>Babyville, Cape Town 8001</p>
+                                    <p style={{ color: '#5D5D5D', margin: '0.2rem 0', fontSize: '1rem' }}>89 Kloof Street</p>
+                                    <p style={{ color: '#5D5D5D', margin: '0.2rem 0', fontSize: '1rem' }}>Gardens, Cape Town 8001</p>
                                     <p style={{ color: '#5D5D5D', margin: '0.2rem 0', fontSize: '1rem' }}>South Africa</p>
                                 </div>
                             </div>
@@ -136,12 +182,126 @@ const ContactPage = () => {
                     </div>
                 </div>
 
+                {/* Email Subscription Section */}
+                <div className="subscription-section" style={{
+                    marginTop: '4rem',
+                    background: '#fff',
+                    padding: '2.5rem',
+                    borderRadius: '15px',
+                    boxShadow: '0 5px 20px rgba(0,0,0,0.08)',
+                    maxWidth: '600px',
+                    margin: '4rem auto 0'
+                }}>
+                    <h3 style={{ 
+                        fontSize: '1.5rem', 
+                        fontWeight: '600', 
+                        marginBottom: '0.5rem', 
+                        color: '#f7b6d5',
+                        textAlign: 'center'
+                    }}>Stay Updated</h3>
+                    <p style={{ 
+                        fontSize: '0.95rem', 
+                        color: '#5D5D5D', 
+                        marginBottom: '1.5rem', 
+                        lineHeight: '1.4',
+                        textAlign: 'center'
+                    }}>
+                        Subscribe to receive alerts about new products, special offers, and exclusive deals!
+                    </p>
+                    
+                    <form onSubmit={handleSubscribe} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="Enter your email"
+                                disabled={status === 'loading'}
+                                style={{
+                                    flex: '1',
+                                    minWidth: '200px',
+                                    padding: '0.75rem 1rem',
+                                    border: status === 'error' ? '2px solid #dc3545' : '2px solid #e0e0e0',
+                                    borderRadius: '6px',
+                                    fontSize: '0.95rem',
+                                    transition: 'all 0.3s ease',
+                                    backgroundColor: status === 'loading' ? '#f5f5f5' : '#fff',
+                                    cursor: status === 'loading' ? 'not-allowed' : 'text'
+                                }}
+                                onFocus={(e) => {
+                                    if (status !== 'error') {
+                                        e.target.style.borderColor = '#87CEEB';
+                                        e.target.style.boxShadow = '0 0 0 3px rgba(135, 206, 235, 0.1)';
+                                    }
+                                }}
+                                onBlur={(e) => {
+                                    if (status !== 'error') {
+                                        e.target.style.borderColor = '#e0e0e0';
+                                        e.target.style.boxShadow = 'none';
+                                    }
+                                }}
+                            />
+                            <button 
+                                type="submit" 
+                                disabled={status === 'loading'}
+                                style={{
+                                    padding: '0.75rem 1.5rem',
+                                    backgroundColor: status === 'loading' ? '#b0b0b0' : '#87CEEB',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontSize: '0.95rem',
+                                    fontWeight: '600',
+                                    cursor: status === 'loading' ? 'not-allowed' : 'pointer',
+                                    transition: 'all 0.3s ease',
+                                    whiteSpace: 'nowrap'
+                                }}
+                                onMouseOver={(e) => {
+                                    if (status !== 'loading') {
+                                        e.target.style.backgroundColor = '#6DB8DB';
+                                        e.target.style.transform = 'translateY(-1px)';
+                                        e.target.style.boxShadow = '0 4px 8px rgba(135, 206, 235, 0.3)';
+                                    }
+                                }}
+                                onMouseOut={(e) => {
+                                    if (status !== 'loading') {
+                                        e.target.style.backgroundColor = '#87CEEB';
+                                        e.target.style.transform = 'translateY(0)';
+                                        e.target.style.boxShadow = 'none';
+                                    }
+                                }}
+                            >
+                                {status === 'loading' ? 'Subscribing...' : 'Subscribe'}
+                            </button>
+                        </div>
+                        
+                        {message && (
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                padding: '0.75rem 1rem',
+                                borderRadius: '6px',
+                                fontSize: '0.9rem',
+                                backgroundColor: status === 'success' ? '#d4edda' : '#f8d7da',
+                                color: status === 'success' ? '#155724' : '#721c24',
+                                border: status === 'success' ? '1px solid #c3e6cb' : '1px solid #f5c6cb',
+                                animation: 'slideIn 0.3s ease'
+                            }}>
+                                <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
+                                    {status === 'success' ? '✓' : '✗'}
+                                </span>
+                                <span>{message}</span>
+                            </div>
+                        )}
+                    </form>
+                </div>
+
                 {/* FAQ Section */}
                 <div className="faq-section" style={{ marginTop: '4rem', textAlign: 'center' }}>
                     <h2 style={{ color: '#f7b6d5', marginBottom: '2rem', fontSize: '2.5rem', fontWeight: '700' }}>Frequently Asked Questions</h2>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', maxWidth: '1000px', margin: '0 auto' }}>
                         {[
-                            { question: 'What is your return policy?', answer: 'We offer 30-day returns on all unworn items with original tags.' },
                             { question: 'How long does shipping take?', answer: 'Standard shipping takes 3-5 business days within South Africa.' },
                             { question: 'Are your products hypoallergenic?', answer: 'Yes! All our cotton products are hypoallergenic and chemical-free.' }
                         ].map((faq, index) => (

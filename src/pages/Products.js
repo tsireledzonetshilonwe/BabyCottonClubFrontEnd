@@ -1,287 +1,194 @@
-import React, { useState, useEffect } from "react";
-import { useCart } from "../context/CartContext";
-import { fetchAllReviews, createReview, fetchProducts } from "../api/api";
-import SimpleFilters from "../components/SimpleFilters";
-import "./Product.css";
+import React, { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import api, { fetchAllReviews, fetchProducts, fetchCustomerById } from '../api/api';
+import { Button } from '../components/ui/button';
+import { resolveProductImage, IMAGE_PLACEHOLDER } from '../utils/images';
+import { mapToCategory } from '../utils/categoryMapper';
 
-export default function Products() {
-    const [products, setProducts] = useState([]);
-    const [expandedProduct, setExpandedProduct] = useState(null);
-    const [reviewInputs, setReviewInputs] = useState({});
-    const [selectedCategory, setSelectedCategory] = useState("All");
-    const [selectedBrand, setSelectedBrand] = useState("All");
-    const [allReviews, setAllReviews] = useState([]);
-    const [loadingReviews, setLoadingReviews] = useState(false);
-    const [reviewError, setReviewError] = useState("");
-    
-    // Search and filter states
-    const [searchTerm, setSearchTerm] = useState("");
-    const [priceRange, setPriceRange] = useState("all");
-    const [sortBy, setSortBy] = useState("name");
-    
-    const { addToCart } = useCart();
+const ProductDetails = () => {
+  const { id } = useParams();
+  const [product, setProduct] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [customerCache, setCustomerCache] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    useEffect(() => {
-        fetchProducts()
-            .then((data) => setProducts(data))
-            .catch(() => setProducts([]));
-    }, []);
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        // fetch all products and find by id (backend returns productId as number)
+        const prods = await fetchProducts();
+        const found = prods.find(p => String(p.productId) === String(id) || String(p.id) === String(id));
+        setProduct(found || null);
 
-    useEffect(() => {
-        setLoadingReviews(true);
-        fetchAllReviews()
-            .then((data) => setAllReviews(data))
-            .catch(() => setReviewError("Failed to load reviews."))
-            .finally(() => setLoadingReviews(false));
-    }, []);
-
-    const toggleExpand = (id) => {
-        setExpandedProduct(expandedProduct === id ? null : id);
-    };
-
-    const handleReviewSubmit = async (e, productId) => {
-        e.preventDefault();
-        const { name, comment, rating } = reviewInputs[productId] || {};
-        if (!name || !comment) return;
-        try {
-            await createReview({
-                productId,
-                name,
-                comment,
-                rating: rating || 5
-            });
-            const data = await fetchAllReviews();
-            setAllReviews(data);
-            setReviewInputs({ ...reviewInputs, [productId]: { name: "", comment: "", rating: 5 } });
-        } catch (err) {
-            setReviewError("Failed to submit review.");
-        }
-    };
-
-    const handleInputChange = (productId, field, value) => {
-        setReviewInputs({
-            ...reviewInputs,
-            [productId]: { ...reviewInputs[productId], [field]: value },
+        // load reviews for the product
+        const all = await fetchAllReviews();
+        const filtered = (all || []).filter(r => {
+          if (!r) return false;
+          if (r.product && (r.product.productId || r.product.id)) {
+            return String(r.product.productId || r.product.id) === String(found?.productId || id || found?.id);
+          }
+          if (r.productId) return String(r.productId) === String(found?.productId || id || found?.id);
+          return false;
         });
+        setReviews(filtered);
+
+        // If reviews lack nested customer objects but have customerId, fetch those customers
+        const missingCustomerIds = Array.from(new Set((filtered || [])
+          .map(r => r && (r.customerId || (r.customer && (r.customer.customerId || r.customer.id))))
+          .filter(Boolean)
+          .map(String)
+          .filter(cid => !customerCache[cid])
+        ));
+
+        if (missingCustomerIds.length > 0) {
+          try {
+            const fetched = await Promise.all(missingCustomerIds.map(cid => fetchCustomerById(cid).catch(() => null)));
+            const map = {};
+            fetched.forEach((c, i) => { if (c) map[String(missingCustomerIds[i])] = c; });
+            setCustomerCache(prev => ({ ...prev, ...map }));
+          } catch (e) {
+            // ignore customer fetch errors
+            console.warn('Failed to fetch some customers for reviews', e);
+          }
+        }
+      } catch (err) {
+        setError('Failed to load product or reviews');
+      } finally {
+        setLoading(false);
+      }
     };
+    load();
+  }, [id]);
 
-    const categories = ["All", ...new Set(products.map((p) => p.category?.categoryName || "Other"))];
-    const brands = ["All"]; // If you have a brand field, update this accordingly
+  if (loading) return <div className="container mx-auto p-4">Loading...</div>;
+  if (error) return <div className="container mx-auto p-4 text-destructive">{error}</div>;
+  if (!product) return <div className="container mx-auto p-4">Product not found</div>;
 
-    const filteredProducts = products.filter((p) => {
-        // Category filter
-        const categoryMatch = selectedCategory === "All" || (p.category?.categoryName === selectedCategory);
-        
-        // Search filter
-        const searchMatch = searchTerm === "" || 
-            p.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (p.category?.categoryName || "").toLowerCase().includes(searchTerm.toLowerCase());
-        
-        // Price range filter
-        let priceMatch = true;
-        const price = parseFloat(p.price);
-        switch (priceRange) {
-            case "under25":
-                priceMatch = price < 25;
-                break;
-            case "25to40":
-                priceMatch = price >= 25 && price <= 40;
-                break;
-            case "over40":
-                priceMatch = price > 40;
-                break;
-            default:
-                priceMatch = true;
-        }
-        
-        return categoryMatch && searchMatch && priceMatch;
-    });
+  // compute average rating and count from reviews array
+  const reviewCount = (reviews || []).length;
+  const avgRating = reviewCount > 0 ? (reviews.reduce((s, r) => s + (Number(r.rating) || 0), 0) / reviewCount) : null;
 
-    // Sort products
-    const sortedProducts = [...filteredProducts].sort((a, b) => {
-        switch (sortBy) {
-            case "name":
-                return a.productName.localeCompare(b.productName);
-            case "price-low":
-                return parseFloat(a.price) - parseFloat(b.price);
-            case "price-high":
-                return parseFloat(b.price) - parseFloat(a.price);
-            case "rating":
-                // Calculate average rating for each product
-                const aRating = allReviews.filter(r => r.productId === a.productId)
-                    .reduce((sum, r) => sum + r.rating, 0) / 
-                    Math.max(1, allReviews.filter(r => r.productId === a.productId).length);
-                const bRating = allReviews.filter(r => r.productId === b.productId)
-                    .reduce((sum, r) => sum + r.rating, 0) / 
-                    Math.max(1, allReviews.filter(r => r.productId === b.productId).length);
-                return bRating - aRating;
-            default:
-                return 0;
-        }
-    });
+  // breakdown counts per star (5 to 1)
+  const ratingCounts = [5,4,3,2,1].map(star => (
+    (reviews || []).filter(r => Number(r.rating) === star).length
+  ));
+  const maxCount = Math.max(...ratingCounts, 1);
 
-    return (
-        <div className="products-page">
-            <h1 className="products-title">All Products</h1>
-            
-            <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
-                {/* Filters Section */}
-                <div style={{ flexShrink: 0 }}>
-                    <SimpleFilters
-                        searchTerm={searchTerm}
-                        setSearchTerm={setSearchTerm}
-                        priceRange={priceRange}
-                        setPriceRange={setPriceRange}
-                        sortBy={sortBy}
-                        setSortBy={setSortBy}
-                    />
-                    
-                    {/* Category Filter */}
-                    <div style={{ 
-                        width: '300px', 
-                        padding: '1rem', 
-                        backgroundColor: 'white', 
-                        border: '1px solid #e5e7eb', 
-                        borderRadius: '8px',
-                        marginTop: '1rem'
-                    }}>
-                        <label style={{ 
-                            display: 'block', 
-                            fontWeight: 'bold', 
-                            marginBottom: '0.5rem',
-                            color: '#374151'
-                        }}>
-                            Category
-                        </label>
-                        <select
-                            value={selectedCategory}
-                            onChange={(e) => setSelectedCategory(e.target.value)}
-                            style={{
-                                width: '100%',
-                                padding: '0.75rem',
-                                border: '2px solid #FFB6C1',
-                                borderRadius: '12px',
-                                fontSize: '0.875rem',
-                                backgroundColor: 'white',
-                                outline: 'none',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                                boxShadow: '0 2px 8px rgba(255, 182, 193, 0.1)'
-                            }}
-                        >
-                            {categories.map((cat, idx) => (
-                                <option key={idx} value={cat}>
-                                    {cat}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-
-                {/* Products Grid */}
-                <div style={{ flex: 1 }}>
-                    <div style={{ marginBottom: '1rem', color: '#666' }}>
-                        Showing {sortedProducts.length} of {products.length} products
-                    </div>
-                    
-                    <div className="products-grid">
-                        {sortedProducts.map((product) => (
-                    <div key={product.productId} className="product-card">
-                        <img src={product.imageUrl} alt={product.productName} className="product-image" />
-                        <div className="product-info">
-                            <h2 className="product-name">{product.productName}</h2>
-                            <p className="product-category">{product.category?.categoryName}</p>
-                            <p className="product-price">R {product.price}</p>
-                            <p className={`category-stock ${product.inStock === 'available' ? "in" : "out"}`}>
-                                {product.inStock === 'available' ? "In Stock" : "Out of Stock"}
-                            </p>
-                        </div>
-                        <button className="product-buy-btn" onClick={() => toggleExpand(product.productId)}>
-                            {expandedProduct === product.productId ? "Hide Details" : "View Details"}
-                        </button>
-                        <button
-                            className="product-buy-btn"
-                            onClick={() => {
-                                const cartItem = {
-                                    id: product.productId,        // Map productId to id
-                                    name: product.productName,    // Map productName to name
-                                    price: product.price,         // Keep price as is
-                                    image: product.imageUrl,      // Map imageUrl to image
-                                };
-                                console.log("Product clicked:", product);
-                                console.log("Cart item being added:", cartItem);
-                                console.log("Cart item ID:", cartItem.id, "Type:", typeof cartItem.id);
-                                addToCart(cartItem);
-                            }}
-                            disabled={product.inStock !== 'available'}
-                            style={{ marginTop: 8, background: product.inStock === 'available' ? '#90e0ef' : '#ccc', color: product.inStock === 'available' ? '#023e8a' : '#888', cursor: product.inStock === 'available' ? 'pointer' : 'not-allowed' }}
-                        >
-                            {product.inStock === 'available' ? 'Add to Cart' : 'Out of Stock'}
-                        </button>
-                        {expandedProduct === product.productId && (
-                            <div className="product-detail-section">
-                                <h3>Product Details</h3>
-                                <p>
-                                    This is a soft, high-quality {product.productName}.
-                                    Perfect for comfort and care.
-                                </p>
-                                <div className="review-section">
-                                    <h4>Customer Reviews</h4>
-                                    <div className="review-list">
-                                        {loadingReviews && <p>Loading reviews...</p>}
-                                        {reviewError && <p className="error-message">{reviewError}</p>}
-                                        {allReviews.filter(r => r.productId === product.productId).length === 0 && <p>No reviews yet.</p>}
-                                        {allReviews.filter(r => r.productId === product.productId).map((rev, index) => (
-                                            <div key={index} className="review-card">
-                                                <div className="review-card-header">
-                                                    <span>{rev.name}</span>
-                                                    <span className="review-rating">{"★".repeat(rev.rating)}</span>
-                                                </div>
-                                                <p>{rev.comment}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <form
-                                        onSubmit={(e) => handleReviewSubmit(e, product.productId)}
-                                        className="review-form"
-                                    >
-                                        <input
-                                            type="text"
-                                            placeholder="Your Name"
-                                            value={reviewInputs[product.productId]?.name || ""}
-                                            onChange={(e) => handleInputChange(product.productId, "name", e.target.value)}
-                                        />
-                                        <textarea
-                                            placeholder="Write your review..."
-                                            value={reviewInputs[product.productId]?.comment || ""}
-                                            onChange={(e) => handleInputChange(product.productId, "comment", e.target.value)}
-                                        />
-                                        <label>
-                                            Rating:
-                                            <select
-                                                value={reviewInputs[product.productId]?.rating || 5}
-                                                onChange={(e) =>
-                                                    handleInputChange(product.productId, "rating", Number(e.target.value))
-                                                }
-                                            >
-                                                {[1, 2, 3, 4, 5].map((n) => (
-                                                    <option key={n} value={n}>
-                                                        {n}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </label>
-                                        <button type="submit">Submit Review</button>
-                                    </form>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                ))}
-                    </div>
-                </div>
-            </div>
+  return (
+    <div className="container mx-auto p-6">
+      <div className="flex flex-col md:flex-row gap-6">
+        <div className="w-full md:w-1/3 bg-muted p-4 rounded">
+          <img src={resolveProductImage(product)} onError={(e)=>{e.currentTarget.src=IMAGE_PLACEHOLDER}} alt={product.productName || product.name} className="w-full object-contain h-64 mx-auto" />
         </div>
-    );
-}
+        <div className="flex-1">
+          <h1 className="text-2xl font-bold mb-2">{product.productName || product.name}</h1>
+          <p className="text-muted-foreground mb-4">{product.description}</p>
+          <div className="flex items-center mb-4">
+            <div className="flex items-center mr-3" aria-hidden>
+              {[...Array(5)].map((_, i) => (
+                <span key={i} className={`mr-1 ${i < Math.round(Number(avgRating || product.rating || 0)) ? 'text-yellow-400' : 'text-gray-300'}`}>
+                  ★
+                </span>
+              ))}
+            </div>
+            <div className="text-sm text-muted-foreground">{avgRating ? Number(avgRating).toFixed(1) : (product.rating || '4.0')} · {reviewCount} review{reviewCount === 1 ? '' : 's'}</div>
+          </div>
+          <div className="mb-4">
+            <span className="text-xl font-semibold">R{product.price}</span>
+            <span className="ml-4 text-sm text-muted-foreground">Category: {product.category?.categoryName || product.category || mapToCategory({ name: product.productName || product.name, category: product.category?.categoryName }) || 'Other'}</span>
+          </div>
 
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold mb-2">Reviews</h2>
+            <div className="rating-summary mb-6">
+              <div className="rating-left">
+                <div className="avg-rating">{avgRating ? Number(avgRating).toFixed(1) : (product.rating || '4.0')}</div>
+                <div className="avg-stars" aria-hidden>
+                  {[...Array(5)].map((_, i) => (
+                    <span key={i} className={`mr-1 ${i < Math.round(Number(avgRating || product.rating || 0)) ? 'text-yellow-400' : 'text-gray-300'}`}>★</span>
+                  ))}
+                </div>
+                <div className="review-count text-sm text-muted-foreground">{reviewCount} review{reviewCount === 1 ? '' : 's'}</div>
+              </div>
+              <div className="rating-right">
+                {[5,4,3,2,1].map((star, idx) => {
+                  const count = ratingCounts[idx];
+                  const pct = Math.round((count / maxCount) * 100);
+                  return (
+                    <div className="rating-row" key={star}>
+                      <div className="star-label">{star} <span className="sr-only">stars</span></div>
+                      <div className="rating-bar-wrap">
+                        <div className="rating-bar" style={{ width: `${pct}%` }}></div>
+                      </div>
+                      <div className="rating-num">{count}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <Link to="/orders" style={{ textDecoration: 'none' }}>
+                <Button variant="default" className="write-review-btn">Write Review</Button>
+              </Link>
+            </div>
+            {reviews.length === 0 && (
+              <div className="no-reviews">
+                <div className="no-reviews-icon">💬</div>
+                <h5>No reviews yet</h5>
+                <p>Be the first to review this product!</p>
+              </div>
+            )}
+            <div className="reviews-list">
+              {reviews.map((r) => {
+                const idKey = String(r.reviewId || r.id || Math.random());
+                // pick comment from several possible field names (backend uses reviewComment)
+                const comment = String(r.reviewComment ?? r.comment ?? r.text ?? r.content ?? r.body ?? '').trim();
+                // resolve customer: prefer nested, else look in cache by customerId
+                let customer = r.customer || null;
+                const cid = r.customerId || (r.customer && (r.customer.customerId || r.customer.id));
+                if (!customer && cid) {
+                  customer = customerCache[String(cid)] || null;
+                }
+
+                const customerName = customer && (customer.firstName || customer.name || customer.fullName)
+                  ? `${customer.firstName || customer.name || customer.fullName}${customer.lastName ? ' ' + customer.lastName : ''}`
+                  : (customer && (customer.email || customer.username) ? (customer.email || customer.username) : 'Anonymous');
+
+                return (
+                  <div key={idKey} className="review-card">
+                    <div className="review-card-header">
+                      <div className="reviewer-name">{customerName}</div>
+                      <div className="review-rating">{[...Array(5)].map((_, i) => (
+                        <span key={i} className={`${i < (Number(r.rating) || 0) ? 'text-yellow-400' : 'text-gray-300'} mr-0.5`}>★</span>
+                      ))}</div>
+                    </div>
+                    <div className="review-meta">
+                      <span className="review-date">{r.reviewDate || new Date().toLocaleDateString()}</span>
+                      <span className="review-purchase-info">Reviewed after purchase</span>
+                      {r.size && <span className="review-size">Size: {r.size}</span>}
+                    </div>
+                    <div className="review-body">{comment || '(no comment)'}</div>
+                    <div className="review-helpful">
+                      <span className="helpful-text">Helpful?</span>
+                      <span className="helpful-count">{Math.floor(Math.random() * 15)}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <Link to="/products" className="mr-4 back-to-products-link" style={{ textDecoration: 'none' }}>
+              <Button variant="default" className="back-to-products-btn">Back to products</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ProductDetails;

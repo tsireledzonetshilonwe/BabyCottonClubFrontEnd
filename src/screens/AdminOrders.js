@@ -154,36 +154,18 @@ const AdminOrders = () => {
         marginBottom: '24px' 
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <Link 
-                        to="/admin/dashboard" 
-            style={{ 
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 16px',
-              backgroundColor: '#FFB6C1',
-              color: '#8B0000',
-              borderRadius: '8px',
-              border: '1px solid #FFB6C1',
-              fontSize: '14px',
-              fontWeight: '500',
-              textDecoration: 'none',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#FF69B4';
-              e.target.style.borderColor = '#FF69B4';
-              e.target.style.transform = 'translateY(-1px)';
-              e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = '#FFB6C1';
-              e.target.style.borderColor = '#FFB6C1';
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
-            }}
-          >
+          <Link to="/admin/dashboard" style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 16px',
+            backgroundColor: '#FFB6C1',
+            color: '#8B0000',
+            borderRadius: '8px',
+            border: '1px solid #FFB6C1',
+            fontSize: '14px',
+            textDecoration: 'none'
+          }}>
             <ArrowLeft style={{ width: '16px', height: '16px' }} />
             Back to Dashboard
           </Link>
