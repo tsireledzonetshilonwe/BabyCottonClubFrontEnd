@@ -21,8 +21,9 @@ function AdminLogin({ setIsAdmin }) {
       console.log("Admin login response:", admin);
       
       if (admin && admin.adminId) {
-        // Store admin data
-        localStorage.setItem("admin", JSON.stringify(admin));
+        // Store admin data with loggedIn flag
+        const adminData = { ...admin, loggedIn: true };
+        localStorage.setItem("admin", JSON.stringify(adminData));
         
         // Store JWT token if provided by backend
         if (admin.token) {
