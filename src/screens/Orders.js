@@ -721,7 +721,7 @@ function Orders() {
                                                                         }}>
                                                                             <div style={{ fontWeight: '600', fontSize: '14px', marginBottom: '6px', color: '#0056b3' }}>Your review:</div>
                                                                             <div style={{ fontSize: '14px', marginBottom: '4px' }}>
-                                                                                <span style={{ color: '#ffc107' }}>★</span> Rating: {myReview.rating} / 5
+                                                                                Rating: {myReview.rating} / 5
                                                                             </div>
                                                                             <div style={{ fontSize: '14px', color: '#495057', fontStyle: 'italic' }}>"{myReview.reviewComment ?? myReview.comment ?? myReview.text ?? ''}"</div>
                                                                         </div>
@@ -746,11 +746,11 @@ function Orders() {
                                                                                     onChange={(e) => handleReviewInput(orderLineId, 'rating', e.target.value)}
                                                                                 >
                                                                                     <option value="">Rate</option>
-                                                                                    <option value="1">⭐ 1</option>
-                                                                                    <option value="2">⭐⭐ 2</option>
-                                                                                    <option value="3">⭐⭐⭐ 3</option>
-                                                                                    <option value="4">⭐⭐⭐⭐ 4</option>
-                                                                                    <option value="5">⭐⭐⭐⭐⭐ 5</option>
+                                                                                    <option value="1">1</option>
+                                                                                    <option value="2">2</option>
+                                                                                    <option value="3">3</option>
+                                                                                    <option value="4">4</option>
+                                                                                    <option value="5">5</option>
                                                                                 </select>
                                                                                 <input 
                                                                                     style={{

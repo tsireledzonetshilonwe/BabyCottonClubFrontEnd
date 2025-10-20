@@ -284,7 +284,6 @@ const AdminProducts = () => {
                                 <th style={{ padding: '12px 16px', textAlign: 'left' }}>Image</th>
                                 <th style={{ padding: '12px 16px', textAlign: 'left' }}>Name</th>
                                 <th style={{ padding: '12px 16px', textAlign: 'left' }}>Price</th>
-                                <th style={{ padding: '12px 16px', textAlign: 'left' }}>Category</th>
                                 <th style={{ padding: '12px 16px', textAlign: 'left' }}>Actions</th>
                             </tr>
                             </thead>
@@ -310,9 +309,6 @@ const AdminProducts = () => {
                                     </td>
                                     <td style={{ padding: '12px 16px' }}>{product.productName || product.name}</td>
                                     <td style={{ padding: '12px 16px', color: '#059669' }}>R{product.price}</td>
-                                    <td style={{ padding: '12px 16px' }}>
-                                        <Badge variant="outline">{product.category}</Badge>
-                                    </td>
                                     <td style={{ padding: '12px 16px' }}>
                                         <div style={{ display: 'flex', gap: '8px' }}>
                                             <Button

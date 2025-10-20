@@ -3,8 +3,10 @@
  * Run these functions in browser console to debug cart issues
  */
 
-// Make functions available globally for console access
-window.inspectCart = function() {
+// Only load in development mode and don't show startup message
+if (process.env.NODE_ENV === 'development') {
+  // Make functions available globally for console access
+  window.inspectCart = function() {
   console.group("🔍 CART STATE INSPECTION");
   
   // Check localStorage
@@ -264,20 +266,10 @@ window.checkBackendData = function() {
   console.log("   that's why you're getting 500 errors!");
 };
 
-console.log(`
-�🔍 Cart Debug Tools Loaded!
+// Only show the debug message in development, and only once
+if (!window.__cartInspectorLoaded) {
+  window.__cartInspectorLoaded = true;
+  console.log('🔍 Cart Debug Tools: Type inspectCart() in console');
+}
 
-Available commands in console:
-- inspectCart()        → View current cart state and validate payload
-- testCartUpdate()     → Test cart update API call with current cart
-- fixCartTypes()       → Fix type issues in localStorage (string → number)
-- clearCartDebug()     → Clear cart and start fresh
-- fixCart404()         → Fix "Cart not found" 404 errors
-- checkBackendData()   → Check if customer/products exist in backend
-
-Example: Type "inspectCart()" in console and press Enter
-
-🔧 QUICK FIXES:
-   - Cart not found (404): fixCart404()
-   - Server error (500): checkBackendData()
-`);
+} // Close the if (process.env.NODE_ENV === 'development') block
