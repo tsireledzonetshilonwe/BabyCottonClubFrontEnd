@@ -107,11 +107,11 @@
 .orders-empty h3, .orders-error h3 { margin-bottom: 0.5rem; font-size: 1.25rem; }
 .orders-empty p, .orders-error p { color: #6b7280; }
 
-/* Orders list: card grid */
+/* Orders list: vertical stack layout */
 .orders-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .orders-controls { display:flex; gap:0.5rem; align-items:center; }

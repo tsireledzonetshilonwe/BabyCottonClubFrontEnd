@@ -55,7 +55,6 @@ function Orders() {
     const [error, setError] = useState("");
     const [expandedOrderId, setExpandedOrderId] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
-    const [search, setSearch] = useState("");
     const [reviews, setReviews] = useState([]);
     const [reviewInputs, setReviewInputs] = useState({});
     const [submitting, setSubmitting] = useState({});
@@ -249,20 +248,8 @@ function Orders() {
         let arr = Array.isArray(orders) ? [...orders] : [];
         // Hide cancelled orders from the list
         arr = arr.filter(o => String(o.status || '').trim().toLowerCase() !== 'cancelled');
-        const q = String(search || "").trim().toLowerCase();
-        if (q) {
-            arr = arr.filter(o => {
-                if (String(o.orderId || '').toLowerCase().includes(q)) return true;
-                if (String(o.totalAmount || o.total || '').toLowerCase().includes(q)) return true;
-                const cust = o.customer || {};
-                if (String(cust.email || cust.name || cust.firstName || '').toLowerCase().includes(q)) return true;
-                const names = (o.orderLines || []).map(getLineProductName).join(' ').toLowerCase();
-                if (names.includes(q)) return true;
-                return false;
-            });
-        }
         return arr;
-    }, [orders, search]);
+    }, [orders]);
 
     return (
         <div className="orders-page-wrapper">
@@ -273,7 +260,6 @@ function Orders() {
                         <p className="orders-subtitle">Track and manage your orders</p>
                     </div>
                     <div className="orders-controls">
-                        <input className="search-input" placeholder="Search orders or products..." value={search} onChange={e => setSearch(e.target.value)} />
                         <button
                             className={`refresh-button ${refreshing || loading ? 'is-loading' : ''}`}
                             onClick={handleManualRefresh}
@@ -348,15 +334,34 @@ function Orders() {
                                                 <button className="btn-secondary" onClick={() => setExpandedOrderId(expandedOrderId === order.orderId ? null : order.orderId)}>
                                                     {expandedOrderId === order.orderId ? 'Hide Details' : 'View Details'}
                                                 </button>
-                                                {showTracking && (
-                                                    <button className="btn-outline">Track Order</button>
-                                                )}
                                                 {canCancel && (
                                                     <button
                                                         className="btn-outline"
-                                                        style={{ marginLeft: 8, color: '#dc3545', borderColor: '#dc3545' }}
+                                                        style={{ 
+                                                            marginLeft: 8, 
+                                                            color: '#dc3545', 
+                                                            borderColor: '#dc3545',
+                                                            backgroundColor: 'transparent',
+                                                            padding: '8px 16px',
+                                                            fontWeight: '500',
+                                                            transition: 'all 0.2s ease',
+                                                            cursor: cancellingOrderId === order.orderId ? 'not-allowed' : 'pointer',
+                                                            opacity: cancellingOrderId === order.orderId ? 0.6 : 1
+                                                        }}
                                                         disabled={cancellingOrderId === order.orderId}
                                                         onClick={() => handleCancelOrder(order.orderId)}
+                                                        onMouseEnter={(e) => {
+                                                            if (cancellingOrderId !== order.orderId) {
+                                                                e.target.style.backgroundColor = '#dc3545';
+                                                                e.target.style.color = '#fff';
+                                                            }
+                                                        }}
+                                                        onMouseLeave={(e) => {
+                                                            if (cancellingOrderId !== order.orderId) {
+                                                                e.target.style.backgroundColor = 'transparent';
+                                                                e.target.style.color = '#dc3545';
+                                                            }
+                                                        }}
                                                     >
                                                         {cancellingOrderId === order.orderId ? 'Cancelling...' : 'Cancel Order'}
                                                     </button>
@@ -646,7 +651,6 @@ function Orders() {
                                                     <thead>
                                                     <tr>
                                                         <th style={{ textAlign: "left", padding: 8, borderBottom: "1px solid #eee" }}>Product</th>
-                                                        <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>Size</th>
                                                         <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>Qty</th>
                                                         <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>Unit</th>
                                                         <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>Subtotal</th>
@@ -662,7 +666,6 @@ function Orders() {
                                                         return (
                                                             <tr key={idx}>
                                                                 <td style={{ padding: 8, borderBottom: "1px solid #f4f4f4" }}>{pname} {pid ? <span style={{ color: '#666' }}>#{pid}</span> : null}</td>
-                                                                <td style={{ padding: 8, textAlign: 'right', borderBottom: "1px solid #f4f4f4" }}>{line.size || "-"}</td>
                                                                 <td style={{ padding: 8, textAlign: 'right', borderBottom: "1px solid #f4f4f4" }}>{qty}</td>
                                                                 <td style={{ padding: 8, textAlign: 'right', borderBottom: "1px solid #f4f4f4" }}>R{unit}</td>
                                                                 <td style={{ padding: 8, textAlign: 'right', borderBottom: "1px solid #f4f4f4" }}>R{subtotal}</td>
@@ -675,8 +678,19 @@ function Orders() {
 
                                             {/* Reviews: allow writing reviews for delivered orders */}
                                             {String(order.status || '').toLowerCase() === 'delivered' && (
-                                                <div style={{ marginTop: 16 }}>
-                                                    <h5 style={{ marginBottom: 8 }}>Write reviews for delivered items</h5>
+                                                <div style={{ 
+                                                    marginTop: 20, 
+                                                    padding: '16px', 
+                                                    backgroundColor: '#f8f9fa',
+                                                    borderRadius: '8px',
+                                                    border: '1px solid #e9ecef'
+                                                }}>
+                                                    <h5 style={{ 
+                                                        marginBottom: 16, 
+                                                        fontSize: '16px',
+                                                        fontWeight: '600',
+                                                        color: '#2c3e50'
+                                                    }}>Write reviews for delivered items</h5>
                                                     {(order.orderLines || []).map((line) => {
                                                         const pid = getLineProductId(line);
                                                         const product = line.product || { productId: pid };
@@ -684,38 +698,111 @@ function Orders() {
                                                         const customer = getStoredCustomer();
                                                         const myReview = reviews.find(r => String(r.orderLineId ?? r.id ?? r.orderlineId ?? r.order_line_id) === String(orderLineId) && String(r.customerId ?? r.customer?.customerId) === String(customer?.customerId));
                                                         return (
-                                                            <div key={orderLineId} style={{ padding: 8, borderBottom: '1px dashed #eee' }}>
-                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                    <div>
-                                                                        <strong>{getLineProductName(line)}</strong>
-                                                                        <div style={{ fontSize: 13, color: '#666' }}>Qty: {line.quantity}</div>
-                                                                    </div>
-                                                                    <div style={{ minWidth: 240 }}>
-                                                                        {myReview ? (
-                                                                            <div>
-                                                                                <div><strong>Your review:</strong></div>
-                                                                                <div>Rating: {myReview.rating} / 5</div>
-                                                                                <div>{myReview.reviewComment ?? myReview.comment ?? myReview.text ?? ''}</div>
+                                                            <div key={orderLineId} style={{ 
+                                                                padding: '16px', 
+                                                                marginBottom: '12px',
+                                                                backgroundColor: '#fff',
+                                                                borderRadius: '6px',
+                                                                border: '1px solid #dee2e6',
+                                                                boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                                                            }}>
+                                                                <div style={{ marginBottom: '12px' }}>
+                                                                    <strong style={{ fontSize: '15px', color: '#2c3e50', display: 'block', marginBottom: '4px' }}>{getLineProductName(line)}</strong>
+                                                                    <div style={{ fontSize: '13px', color: '#6c757d' }}>Qty: {line.quantity}</div>
+                                                                </div>
+                                                                
+                                                                <div>
+                                                                    {myReview ? (
+                                                                        <div style={{ 
+                                                                            padding: '12px', 
+                                                                            backgroundColor: '#e7f3ff',
+                                                                            borderRadius: '6px',
+                                                                            border: '1px solid #b3d9ff'
+                                                                        }}>
+                                                                            <div style={{ fontWeight: '600', fontSize: '14px', marginBottom: '6px', color: '#0056b3' }}>Your review:</div>
+                                                                            <div style={{ fontSize: '14px', marginBottom: '4px' }}>
+                                                                                <span style={{ color: '#ffc107' }}>★</span> Rating: {myReview.rating} / 5
                                                                             </div>
-                                                                        ) : (
-                                                                            <form onSubmit={(e) => { e.preventDefault(); handleReviewSubmit(line, product); }} className="review-form">
-                                                                                <select className="review-select" required value={reviewInputs[orderLineId]?.rating || ''} onChange={(e) => handleReviewInput(orderLineId, 'rating', e.target.value)}>
+                                                                            <div style={{ fontSize: '14px', color: '#495057', fontStyle: 'italic' }}>"{myReview.reviewComment ?? myReview.comment ?? myReview.text ?? ''}"</div>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <form 
+                                                                            onSubmit={(e) => { e.preventDefault(); handleReviewSubmit(line, product); }} 
+                                                                            style={{ display: 'flex', gap: '10px', alignItems: 'center' }}
+                                                                        >
+                                                                                <select 
+                                                                                    style={{
+                                                                                        padding: '10px 14px',
+                                                                                        borderRadius: '6px',
+                                                                                        border: '1px solid #ced4da',
+                                                                                        fontSize: '14px',
+                                                                                        backgroundColor: '#fff',
+                                                                                        cursor: 'pointer',
+                                                                                        width: '120px',
+                                                                                        height: '40px'
+                                                                                    }}
+                                                                                    required 
+                                                                                    value={reviewInputs[orderLineId]?.rating || ''} 
+                                                                                    onChange={(e) => handleReviewInput(orderLineId, 'rating', e.target.value)}
+                                                                                >
                                                                                     <option value="">Rate</option>
-                                                                                    <option value="1">1</option>
-                                                                                    <option value="2">2</option>
-                                                                                    <option value="3">3</option>
-                                                                                    <option value="4">4</option>
-                                                                                    <option value="5">5</option>
+                                                                                    <option value="1">⭐ 1</option>
+                                                                                    <option value="2">⭐⭐ 2</option>
+                                                                                    <option value="3">⭐⭐⭐ 3</option>
+                                                                                    <option value="4">⭐⭐⭐⭐ 4</option>
+                                                                                    <option value="5">⭐⭐⭐⭐⭐ 5</option>
                                                                                 </select>
-                                                                                <input className="review-input" required value={reviewInputs[orderLineId]?.comment || ''} onChange={(e) => handleReviewInput(orderLineId, 'comment', e.target.value)} placeholder="Write a short review" />
-                                                                                <Button type="submit" size="sm" className="review-submit" disabled={submitting[orderLineId]}>
+                                                                                <input 
+                                                                                    style={{
+                                                                                        flex: '1',
+                                                                                        padding: '10px 14px',
+                                                                                        borderRadius: '6px',
+                                                                                        border: '1px solid #ced4da',
+                                                                                        fontSize: '14px',
+                                                                                        height: '40px'
+                                                                                    }}
+                                                                                    required 
+                                                                                    value={reviewInputs[orderLineId]?.comment || ''} 
+                                                                                    onChange={(e) => handleReviewInput(orderLineId, 'comment', e.target.value)} 
+                                                                                    placeholder="Write a short review" 
+                                                                                />
+                                                                                <Button 
+                                                                                    type="submit" 
+                                                                                    size="sm" 
+                                                                                    disabled={submitting[orderLineId]}
+                                                                                    style={{
+                                                                                        backgroundColor: '#FFB6C1',
+                                                                                        color: '#8B0000',
+                                                                                        border: 'none',
+                                                                                        padding: '10px 20px',
+                                                                                        borderRadius: '6px',
+                                                                                        fontWeight: '500',
+                                                                                        cursor: submitting[orderLineId] ? 'not-allowed' : 'pointer',
+                                                                                        opacity: submitting[orderLineId] ? 0.6 : 1,
+                                                                                        transition: 'all 0.2s ease',
+                                                                                        height: '40px',
+                                                                                        whiteSpace: 'nowrap'
+                                                                                    }}
+                                                                                    onMouseEnter={(e) => {
+                                                                                        if (!submitting[orderLineId]) {
+                                                                                            e.target.style.backgroundColor = '#FF69B4';
+                                                                                        }
+                                                                                    }}
+                                                                                    onMouseLeave={(e) => {
+                                                                                        if (!submitting[orderLineId]) {
+                                                                                            e.target.style.backgroundColor = '#FFB6C1';
+                                                                                        }
+                                                                                    }}
+                                                                                >
                                                                                     {submitting[orderLineId] ? (
-                                                                                        <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Sending...</span>
+                                                                                        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                                            <Loader2 style={{ height: '16px', width: '16px' }} className="animate-spin" /> 
+                                                                                            Sending...
+                                                                                        </span>
                                                                                     ) : 'Submit'}
                                                                                 </Button>
                                                                             </form>
                                                                         )}
-                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         );
