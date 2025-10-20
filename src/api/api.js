@@ -72,13 +72,23 @@ export const fetchProductsByName = async (name) => {
 };
 
 export const createProduct = async (productData) => {
-    const res = await api.post("/api/products/create", productData);
-    return res.data;
+  // Admin-only: check for admin role
+  const admin = JSON.parse(localStorage.getItem('admin') || '{}');
+  if (!admin || !admin.adminId) {
+    throw new Error('Admin authentication required');
+  }
+  const res = await api.post("/api/products/create", productData);
+  return res.data;
 };
 
 export const updateProduct = async (productData) => {
-    const res = await api.put(`/api/products/update/${productData.productId}`, productData);
-    return res.data;
+  // Admin-only: check for admin role
+  const admin = JSON.parse(localStorage.getItem('admin') || '{}');
+  if (!admin || !admin.adminId) {
+    throw new Error('Admin authentication required');
+  }
+  const res = await api.put(`/api/products/update/${productData.productId}`, productData);
+  return res.data;
 };
 
 export const deleteProduct = async (productId) => {
@@ -120,8 +130,13 @@ export const updateCustomer = async (customerData) => {
 
 // ----------------- ORDERS -----------------
 export const createOrder = async (orderData) => {
-    const res = await api.post("/api/order/create", orderData);
-    return res.data;
+  // Customer-only: check for customer role
+  const customer = JSON.parse(localStorage.getItem('customer') || '{}');
+  if (!customer || !customer.customerId) {
+    throw new Error('Customer authentication required');
+  }
+  const res = await api.post("/api/order/create", orderData);
+  return res.data;
 };
 
 export const fetchAllOrders = async () => {
@@ -194,20 +209,30 @@ export const fetchAllReviews = async () => {
 };
 
 export const createReview = async (reviewData) => {
-    try {
-        const res = await api.post("/api/review/create", reviewData);
-        return res.data;
-    } catch (err) {
-        // Keep logging minimal and let the caller decide how to present errors to users
-        console.error('createReview failed:', err?.message || err);
-        throw err;
-    }
+  // Customer-only: check for customer role
+  const customer = JSON.parse(localStorage.getItem('customer') || '{}');
+  if (!customer || !customer.customerId) {
+    throw new Error('Customer authentication required');
+  }
+  try {
+    const res = await api.post("/api/review/create", reviewData);
+    return res.data;
+  } catch (err) {
+    // Keep logging minimal and let the caller decide how to present errors to users
+    console.error('createReview failed:', err?.message || err);
+    throw err;
+  }
 };
 
 // ----------------- CART PERSISTENCE -----------------
 export const createCart = async (cartData) => {
-    const res = await api.post("/api/cart/create", cartData);
-    return res.data;
+  // Customer-only: check for customer role
+  const customer = JSON.parse(localStorage.getItem('customer') || '{}');
+  if (!customer || !customer.customerId) {
+    throw new Error('Customer authentication required');
+  }
+  const res = await api.post("/api/cart/create", cartData);
+  return res.data;
 };
 
 export const getCartFromBackend = async (customerId) => {
